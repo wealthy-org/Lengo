@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# keep the template, never the real env files (.env.local, .env.e2e stay ignored by .env*)
+!.env.example
+
+# foundry build output
+/contracts/out/
+/contracts/cache/
+
+# local tooling
+/.claude/
+/contracts/broadcast/**/*.lock

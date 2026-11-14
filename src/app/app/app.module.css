@@ -1,0 +1,20 @@
+.shell{min-height:100vh;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:20;display:grid;grid-template-columns:auto 1fr auto;align-items:stretch;height:64px;border-bottom:1px solid var(--line);background:rgba(14,20,18,.92);backdrop-filter:blur(12px)}
+.brand{display:flex;align-items:center;gap:12px;padding:0 28px;border-right:1px solid var(--line);font-family:var(--mono);font-weight:600;letter-spacing:.2em;font-size:14px}
+.nav{display:flex;justify-content:center}
+.nav a{display:flex;align-items:center;padding:0 26px;border-left:1px solid var(--line);font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--tx2);position:relative;transition:color .2s,background .2s}
+.nav a:last-child{border-right:1px solid var(--line)}
+.nav a:hover{color:var(--tx);background:var(--bg2)}
+.nav .on{color:var(--tx)}
+.nav .on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--tx)}
+.right{display:flex;align-items:center;gap:8px;padding:0 20px;border-left:1px solid var(--line)}
+.chain,.connect{display:flex;align-items:center;gap:10px;height:42px;padding:0 14px;border:1px solid var(--line2);background:var(--panel);font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx2);transition:.2s}
+.chain:hover,.connect:hover{border-color:var(--tx3);color:var(--tx)}
+.chain i{font-style:normal;font-size:9px;color:var(--tx3)}
+.chainIco{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--bg);border:1px solid var(--line2)}
+.connect{color:var(--tx);padding:0 18px}
+.connected{color:var(--lime);border-color:rgba(201,242,122,.35)}
+.content{flex:1;padding:28px 32px 40px;max-width:1720px;width:100%;margin:0 auto}
+@media (max-width:1000px){.nav a{padding:0 14px;font-size:11px}.brand{padding:0 16px}}
+@media (max-width:760px){.top{grid-template-columns:1fr auto;height:auto}.nav{grid-column:1/-1;grid-row:2;justify-content:flex-start;overflow-x:auto;border-top:1px solid var(--line)}.nav a{padding:12px 14px}.chain{display:none}.right{border-left:0;padding:10px 12px}.brand{border-right:0;padding:14px 16px}.content{padding:16px}}
+.wrong{color:var(--amber)!important;border-color:rgba(242,193,78,.45)!important}

@@ -1,0 +1,62 @@
+[
+  {
+    "step": "faucet tBTC",
+    "tx": "0x6e55ff0afa676b9d62cc4da9c0e5aceb0e172448580c1559167312afbcedcbbd"
+  },
+  {
+    "step": "faucet tUSDC",
+    "tx": "0x0038bebafa23dc37932d774533c83a716db94c01ec28e24817ab52b330659e46"
+  },
+  {
+    "step": "approve 0.12 tBTC",
+    "tx": "0xf6d517e483c6059fef0479dd09d65552ebfab7739db0bba71112f299d6076ce1"
+  },
+  {
+    "step": "deposit 0.1 tBTC",
+    "tx": "0xf8a22aa3ed3a28b0e116db3ccf5cedf5d4c9f16adc6a844aae089c2e5f76f4cf"
+  },
+  {
+    "step": "borrow 4,000 tUSDC",
+    "tx": "0x6f1ad8cdcca074b61c98558e7a3fb6f27342ba50094cfd318205b85ed17e6a0c"
+  },
+  {
+    "step": "top-up 0.02 tBTC",
+    "tx": "0x9ba6f59ef717a0c6d0eb052d1fb38ca32b6d9ab73771fad0a31ddd0d90833fec"
+  },
+  {
+    "step": "approve tUSDC for repay",
+    "tx": "0x9f4bfc4e69d91d5fff9ac2d60ee996cb2e01fcfa90c3ef645ed83405423e8961"
+  },
+  {
+    "step": "partial repay 1,000 tUSDC",
+    "tx": "0x8db24107798e2f53d0b6318499bdc5b264692f30e7c27acbbf6c82aee2fccf67"
+  },
+  {
+    "step": "repay all",
+    "tx": "0x0b37f9c3385b265f5d5ffc6bb55d88c7ced3ba0b19cee4f647271380cd786798"
+  },
+  {
+    "step": "withdraw all 0.12 tBTC",
+    "tx": "0x8c42169046e762d89cb17c4d11453969e3f2fc224ef974caa57a6372846bbeea"
+  },
+  {
+    "step": "approve 0.1 tBTC",
+    "tx": "0xde9dcd7bc5263916d6a5af98dd9a29bcbb9b690d762264c25c066344f3911593"
+  },
+  {
+    "step": "deposit 0.1 tBTC",
+    "tx": "0x5c311b8427bbb3336ae799b540f057d9cd15794c2d2a0cc8c6aa7cd6fb26f77f"
+  },
+  {
+    "step": "borrow 5,500 tUSDC",
+    "tx": "0x69068cad0e8300e024918821571877bc287609aba3631d5ecfd164e8f503b9d6"
+  },
+  {
+    "step": "liquidator faucet tUSDC",
+    "tx": "0x12a89cce7658340c31a6efb220bcefbe7cb7ecc7d3f8d4133174c16628f4e9a8"
+  },
+  {
+    "step": "liquidator approve tUSDC",
+    "tx": "0x21714ff1c9a7979966a9200059c1a0ba16f30d328a94f92c8aac1014ff3a3a47"
+  }
+]

@@ -1,0 +1,6 @@
+.pair{display:inline-flex;flex-shrink:0}
+.pair>.icon+.icon{margin-left:-10px}
+.icon{position:relative;display:inline-grid;place-items:center;border-radius:50%;background:var(--panel2);box-shadow:0 0 0 2px var(--bg2);flex-shrink:0}
+.icon img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.icon b{font-family:var(--mono);color:var(--tx2)}
+.icon .test{margin:0;letter-spacing:0;text-transform:none;border:0;padding:0;position:absolute;right:-3px;bottom:-3px;width:14px;height:14px;display:grid;place-items:center;font-style:normal;font-family:var(--mono);font-size:8px;font-weight:700;color:#14200f;background:var(--amber);border-radius:50%;box-shadow:0 0 0 2px var(--bg2)}

@@ -1,94 +1,198 @@
+import Link from "next/link";
 import Image from "next/image";
-import styles from "./page.module.css";
+import s from "./landing.module.css";
+import fx from "./fx.module.css";
+import { CycleWord, Ticker, Ruler } from "./Fx";
+import { MarketList, EventStream } from "./Console";
+import Bento from "./Bento";
+import Story from "./Story";
+import RiskCalc from "./RiskCalc";
+import Motion from "./Motion";
+import TopNav from "./TopNav";
 
-export default function Home() {
+const tick = [["tBTC/tUSDC","APR","8.00%"],["Max LTV","","60%"],["Liq. threshold","","75%"],["BTC → USDC","route","Solana"],["USDG → USDC","route","Preview"],["Chain","Robinhood","46630"],["Intents","1Click","dry:true"],["Liq. bonus","","5%"]];
+const params = [["Max borrow LTV","60%"],["Liquidation threshold","75%"],["Eligible when","HF < 1"],["Liquidator bonus","5%"],["Close factor","50% per call"],["Borrow APR","8% fixed"],["Protocol reserve","0%"],["Oracle freshness","300 s"]];
+const disclosure = [
+  ["Lending contracts", "Real testnet tx", "Mainnet after review"],
+  ["Collateral asset", "tBTC · no BTC backing", "Backed BTC, then ZEC, SOL"],
+  ["Borrow asset", "tUSDC · not Circle USDC", "Real RH stablecoin"],
+  ["Liquidation", "Two wallets, real tx", "Funded liquidators"],
+  ["Multichain payout", "dry:true quote only", "Execution + settlement"],
+  ["Native BTC / ZEC deposit", "Not offered", "Lock, proof, redemption"],
+  ["Private positions", "Not offered", "Separate design"],
+];
+const phases = [
+  ["Phase 1", "LIVE", "Lending lifecycle", ["Isolated tBTC/tUSDC market", "Faucet + dashboard", "Deposit → withdraw on RH"], 100],
+  ["Phase 2", "BUILDING", "Risk demo", ["Demo oracle scenarios", "Two-wallet liquidation", "Accounting invariants"], 60],
+  ["Phase 3", "BUILDING", "Multichain preview", ["1Click token discovery", "dry:true quotes", "Expiry + error states"], 40],
+  ["Phase 4", "NEXT", "Release package", ["Public testnet app", "Docs + QA", "Proof index"], 10],
+  ["Phase 5", "RESEARCH", "Native BTC", ["Custody + signer model", "Proof and redemption", "Liquidation feasibility"], 0],
+] as const;
+const contracts = [
+  ["TestCollateralToken.sol", "tBTC, 8 decimals, capped mint, testnet only", "Asset"],
+  ["TestDebtToken.sol", "tUSDC, 6 decimals, capped mint, testnet only", "Asset"],
+  ["DemoOracle.sol", "Price + timestamp, validity checks, labeled overrides", "Oracle"],
+  ["LengoMarket.sol", "Collateral, lender shares, debt index, liquidate", "Core"],
+  ["Indexer / API", "Events, quotes, alerts. Cannot touch balances", "Read"],
+];
+
+function Head({ n, label, a, b, aside }: { n: string; label: string; a: string; b: string; aside?: string }) {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className={s.secHead}>
+      <div className={s.label}><em>{n}</em> / {label}<span className="hatch" data-rule /></div>
+      <div className={s.headRow}>
+        <h2 className={s.h2} data-split><span>{a}</span><span className={s.dim}>{b}</span></h2>
+        {aside && <p className={s.aside} data-reveal>{aside}</p>}
+      </div>
+    </div>
+  );
+}
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+export default function Landing() {
+  return (
+    <div className={s.page}>
+      <Motion />
+      <TopNav />
+
+      <section className={`${s.hero} grid-bg`} data-hero>
+        <div className={s.vignette} aria-hidden />
+        <div className={fx.scanline} />
+        <Ruler />
+        <div className={s.console}>
+          <aside className={s.colL}><MarketList /></aside>
+          <div className={s.center}>
+            <div className={`${s.heroBox} bevel`}>
+              <div className={s.addr}><span>MARKET</span>0xLENGO…TBTC/TUSDC<em>TESTNET</em></div>
+              <div className={s.markWrap} data-hero-mark>
+                <Image src="/logo-mark.png" alt="Lengo" width={150} height={150} priority className={s.mark} />
+              </div>
+              <div className={s.eyebrow}><span className="dot" /> Cross-chain lending · Robinhood Chain + NEAR Intents</div>
+              <h1 className={s.h1}>
+                <span>Borrow against</span>
+                <span className={s.wordFrame}><CycleWord words={["BTC", "ZEC", "SOL", "ANY CHAIN"]} /></span>
+                <span>Paid where you are</span>
+              </h1>
+            </div>
+            <p className={`${s.sub} bevel`}>Collateral from one chain. One isolated market on Robinhood Chain. Stablecoins to the chain you actually use.</p>
+            <div className={s.ctas}>
+              <a href="#flow" className="btn">Explore flow</a>
+              <Link href="/app/routes" className="btn">Route preview</Link>
+              <Link href="/app" className="btn btn-primary">Launch app →</Link>
+            </div>
+          </div>
+          <aside className={s.colR}><EventStream /></aside>
         </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+        <Ticker items={tick} />
+      </section>
+
+      <section id="system" className={s.section}>
+        <Head n="00" label="System overview" a="One position." b="Every step on record." aside="Collateral intents come in, the risk guard checks every action, the ledger records debt on Robinhood Chain, and payouts are quoted through NEAR Intents. This is the whole path." />
+        <div data-reveal><Bento /></div>
+      </section>
+
+      <section className={s.section}>
+        <Head n="01" label="Two sides" a="Multichain has two sides." b="Most protocols build one." />
+        <div className={s.split} data-stagger>
+          <div className={`${s.side} bevel`}>
+            <span className={s.k}>Side A · collateral origin</span>
+            <h3>Where your collateral lives</h3>
+            <p>BTC on Bitcoin, ZEC on Zcash, SOL on Solana. Lengo must verify it is locked, not swapped. Selling BTC for stablecoins and still calling it BTC collateral is off the table.</p>
+            <div className={s.chips}><i>BTC</i><i>ZEC</i><i>SOL</i></div>
+          </div>
+          <div className={s.core}>
+            <span className={s.beam} />
+            <Image src="/logo-mark.png" alt="" width={64} height={64} />
+            <b>Robinhood Chain</b>
+            <small>debt · interest · HF · liquidation</small>
+          </div>
+          <div className={`${s.side} bevel`}>
+            <span className={s.k}>Side B · payout destination</span>
+            <h3>Where you need the money</h3>
+            <p>NEAR Intents 1Click routes the borrowed stablecoin to your chain. Debt stays in its own denomination on RH; the conversion and its fee are shown separately.</p>
+            <div className={s.chips}><i>USDC · Solana</i><i>USDC · Base</i><i>USDC · Arbitrum</i></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="flow" className={s.section}>
+        <div className={s.label}><em>02</em> / Lending lifecycle<span className="hatch" data-rule /></div>
+        <Story />
+      </section>
+
+      <section className={s.section}>
+        <Head n="03" label="Liquidation demo" a="Two wallets." b="One price drop. Proof onchain." aside="An authorized testnet operator moves the demo oracle under a visible Demo price override. Once HF drops below 1, a separate liquidator repays up to half the debt and takes tBTC plus a 5% bonus." />
+        <div className={s.liq} data-stagger>
+          {[["01", "Oracle update", "Demo price override event"], ["02", "HF < 1", "Position becomes eligible"], ["03", "Liquidate ≤ 50%", "Liquidator pays tUSDC"], ["04", "Settle", "tBTC + 5% bonus out, debt down"]].map(([n, t, d], i) => (
+            <div key={n} className={`${s.liqStep} ${i === 2 ? s.liqHot : ""}`}><span>{n}</span><b>{t}</b><p>{d}</p></div>
+          ))}
+        </div>
+      </section>
+
+      <section id="risk" className={s.section}>
+        <Head n="04" label="Risk, in the open" a="The math is on the page." b="Not in a tooltip." />
+        <div data-reveal className="bevel"><RiskCalc /></div>
+        <div className={s.riskGrid} data-stagger>
+          <pre className={`${s.formula} bevel`}>{`LTV            = D / C
+Health factor  = (C × liqThreshold) / D
+Extra capacity = max(0, C × maxLTV − D)
+Liq. price     = D / (qty × liqThreshold)`}</pre>
+          <div className={`${s.params} bevel`}>{params.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div>
+        </div>
+      </section>
+
+      <section id="disclosure" className={s.section}>
+        <Head n="05" label="Disclosure" a="What is real." b="What is preview." aside="Claims are only useful when they are exact. This is what release 0.1 actually does, including everything it does not." />
+        <div className={`${s.table} bevel`} data-reveal>
+          <div className={s.tHead}><span>Capability</span><span><i className={s.pill}>● v0.1 testnet</i></span><span><i className={s.pill}>○ Next</i></span></div>
+          {disclosure.map(([a, b, c]) => (
+            <div key={a} className={s.tRow}><span>{a}</span><span className={b.startsWith("Not") ? s.muted : ""}>{b}</span><span className={s.muted}>{c}</span></div>
+          ))}
+        </div>
+      </section>
+
+      <section id="roadmap" className={s.sectionWide}>
+        <div className={s.inner}><Head n="06" label="Roadmap" a="Ship the loop first." b="Then go native." /></div>
+        <div className={s.hwrap} data-hwrap>
+          <div className={s.htrack} data-htrack>
+            {phases.map(([p, st, t, items, pct]) => (
+              <div key={p} className={`${s.phase} bevel`}>
+                <div className={s.pTop}><span>{p}</span><em className={st === "LIVE" ? s.live : ""}>{st}</em></div>
+                <h3>{t}</h3>
+                <ul>{items.map((x) => <li key={x}>{x}</li>)}</ul>
+                <div className={s.prog}><i style={{ width: `${pct}%` }} /></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className={s.section}>
+        <div className={s.contracts}>
+          <div>
+            <div className={s.label}><em>07</em> / Contracts<span className="hatch" data-rule /></div>
+            <h2 className={s.h2} data-split><span>The</span><span>contracts.</span></h2>
+            <p className={s.aside} data-reveal>Small pieces, one job each. Solidity + Foundry with pinned, audited libraries. Chain is the source of truth; the database only speeds up reads.</p>
+          </div>
+          <div className={`${s.cList} bevel`} data-stagger>
+            {contracts.map(([n, d, t]) => <div key={n}><b>{n}</b><span>{d}</span><em>{t}</em></div>)}
+          </div>
+        </div>
+      </section>
+
+      <section className={s.cta}>
+        <div className={`${s.ctaBox} bevel`} data-reveal>
+          <h2 data-split><span>Deposit.</span><span>Borrow.</span><span className={s.dim}>Route.</span></h2>
+          <p>Mint test assets, open a position, push it toward liquidation, and check every tx on the explorer.</p>
+        </div>
+        <div className={`${s.ctaBtns} bevel`}>
+          <a href="https://explorer.testnet.chain.robinhood.com" target="_blank" rel="noreferrer" className="btn">RH explorer ↗</a>
+          <Link href="/app" className="btn btn-primary">Launch app →</Link>
+        </div>
+      </section>
+
+      <footer className={`${s.foot} bevel`}>
+        <Link href="/app">Markets</Link><Link href="/app/routes">Routes</Link><Link href="/app/activity">Activity</Link><a href="#">Faucet</a><a href="#">Docs</a>
+        <span>Demo assets · no value</span><span className={s.status}>Status <i /></span>
       </footer>
     </div>
   );
