@@ -22,6 +22,9 @@ REFRESH_AFTER_S = "180"            # skip the tx if the price is younger than th
 # Secrets (never in this file):  npx wrangler secret put KEEPER_PRIVATE_KEY   /   npx wrangler secret put DATABASE_URL
 
 # Keep Workers Logs on across git deploys (dashboard toggles are overwritten by wrangler deploy)
-[observability]
+[observability.logs]
 enabled = true
-head_sampling_rate = 1
+invocation_logs = true
+
+[observability.traces]
+enabled = false
