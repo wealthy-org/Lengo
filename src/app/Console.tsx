@@ -4,17 +4,19 @@ import { useEffect, useRef, useState } from "react";
 import s from "./console.module.css";
 
 const assets = [
-  { sym: "tBTC", name: "tBTC / tUSDC", st: "ACTIVE", note: "testnet", c: "#f2a93b" },
-  { sym: "BTC", name: "BTC · Bitcoin", st: "SPIKE", note: "M5", c: "#f2a93b" },
-  { sym: "ZEC", name: "ZEC · Zcash", st: "RESEARCH", note: "next", c: "#e8c46b" },
-  { sym: "SOL", name: "SOL · Solana", st: "RESEARCH", note: "next", c: "#9b8cf2" },
-  { sym: "USDG", name: "USDG · hood", st: "PREVIEW", note: "payout", c: "#7fe0b4" },
-  { sym: "USDC", name: "USDC · Solana", st: "PREVIEW", note: "payout", c: "#7fb6f2" },
+  { sym: "tBTC", name: "tBTC / tUSDC", st: "ACTIVE", note: "RH Testnet", c: "#f2a93b" },
+  { sym: "BTC", name: "BTC · Bitcoin", st: "RESEARCH", note: "Native Collateral", c: "#f2a93b" },
+  { sym: "ZEC", name: "ZEC · Zcash", st: "ROADMAP", note: "NEAR Intents", c: "#e8c46b" },
+  { sym: "SOL", name: "SOL · Solana", st: "ROADMAP", note: "SVM Collateral", c: "#9b8cf2" },
+  { sym: "HYPE", name: "HYPE · Hyperliquid", st: "ROADMAP", note: "HyperEVM", c: "#48e59b" },
+  { sym: "ETH", name: "ETH · Ethereum", st: "ROADMAP", note: "EVM Inflow", c: "#627eea" },
+  { sym: "USDG", name: "USDG · Robinhood", st: "PREVIEW", note: "Payout Route", c: "#7fe0b4" },
+  { sym: "USDC", name: "USDC · Solana", st: "PREVIEW", note: "Payout Route", c: "#7fb6f2" },
 ];
 export function MarketList() {
   return (
     <div className={`${s.panel} bevel`}>
-      <div className={s.head}><span>COLLATERAL</span><span>6 TRACKED</span></div>
+      <div className={s.head}><span>COLLATERAL & ROUTES</span><span>{assets.length} TRACKED</span></div>
       {assets.map((a) => (
         <div key={a.name} className={s.asset}>
           <TokenIcon sym={a.sym} size={24} />
@@ -36,7 +38,7 @@ export function EventStream() {
   useEffect(() => {
     const mk = (): Ev => {
       const k = kinds[(Math.random() * kinds.length) | 0];
-      return { id: n.current++, k, h: hex(), b: 18204117 + n.current, amt: k === "DEPOSIT" || k === "TOPUP" || k === "WITHDRAW" ? (Math.random() * 0.3).toFixed(4) + " tBTC" : k === "QUOTE" ? "dry:true" : (Math.random() * 5000).toFixed(0) + " tUSDC" };
+      return { id: n.current++, k, h: hex(), b: 18204117 + n.current, amt: k === "DEPOSIT" || k === "TOPUP" || k === "WITHDRAW" ? (Math.random() * 0.3).toFixed(4) + " tBTC" : k === "QUOTE" ? "Route preview" : (Math.random() * 5000).toFixed(0) + " tUSDC" };
     };
     setEvs(Array.from({ length: 7 }, mk));
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;

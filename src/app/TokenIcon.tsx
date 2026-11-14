@@ -10,6 +10,9 @@ const LOGOS: Record<string, string> = {
   ZEC: `${CG}/486/large/Brandmark-Yellow_%281%29.png`,
   SOL: `${CG}/4128/large/solana.png`,
   USDG: `${CG}/51281/large/GDN_USDG_Token_200x200.png`,
+  HYPE: "/tokens/hype.svg",
+  ETH: `${CG}/279/large/ethereum.png`,
+  NEAR: `${CG}/10365/large/near.png`,
 };
 // Demo assets reuse the underlying logo but always carry a TEST badge.
 const TEST: Record<string, string> = { tBTC: "BTC", tUSDC: "USDC" };

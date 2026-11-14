@@ -28,6 +28,9 @@
 .wordFrame strong{font-family:var(--mono);font-weight:400;font-size:clamp(48px,6.6vw,92px);letter-spacing:.04em;color:var(--tx)}
 .sub{max-width:720px;width:100%;padding:16px 24px;text-align:center;font-family:var(--mono);font-size:12px;line-height:1.7;text-transform:uppercase;letter-spacing:.06em;color:var(--tx2);background:var(--panel)}
 .ctas{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.badgesRow{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-top:6px}
+.badgesRow span{display:inline-flex;align-items:center;gap:6px}
+.badgesRow span::before{content:"";width:4px;height:4px;background:var(--lime);border-radius:50%}
 
 /* sections */
 .section{max-width:1240px;margin:0 auto;padding:140px 32px 0}

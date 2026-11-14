@@ -57,7 +57,7 @@ export function Binary({ rows = 22, cols = 30 }: { rows?: number; cols?: number 
 /* Pipeline terminal: intent → route → lend → settle */
 const stages = [
   { k: "INTENT", t: "Collateral intent received", d: "origin BTC · bitcoin" },
-  { k: "ROUTE", t: "1Click quote · dry:true", d: "near intents · hood" },
+  { k: "ROUTE", t: "1Click quote · Route preview", d: "near intents · hood" },
   { k: "LEND", t: "Position recorded", d: "robinhood chain · 46630" },
   { k: "HEALTH", t: "HF guard active", d: "liq < 1.00 · ltv 60/75" },
   { k: "SETTLE", t: "Payout route ready", d: "USDC · solana" },

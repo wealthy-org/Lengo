@@ -24,7 +24,7 @@ export default function RiskCalc() {
           <span>Debt incl. interest <b>{usd(d)}</b></span>
           <input type="range" min={0} max={15000} step={100} value={d} onChange={(e) => setD(+e.target.value)} />
         </label>
-        <p>Fixture from the brief: $10,000 collateral, $4,000 debt. Drag to see where liquidation starts.</p>
+        <p>Interactive scenario: $10,000 collateral, $4,000 debt. Drag to explore where liquidation triggers.</p>
       </div>
       <div className={s.calcOut}>
         <div><span>LTV</span><b>{(ltv * 100).toFixed(1)}%</b></div>

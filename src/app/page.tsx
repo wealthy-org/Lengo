@@ -10,21 +10,21 @@ import RiskCalc from "./RiskCalc";
 import Motion from "./Motion";
 import TopNav from "./TopNav";
 
-const tick = [["tBTC/tUSDC","APR","8.00%"],["Max LTV","","60%"],["Liq. threshold","","75%"],["BTC → USDC","route","Solana"],["USDG → USDC","route","Preview"],["Chain","Robinhood","46630"],["Intents","1Click","dry:true"],["Liq. bonus","","5%"]];
+const tick = [["tBTC/tUSDC","APR","8.00%"],["Max LTV","","60%"],["Liq. threshold","","75%"],["BTC → USDC","route","Solana"],["USDG → USDC","route","Preview"],["Chain","Robinhood","46630"],["Intents","1Click","Route Preview"],["Liq. bonus","","5%"]];
 const params = [["Max borrow LTV","60%"],["Liquidation threshold","75%"],["Eligible when","HF < 1"],["Liquidator bonus","5%"],["Close factor","50% per call"],["Borrow APR","8% fixed"],["Protocol reserve","0%"],["Oracle freshness","300 s"]];
 const disclosure = [
   ["Lending contracts", "Real testnet tx", "Mainnet after review"],
   ["Collateral asset", "tBTC · no BTC backing", "Backed BTC, then ZEC, SOL"],
   ["Borrow asset", "tUSDC · not Circle USDC", "Real RH stablecoin"],
   ["Liquidation", "Two wallets, real tx", "Funded liquidators"],
-  ["Multichain payout", "dry:true quote only", "Execution + settlement"],
+  ["Multichain payout", "Route preview only", "Execution + settlement"],
   ["Native BTC / ZEC deposit", "Not offered", "Lock, proof, redemption"],
   ["Private positions", "Not offered", "Separate design"],
 ];
 const phases = [
   ["Phase 1", "LIVE", "Lending lifecycle", ["Isolated tBTC/tUSDC market", "Faucet + dashboard", "Deposit → withdraw on RH"], 100],
   ["Phase 2", "BUILDING", "Risk demo", ["Demo oracle scenarios", "Two-wallet liquidation", "Accounting invariants"], 60],
-  ["Phase 3", "BUILDING", "Multichain preview", ["1Click token discovery", "dry:true quotes", "Expiry + error states"], 40],
+  ["Phase 3", "BUILDING", "Multichain preview", ["1Click token discovery", "Route preview quotes", "Expiry + error states"], 40],
   ["Phase 4", "NEXT", "Release package", ["Public testnet app", "Docs + QA", "Proof index"], 10],
   ["Phase 5", "RESEARCH", "Native BTC", ["Custody + signer model", "Proof and redemption", "Liquidation feasibility"], 0],
 ] as const;
@@ -69,15 +69,20 @@ export default function Landing() {
               <div className={s.eyebrow}><span className="dot" /> Cross-chain lending · Robinhood Chain + NEAR Intents</div>
               <h1 className={s.h1}>
                 <span>Borrow against</span>
-                <span className={s.wordFrame}><CycleWord words={["BTC", "ZEC", "SOL", "ANY CHAIN"]} /></span>
-                <span>Paid where you are</span>
+                <span className={s.wordFrame}><CycleWord words={["BTC", "ZEC", "SOL", "HYPE"]} /></span>
+                <span>Liquidity across chains</span>
               </h1>
             </div>
-            <p className={`${s.sub} bevel`}>Collateral from one chain. One isolated market on Robinhood Chain. Stablecoins to the chain you actually use.</p>
+            <p className={`${s.sub} bevel`}>Your assets on one chain. Your liquidity on another. Borrow against collateral across networks, settled on Robinhood Chain.</p>
             <div className={s.ctas}>
-              <a href="#flow" className="btn">Explore flow</a>
-              <Link href="/app/routes" className="btn">Route preview</Link>
-              <Link href="/app" className="btn btn-primary">Launch app →</Link>
+              <Link href="/app" className="btn btn-primary">Launch Testnet →</Link>
+              <a href="#twosides" className="btn">Explore Cross-chain Flow</a>
+              <Link href="/app/routes" className="btn">Route Preview</Link>
+            </div>
+            <div className={s.badgesRow}>
+              <span>Testnet lending</span>
+              <span>Cross-chain route preview</span>
+              <span>Native collateral in research</span>
             </div>
           </div>
           <aside className={s.colR}><EventStream /></aside>
@@ -85,19 +90,14 @@ export default function Landing() {
         <Ticker items={tick} />
       </section>
 
-      <section id="system" className={s.section}>
-        <Head n="00" label="System overview" a="One position." b="Every step on record." aside="Collateral intents come in, the risk guard checks every action, the ledger records debt on Robinhood Chain, and payouts are quoted through NEAR Intents. This is the whole path." />
-        <div data-reveal><Bento /></div>
-      </section>
-
-      <section className={s.section}>
-        <Head n="01" label="Two sides" a="Multichain has two sides." b="Most protocols build one." />
+      <section id="twosides" className={s.section}>
+        <Head n="00" label="Cross-chain architecture" a="Two sides of lending." b="Collateral origin meets liquidity destination." aside="Target design: collateral stays on its origin network, debt and risk accounting live on Robinhood Chain, and stablecoins are routed to your chain via NEAR Intents. Today: testnet lending live, route preview only, native collateral in research." />
         <div className={s.split} data-stagger>
           <div className={`${s.side} bevel`}>
             <span className={s.k}>Side A · collateral origin</span>
             <h3>Where your collateral lives</h3>
-            <p>BTC on Bitcoin, ZEC on Zcash, SOL on Solana. Lengo must verify it is locked, not swapped. Selling BTC for stablecoins and still calling it BTC collateral is off the table.</p>
-            <div className={s.chips}><i>BTC</i><i>ZEC</i><i>SOL</i></div>
+            <p>BTC on Bitcoin, ZEC on Zcash, SOL on Solana, HYPE on Hyperliquid. Lengo must verify it is locked, not swapped. Collateral stays collateral. In research — testnet uses tBTC.</p>
+            <div className={s.chips}><i>BTC</i><i>ZEC</i><i>SOL</i><i>HYPE</i><i>ETH</i></div>
           </div>
           <div className={s.core}>
             <span className={s.beam} />
@@ -107,11 +107,16 @@ export default function Landing() {
           </div>
           <div className={`${s.side} bevel`}>
             <span className={s.k}>Side B · payout destination</span>
-            <h3>Where you need the money</h3>
-            <p>NEAR Intents 1Click routes the borrowed stablecoin to your chain. Debt stays in its own denomination on RH; the conversion and its fee are shown separately.</p>
-            <div className={s.chips}><i>USDC · Solana</i><i>USDC · Base</i><i>USDC · Arbitrum</i></div>
+            <h3>Where you need liquidity</h3>
+            <p>NEAR Intents 1Click previews routing the borrowed stablecoin to your chain. Debt stays on Robinhood Chain; conversion and fees are shown separately. Quote preview today.</p>
+            <div className={s.chips}><i>USDC · Solana</i><i>USDC · Base</i><i>USDC · Arbitrum</i><i>USDG · Robinhood</i></div>
           </div>
         </div>
+      </section>
+
+      <section id="system" className={s.section}>
+        <Head n="01" label="System overview" a="One position." b="Every step on record." aside="Collateral intents come in, the risk guard checks every action, the ledger records debt on Robinhood Chain, and payouts are quoted through NEAR Intents. This is the whole path." />
+        <div data-reveal><Bento /></div>
       </section>
 
       <section id="flow" className={s.section}>

@@ -5,7 +5,7 @@ import s from "./story.module.css";
 const steps = [
   { k: "DEPOSIT", t: "Deposit", d: "Approve the exact amount to the market contract, then lock tBTC. The contract reads the balance it actually received.", pub: "Your address, the asset and the amount are public.", big: "0.1000", unit: "tBTC", from: "connected wallet", to: "LengoMarket", meta: "allowance: exact amount" },
   { k: "BORROW", t: "Borrow", d: "Pick an amount inside 60% max LTV. HF, LTV, interest and liquidation price update before you sign.", pub: "tUSDC lands in your wallet on Robinhood Chain Testnet.", big: "4,000", unit: "tUSDC", from: "pool liquidity", to: "your wallet", meta: "HF 1.875 · LTV 40%" },
-  { k: "ROUTE", t: "Route", d: "Preview what the payout would look like on another chain through NEAR Intents 1Click with dry:true.", pub: "Mainnet quote only. No funds move, no deposit address.", big: "≈ USDC", unit: "Solana", from: "USDG · hood", to: "USDC · solana", meta: "status: preview" },
+  { k: "ROUTE", t: "Route", d: "Preview what the payout would look like on another chain through NEAR Intents 1Click route simulation.", pub: "Quote preview only. No funds move, no deposit address.", big: "≈ USDC", unit: "Solana", from: "USDG · hood", to: "USDC · solana", meta: "status: preview" },
   { k: "REPAY", t: "Repay & exit", d: "Repay part or Repay All with accrued interest and zero dust. Then withdraw every tBTC that is still yours.", pub: "Debt to zero, collateral back, all on the explorer.", big: "0.00", unit: "debt", from: "your wallet", to: "LengoMarket", meta: "withdraw all · unlocked" },
 ];
 
