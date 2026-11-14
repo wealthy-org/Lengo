@@ -3,12 +3,13 @@ import { useState } from "react";
 import { WagmiProvider } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { wagmiConfig } from "@/lib/wagmi";
+import { Toaster } from "./Toaster";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [qc] = useState(() => new QueryClient({ defaultOptions: { queries: { refetchInterval: 12_000 } } }));
   return (
     <WagmiProvider config={wagmiConfig}>
-      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+      <QueryClientProvider client={qc}><Toaster>{children}</Toaster></QueryClientProvider>
     </WagmiProvider>
   );
 }

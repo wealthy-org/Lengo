@@ -4,6 +4,7 @@ import { formatUnits, maxUint256, parseUnits, type Address } from "viem";
 import { useAccount, useReadContracts, useWriteContract, usePublicClient } from "wagmi";
 import { marketAbi, tokenAbi } from "./abi";
 import { deployment, isDeployed, rhTestnet } from "./chain";
+import { useToast } from "@/app/Toaster";
 
 export type Act = "Deposit" | "Borrow" | "Repay" | "Withdraw" | "Supply" | "WithdrawSupply";
 export type TxStep = { label: string; hash?: string; state: "wait" | "sign" | "pending" | "done" | "failed" };
@@ -50,6 +51,7 @@ export function useLengo() {
 export function useLengoTx(onDone: () => void) {
   const { writeContractAsync } = useWriteContract();
   const client = usePublicClient({ chainId: rhTestnet.id });
+  const toast = useToast();
   const [steps, setSteps] = useState<TxStep[] | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -83,6 +85,7 @@ export function useLengoTx(onDone: () => void) {
         const rc = await client.waitForTransactionReceipt({ hash: h, timeout: 120_000 });
         if (rc.status !== "success") throw new Error("Approval reverted");
         upd(0, { state: "done" }); i = 1;
+        toast.push({ kind: "ok", title: "Approval confirmed", detail: list[0].label, hash: h });
       }
       const fn = { Deposit: "depositCollateral", Withdraw: "withdrawCollateral", Borrow: "borrow", Repay: "repay", Supply: "supply", WithdrawSupply: "withdrawSupply" }[act] as
         "depositCollateral" | "withdrawCollateral" | "borrow" | "repay" | "supply" | "withdrawSupply";
@@ -92,14 +95,18 @@ export function useLengoTx(onDone: () => void) {
       const rc = await client.waitForTransactionReceipt({ hash: h, timeout: 120_000 });
       if (rc.status !== "success") { upd(i + 1, { state: "failed" }); throw new Error("Transaction reverted"); }
       upd(i + 1, { state: "done" }); upd(i + 2, { state: "done", hash: h });
+      toast.push({ kind: "ok", title: `${act === "WithdrawSupply" ? "Withdraw supply" : act} confirmed`, detail: `${opts.all ? "All" : amount} ${isColl ? "tBTC" : "tUSDC"} · Robinhood Chain Testnet`, hash: h });
       onDone();
     } catch (e) {
       const msg = (e as Error).message || "";
       // timeouts stay pending/unknown with their hash; never auto-retry a write that may have been sent
       const timeout = /timed out|timeout/i.test(msg);
+      toast.push(timeout
+        ? { kind: "info", title: "Status unknown", detail: "Still pending after 2 minutes. Check the explorer before retrying." }
+        : { kind: "err", title: /rejected|denied/i.test(msg) ? "Rejected in wallet" : `${act} failed`, detail: /rejected|denied/i.test(msg) ? undefined : msg.split("\n")[0].slice(0, 140) });
       setSteps((s) => s && s.map((x) => (x.state === "sign" || x.state === "pending" ? { ...x, state: timeout ? "pending" : "failed", label: timeout ? x.label + " · unknown, check explorer" : /rejected|denied/i.test(msg) ? "Rejected in wallet" : x.label } : x)));
     } finally { setBusy(false); }
-  }, [busy, client, writeContractAsync, onDone]);
+  }, [busy, client, writeContractAsync, onDone, toast]);
 
   return { steps, busy, run, close: () => setSteps(null) };
 }

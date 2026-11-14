@@ -7,6 +7,7 @@ import s from "../app/trade.module.css";
 import f from "./faucet.module.css";
 import { tokenAbi } from "@/lib/abi";
 import { deployment, isDeployed, rhTestnet, txUrl, addrUrl } from "@/lib/chain";
+import { useToast } from "../Toaster";
 
 const tokens = [
   { sym: "tBTC", name: "Lengo Test BTC (no value)", dec: 8, addr: deployment.tBTC, c: "#f2a93b", t: "₿", note: "Collateral. No Bitcoin backing." },
@@ -29,6 +30,7 @@ export default function Faucet() {
   const { writeContractAsync } = useWriteContract();
   const client = usePublicClient({ chainId: rhTestnet.id });
   const [st, setSt] = useState<Record<string, { msg: string; hash?: string }>>({});
+  const toast = useToast();
 
   async function mint(i: number) {
     const t = tokens[i];
@@ -38,10 +40,13 @@ export default function Faucet() {
       setSt((x) => ({ ...x, [t.sym]: { msg: "Pending onchain", hash: h } }));
       const rc = await client!.waitForTransactionReceipt({ hash: h });
       setSt((x) => ({ ...x, [t.sym]: { msg: rc.status === "success" ? "Minted" : "Reverted", hash: h } }));
+      toast.push(rc.status === "success" ? { kind: "ok", title: `${t.sym} minted`, detail: "Testnet demo asset · no value", hash: h } : { kind: "err", title: `${t.sym} mint reverted`, hash: h });
       reads.refetch();
     } catch (e) {
       const m = (e as Error).message;
-      setSt((x) => ({ ...x, [t.sym]: { msg: /rejected|denied/i.test(m) ? "Rejected in wallet" : /Cooldown/i.test(m) ? "Cooldown active" : "Failed" } }));
+      const label = /rejected|denied/i.test(m) ? "Rejected in wallet" : /Cooldown/i.test(m) ? "Cooldown active" : "Failed";
+      setSt((x) => ({ ...x, [t.sym]: { msg: label } }));
+      toast.push({ kind: "err", title: `${t.sym}: ${label}` });
     }
   }
 

@@ -6,6 +6,7 @@ import s from "../../app/trade.module.css";
 import d from "./scenarios.module.css";
 import { marketAbi, oracleAbi, tokenAbi } from "@/lib/abi";
 import { deployment, isDeployed, rhTestnet, txUrl, addrUrl } from "@/lib/chain";
+import { useToast } from "../../Toaster";
 
 type Pos = { account: Address; coll: number; debt: number; hf: number };
 type Proof = { label: string; hash: string; before?: Pos; after?: Pos; liqBefore?: { tBTC: number; tUSDC: number }; liqAfter?: { tBTC: number; tUSDC: number } };
@@ -30,6 +31,7 @@ export default function Scenarios() {
   const [msg, setMsg] = useState("");
   const [proofs, setProofs] = useState<Proof[]>([]);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  const toast = useToast();
 
   const readPos = useCallback(async (a: Address): Promise<Pos> => {
     const r = await client!.readContract({ address: deployment.market!, abi: marketAbi, functionName: "getPosition", args: [a] }) as readonly bigint[];
@@ -84,17 +86,23 @@ export default function Scenarios() {
       setMsg("Pending onchain");
       const rc = await client!.waitForTransactionReceipt({ hash: h, timeout: 120_000 });
       if (rc.status !== "success") throw new Error("reverted");
-      setMsg(""); return h;
+      setMsg(""); toast.push({ kind: "ok", title: `${label === "oracle" ? "Oracle update" : label === "approve" ? "Approval" : "Liquidation"} confirmed`, hash: h }); return h;
     } catch (e) {
       const m = (e as Error).message;
-      setMsg(/rejected|denied/i.test(m) ? "Rejected in wallet" : /timed out/i.test(m) ? "Unknown status · check explorer" : "Failed: " + m.split("\n")[0].slice(0, 120));
+      const why = /rejected|denied/i.test(m) ? "Rejected in wallet" : /timed out/i.test(m) ? "Unknown status · check explorer" : "Failed: " + m.split("\n")[0].slice(0, 120);
+      setMsg(why); toast.push({ kind: /timed out/i.test(m) ? "info" : "err", title: why });
       return null;
     } finally { setBusy(null); }
   }
 
   async function setOracle(p: number, demo: boolean) {
     const h = await send("oracle", () => writeContractAsync({ address: deployment.oracle!, abi: oracleAbi, functionName: "setPrice", args: [deployment.tBTC!, parseUnits(String(p), 8), demo], chainId: rhTestnet.id }));
-    if (h) { setProofs((x) => [{ label: `${demo ? "Demo price override" : "Price refresh"} · tBTC ${usd(p)}`, hash: h }, ...x]); load(); }
+    if (!h) return;
+    setProofs((x) => [{ label: `${demo ? "Demo price override" : "Price refresh"} · tBTC ${usd(p)}`, hash: h }, ...x]);
+    // liquidation and borrow price BOTH assets, so keep the debt-asset baseline fresh too
+    const h2 = await send("oracle", () => writeContractAsync({ address: deployment.oracle!, abi: oracleAbi, functionName: "setPrice", args: [deployment.tUSDC!, parseUnits("1", 8), false], chainId: rhTestnet.id }));
+    if (h2) setProofs((x) => [{ label: "Price refresh · tUSDC $1", hash: h2 }, ...x]);
+    load();
   }
 
   async function liquidate(p: Pos) {

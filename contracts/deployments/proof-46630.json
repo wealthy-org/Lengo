@@ -58,5 +58,9 @@
   {
     "step": "liquidator approve tUSDC",
     "tx": "0x21714ff1c9a7979966a9200059c1a0ba16f30d328a94f92c8aac1014ff3a3a47"
+  },
+  {
+    "step": "liquidate ≤50%",
+    "tx": "0xf805811a223a82fb9052517f4852a8b3dfa9c7e177e7267c82242e7fd1ee995d"
   }
 ]
