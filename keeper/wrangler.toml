@@ -20,3 +20,8 @@ BTC_BASELINE_USD = "100000"        # keeper only ever re-posts this baseline; de
 REFRESH_AFTER_S = "180"            # skip the tx if the price is younger than this
 
 # Secrets (never in this file):  npx wrangler secret put KEEPER_PRIVATE_KEY   /   npx wrangler secret put DATABASE_URL
+
+# Keep Workers Logs on across git deploys (dashboard toggles are overwritten by wrangler deploy)
+[observability]
+enabled = true
+head_sampling_rate = 1
