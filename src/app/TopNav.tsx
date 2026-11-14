@@ -32,7 +32,7 @@ export default function TopNav() {
       <Link href="/" className={s.brand}><Image src="/logo-mark.png" alt="" width={24} height={24} /> LENGO</Link>
       <nav className={s.nav}>
         {nav.map((n) => (
-          <Link key={n.label} href={n.href} className={path === n.href ? s.on : ""}>{n.label}</Link>
+          <Link key={n.label} href={n.href} className={path === n.href ? s.on : ""} aria-current={path === n.href ? "page" : undefined}>{n.label}</Link>
         ))}
       </nav>
       <div className={s.right}>

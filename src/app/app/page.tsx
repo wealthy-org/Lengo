@@ -1,6 +1,6 @@
 "use client";
 import { Pair } from "../TokenIcon";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import s from "./trade.module.css";
 import HealthAlert from "./HealthAlert";
 import { useToast } from "../Toaster";
@@ -61,6 +61,16 @@ export default function Markets() {
   const [amt, setAmt] = useState("");
   const [q, setQ] = useState("");
   const [tx, setTx] = useState<null | { label: string; step: number }>(null);
+  // Esc closes the result modals once nothing is in flight
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (tx2.steps && !tx2.busy) tx2.close();
+      if (tx && tx.step >= 4) setTx(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
   const pool = P ? { supplied: P.supplied, borrowed: P.borrowed } : { supplied: 250_000, borrowed: 118_400 };
 
   const a = parseFloat(amt) || 0;
@@ -150,8 +160,8 @@ export default function Markets() {
             <span className={s.ok}>HF {hfTxt(hf)}</span>
             <span className={live ? s.ok : s.amberT}>{live ? "Live · read from RH testnet" : !isDeployed ? "Demo mode · contracts not deployed yet" : P ? "Live pool · connect wallet for your position" : "Loading pool…"}</span>
           </div>
-          <div className={s.views}>
-            {["Chart", "Position", "Risk"].map((v) => <button key={v} className={view === v ? s.vOn : ""} onClick={() => setView(v)}>{v}</button>)}
+          <div className={s.views} role="tablist" aria-label="Market view">
+            {["Chart", "Position", "Risk"].map((v) => <button key={v} role="tab" aria-selected={view === v} className={view === v ? s.vOn : ""} onClick={() => setView(v)}>{v}</button>)}
           </div>
 
           <div className={s.viewBody}>
@@ -204,9 +214,9 @@ Liq. price    = D / (qty × 0.75) = ${liqP ? usd(liqP) : "No debt"}`}</pre>
             ))}
           </div>
           {mode === "Borrow" ? (
-            <div className={s.acts}>
+            <div className={s.acts} role="tablist" aria-label="Action">
               {(["Deposit", "Borrow", "Repay", "Withdraw"] as Act[]).map((t) => (
-                <button key={t} className={act === t ? s.aOn : ""} onClick={() => { setAct(t); setAmt(""); }}>{t}</button>
+                <button key={t} role="tab" aria-selected={act === t} className={act === t ? s.aOn : ""} onClick={() => { setAct(t); setAmt(""); }}>{t}</button>
               ))}
             </div>
           ) : <div className={s.acts}><button className={s.aOn}>Supply</button><button>Withdraw</button></div>}
@@ -267,7 +277,7 @@ Liq. price    = D / (qty × 0.75) = ${liqP ? usd(liqP) : "No debt"}`}</pre>
                 </div>
               ))}
             </div>
-            <div className={s.mBtns}><button className="btn btn-primary" disabled={tx2.busy} onClick={tx2.close}>{tx2.busy ? "Working…" : "Close"}</button></div>
+            <div className={s.mBtns}><button className="btn btn-primary" autoFocus disabled={tx2.busy} onClick={tx2.close}>{tx2.busy ? "Working…" : "Close"}</button></div>
           </div>
         </div>
       )}
@@ -283,7 +293,7 @@ Liq. price    = D / (qty × 0.75) = ${liqP ? usd(liqP) : "No debt"}`}</pre>
               })}
             </div>
             {tx.step >= 4 ? (
-              <div className={s.mBtns}><a className="btn" href="https://explorer.testnet.chain.robinhood.com" target="_blank" rel="noreferrer">Explorer ↗</a><button className="btn btn-primary" onClick={() => setTx(null)}>Done</button></div>
+              <div className={s.mBtns}><a className="btn" href="https://explorer.testnet.chain.robinhood.com" target="_blank" rel="noreferrer">Explorer ↗</a><button className="btn btn-primary" autoFocus onClick={() => setTx(null)}>Done</button></div>
             ) : <p className={s.note}>Simulated flow · UI preview</p>}
           </div>
         </div>

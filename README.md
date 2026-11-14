@@ -1,5 +1,7 @@
 # Lengo v0.1
 
+**Live:** https://lengo-two.vercel.app · **Release package / proof index:** [docs/HANDOFF.md](docs/HANDOFF.md) · **BTC research:** [docs/M5-BTC-SPIKE.md](docs/M5-BTC-SPIKE.md)
+
 Cross-chain lending on Robinhood Chain. Release 0.1 runs the lending lifecycle on RH testnet (chain 46630) with demo assets, plus a NEAR Intents 1Click route preview (`dry: true`, no funds moved).
 
 ## Run the app
@@ -17,7 +19,7 @@ Without contract addresses the app runs in **demo mode**: the UI labels every nu
 ```bash
 cd contracts
 forge build
-forge test        # 12 tests: fixture HF 1.875, LTV caps, stale oracle, Repay All, liquidation, bad debt, fuzz
+forge test        # 24 tests: unit, fuzz, edge cases and 6 invariants (128k random calls)
 ```
 
 | Contract | Role |
