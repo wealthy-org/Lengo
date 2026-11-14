@@ -5,7 +5,6 @@ import Providers from "./Providers";
 export const metadata: Metadata = {
   title: "Lengo · Cross-chain lending",
   description: "Borrow on Robinhood Chain, collateral and payout across chains via NEAR Intents.",
-  icons: { icon: "/logo-mark.png" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
