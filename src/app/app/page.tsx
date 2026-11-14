@@ -3,6 +3,7 @@ import { Pair } from "../TokenIcon";
 import { useMemo, useState } from "react";
 import s from "./trade.module.css";
 import HealthAlert from "./HealthAlert";
+import { useToast } from "../Toaster";
 import { useLengo, useLengoTx } from "@/lib/useLengo";
 import { isDeployed, txUrl, addrUrl, deployment } from "@/lib/chain";
 
@@ -33,9 +34,26 @@ export default function Markets() {
   const coll = D ? D.coll : simColl;
   const debt = D ? D.debt : simDebt;
   const wallet = D ? { tBTC: D.tBTC, tUSDC: D.tUSDC } : simWallet;
-  const PRICE = D ? D.price : SIM_PRICE;
-  const priceAge = D ? Math.max(0, Math.floor(Date.now() / 1000) - D.priceAt) : 12;
-  const stale = D ? priceAge > D.maxAge : false;
+  const P = L.pool;
+  const PRICE = P ? P.price : SIM_PRICE;
+  const nowS = Math.floor(Date.now() / 1000);
+  // borrow and liquidation price BOTH assets, so the older of the two decides freshness
+  const priceAge = P ? Math.max(0, nowS - P.priceAt, nowS - P.debtPriceAt) : 12;
+  const stale = P ? priceAge > P.maxAge : false;
+  const toast = useToast();
+  const [refreshing, setRefreshing] = useState(false);
+  async function requestRefresh() {
+    setRefreshing(true);
+    try {
+      const r = await fetch("/api/oracle/refresh", { method: "POST" });
+      const j = await r.json();
+      if (j.ok && j.sent) Object.entries(j.sent as Record<string, string>).forEach(([k, h]) => toast.push({ kind: "ok", title: `Oracle refreshed · ${k}`, detail: "Baseline price re-posted by the keeper", hash: h }));
+      else if (j.ok) toast.push({ kind: "info", title: "Prices are already fresh" });
+      else toast.push({ kind: "err", title: "Refresh unavailable", detail: j.reason });
+      L.refetch();
+    } catch (e) { toast.push({ kind: "err", title: "Refresh failed", detail: String(e) }); }
+    finally { setRefreshing(false); }
+  }
   const hfOf = (c: number, d: number) => (d <= 0 ? Infinity : (c * PRICE * LIQ) / d);
   const [mode, setMode] = useState<"Borrow" | "Lend">("Borrow");
   const [act, setAct] = useState<Act>("Borrow");
@@ -43,7 +61,7 @@ export default function Markets() {
   const [amt, setAmt] = useState("");
   const [q, setQ] = useState("");
   const [tx, setTx] = useState<null | { label: string; step: number }>(null);
-  const pool = D ? { supplied: D.supplied, borrowed: D.borrowed } : { supplied: 250_000, borrowed: 118_400 };
+  const pool = P ? { supplied: P.supplied, borrowed: P.borrowed } : { supplied: 250_000, borrowed: 118_400 };
 
   const a = parseFloat(amt) || 0;
   const C = coll * PRICE;
@@ -130,7 +148,7 @@ export default function Markets() {
           <div className={s.strip}>
             <span className={stale ? s.bad : ""}>Oracle · DemoOracle · {stale ? `stale ${priceAge}s` : `fresh ${priceAge}s`}</span>
             <span className={s.ok}>HF {hfTxt(hf)}</span>
-            <span className={live ? s.ok : s.amberT}>{live ? "Live · read from RH testnet" : !isDeployed ? "Demo mode · contracts not deployed yet" : "Demo data · connect wallet on RH testnet"}</span>
+            <span className={live ? s.ok : s.amberT}>{live ? "Live · read from RH testnet" : !isDeployed ? "Demo mode · contracts not deployed yet" : P ? "Live pool · connect wallet for your position" : "Loading pool…"}</span>
           </div>
           <div className={s.views}>
             {["Chart", "Position", "Risk"].map((v) => <button key={v} className={view === v ? s.vOn : ""} onClick={() => setView(v)}>{v}</button>)}
@@ -213,7 +231,7 @@ Liq. price    = D / (qty × 0.75) = ${liqP ? usd(liqP) : "No debt"}`}</pre>
                   <div><span>Receive on</span><b>RH Testnet</b></div>
                 </div>
                 {over && <p className={`${s.note} ${s.bad}`}>Exceeds the allowed maximum.</p>}
-                {blocked && <p className={`${s.note} ${s.bad}`}>Oracle price is stale. Borrow and collateral withdrawal with debt are paused; repay and debt-free exit still work.</p>}
+                {blocked && <p className={`${s.note} ${s.bad}`}>Oracle price is stale. Borrow and collateral withdrawal with debt are paused; repay and debt-free exit still work. <button className={s.inlineBtn} disabled={refreshing} onClick={requestRefresh}>{refreshing ? "Refreshing…" : "Request price refresh"}</button></p>}
                 {pool.supplied - pool.borrowed <= 0 && act === "Borrow" && <p className={`${s.note} ${s.warn}`}>No liquidity in the pool right now.</p>}
                 <button className={s.cta} disabled={!a || over || blocked || tx2.busy} onClick={submit}>{tx2.busy ? "Waiting for wallet…" : !a ? "Enter amount" : over ? "Exceeds max" : act === "Repay" && a >= debt - 1e-6 ? "Repay all" : `${act} ${unit}`}</button>
               </>

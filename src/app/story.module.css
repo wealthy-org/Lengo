@@ -1,6 +1,6 @@
 .wrap{position:relative;height:340vh}
 .sticky{position:sticky;top:80px;height:calc(100vh - 100px);display:flex;flex-direction:column}
-.head{display:flex;justify-content:space-between;align-items:end;border-bottom:1px solid var(--line);padding-bottom:18px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:18px}
 .head h3{font-size:clamp(32px,4.4vw,56px);font-weight:300;text-transform:uppercase;letter-spacing:-.01em}
 .head span{font-family:var(--mono);font-size:11px;color:var(--tx3);letter-spacing:.12em}
 .body{flex:1;display:grid;grid-template-columns:1fr 1.1fr;gap:64px;align-items:center}

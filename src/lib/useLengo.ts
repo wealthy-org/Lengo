@@ -2,7 +2,7 @@
 import { useCallback, useState } from "react";
 import { formatUnits, maxUint256, parseUnits, type Address } from "viem";
 import { useAccount, useReadContracts, useWriteContract, usePublicClient } from "wagmi";
-import { marketAbi, tokenAbi } from "./abi";
+import { marketAbi, oracleAbi, tokenAbi } from "./abi";
 import { deployment, isDeployed, rhTestnet } from "./chain";
 import { useToast } from "@/app/Toaster";
 
@@ -44,7 +44,27 @@ export function useLengo() {
     maxAge: Number((r?.[5]?.result as bigint | undefined) ?? 300n),
   } : null;
 
-  return { live, address, data, loading: live && q.isLoading, error: q.error, refetch: q.refetch };
+  // Pool state is public: read it even without a wallet so /app never shows demo numbers once deployed.
+  const pq = useReadContracts({
+    allowFailure: true,
+    query: { enabled: isDeployed },
+    contracts: [
+      { ...m, functionName: "getMarketState", chainId: rhTestnet.id },
+      { ...m, functionName: "maxOracleAge", chainId: rhTestnet.id },
+      { address: deployment.oracle!, abi: oracleAbi, functionName: "getPrice", args: [deployment.tUSDC!], chainId: rhTestnet.id },
+    ],
+  });
+  const pm = pq.data?.[0]?.result as readonly bigint[] | undefined;
+  const du = pq.data?.[2]?.result as readonly bigint[] | undefined;
+  const pool = pm ? {
+    supplied: n(pm[0], 6), borrowed: n(pm[1], 6), available: n(pm[2], 6),
+    price: n(pm[4], 8), priceAt: Number(pm[5] ?? 0n),
+    debtPriceAt: Number(du?.[1] ?? 0n),
+    maxAge: Number((pq.data?.[1]?.result as bigint | undefined) ?? 300n),
+  } : null;
+
+  const refetch = () => { pq.refetch(); return q.refetch(); };
+  return { live, address, data, pool, loading: live && q.isLoading, error: q.error, refetch };
 }
 
 /** Runs approve → write → receipt for one action and reports each step for the modal. */

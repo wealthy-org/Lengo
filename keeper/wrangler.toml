@@ -1,0 +1,22 @@
+name = "lengo-keeper"
+main = "src/index.ts"
+compatibility_date = "2025-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Free plan friendly: two small jobs, a few ms of CPU each.
+[triggers]
+crons = ["*/4 * * * *", "*/5 * * * *"]
+
+[vars]
+KEEPER_ON = "true"                 # set "false" during a liquidation demo so the $70k override isn't overwritten
+RPC_URL = "https://rpc.testnet.chain.robinhood.com"
+CHAIN_ID = "46630"
+ORACLE = "0x7e4B30ef399EFE0fab110Ad9ADc3b39c8d19D5cE"
+MARKET = "0xA4f36BEb211186C42B0A6B50Cf85DB062C5e5E25"
+TBTC = "0x2e179ff76ef528821f2dE00D7079F1999ccdEB88"
+TUSDC = "0xe1f1C4292C7AED0D0E99DD1233607e776826762d"
+START_BLOCK = "153087385"
+BTC_BASELINE_USD = "100000"        # keeper only ever re-posts this baseline; demo overrides stay manual
+REFRESH_AFTER_S = "180"            # skip the tx if the price is younger than this
+
+# Secrets (never in this file):  npx wrangler secret put KEEPER_PRIVATE_KEY   /   npx wrangler secret put DATABASE_URL

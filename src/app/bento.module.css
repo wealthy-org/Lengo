@@ -22,7 +22,7 @@
 .axis{display:flex;justify-content:space-between;color:var(--tx3);font-size:9px}
 .check{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);color:var(--tx2);text-transform:none;font-size:11px}
 .check em{font-style:normal;font-size:9px;color:var(--lime);letter-spacing:.1em}
-.count{margin-top:auto;display:flex;justify-content:space-between;align-items:end;color:var(--tx3)}
+.count{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;color:var(--tx3)}
 .count b{font-size:22px;color:var(--tx);font-weight:400}
 .matrix{display:grid;grid-template-columns:repeat(14,1fr);gap:3px}
 .matrix i{aspect-ratio:1;border-radius:50%;background:var(--red);transition:opacity .15s}
