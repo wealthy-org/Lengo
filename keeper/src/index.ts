@@ -1,6 +1,6 @@
 // Lengo keeper: keeps the testnet DemoOracle fresh and advances the Neon event index.
 import { createPublicClient, createWalletClient, defineChain, http, parseUnits, type Address, type Hex, type Log } from "viem";
-import { privateKeyToAccount, nonceManager } from "viem/accounts";
+import { privateKeyToAccount } from "viem/accounts";
 import { neon } from "@neondatabase/serverless";
 import { marketAbi, oracleAbi } from "../../src/lib/abi";
 
@@ -30,7 +30,7 @@ export async function runKeeper(env: Env) {
   if (!env.KEEPER_PRIVATE_KEY) return { skipped: "KEEPER_PRIVATE_KEY not set" };
   const { pub, btc, usd } = await prices(env);
   const after = Number(env.REFRESH_AFTER_S);
-  const account = privateKeyToAccount(env.KEEPER_PRIVATE_KEY, { nonceManager });
+  const account = privateKeyToAccount(env.KEEPER_PRIVATE_KEY);
   const owner = await pub.readContract({ address: env.ORACLE, abi: oracleAbi, functionName: "owner" }) as Address;
   if (owner.toLowerCase() !== account.address.toLowerCase()) return { skipped: `keeper ${account.address} is not oracle owner ${owner}` };
 
@@ -39,9 +39,17 @@ export async function runKeeper(env: Env) {
   // Only the baseline is ever posted, so a leaked keeper key can't set arbitrary prices through this path.
   // That also means an active demo override gets replaced: set KEEPER_ON=false for the liquidation demo.
   const baseline = parseUnits(env.BTC_BASELINE_USD, 8);
-  if (btc.age > after) sent.tBTC = await wallet.writeContract({ address: env.ORACLE, abi: oracleAbi, functionName: "setPrice", args: [env.TBTC, baseline, false] });
-  if (usd.age > after) sent.tUSDC = await wallet.writeContract({ address: env.ORACLE, abi: oracleAbi, functionName: "setPrice", args: [env.TUSDC, parseUnits("1", 8), false] });
-  return { ages: { tBTC: btc.age, tUSDC: usd.age }, sent };
+  // Explicit nonces: a stateless Worker can't rely on a nonce manager between two back-to-back sends.
+  let nonce = await pub.getTransactionCount({ address: account.address, blockTag: "pending" });
+  const errors: Record<string, string> = {};
+  const send = async (k: "tBTC" | "tUSDC", asset: Address, price: bigint) => {
+    try {
+      sent[k] = await wallet.writeContract({ address: env.ORACLE, abi: oracleAbi, functionName: "setPrice", args: [asset, price, false], nonce: nonce++ });
+    } catch (e) { errors[k] = String(e).split("\n")[0].slice(0, 200); }
+  };
+  if (btc.age > after) await send("tBTC", env.TBTC, baseline);
+  if (usd.age > after) await send("tUSDC", env.TUSDC, parseUnits("1", 8));
+  return { ages: { tBTC: btc.age, tUSDC: usd.age }, sent, errors };
 }
 
 type Row = { event: string; account: string; counterparty: string | null; a: bigint | null; b: bigint | null };
