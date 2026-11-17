@@ -3,7 +3,7 @@ import { useState } from "react";
 import s from "../trade.module.css";
 import a from "./activity.module.css";
 import { useActivity } from "@/lib/useActivity";
-import { isDeployed, txUrl } from "@/lib/chain";
+import { txUrl } from "@/lib/chain";
 
 const sample = [
   { type: "Borrow", amt: "4,000.00 tUSDC", tx: "0x9c1f…2ab4", block: "18,204,117", time: "2m ago", st: "Confirmed" },
@@ -27,7 +27,7 @@ export default function Activity() {
     <>
       <div className={s.pageHead}>
         <div><h1>Activity</h1><p>Built from contract events and receipts. A refresh never erases proof.</p></div>
-        <span>{A.live ? (A.loading ? "Loading events…" : A.error ? "RPC error · balances untouched" : "Live · market events on RH testnet") : !isDeployed ? "Sample data · contracts not deployed yet" : "Sample data · connect wallet on RH testnet"}</span>
+        <span>{A.live ? (A.loading ? "Loading events…" : A.error ? "RPC error · balances untouched" : A.mine ? "Live · your events on RH testnet" : "Live · recent market events · connect wallet for yours") : "Sample data · contracts not deployed yet"}</span>
       </div>
       <div className={`${a.frame} bevel`}>
         <div className={s.stats} style={{ gridTemplateColumns: "repeat(5,1fr)" }}>
@@ -35,7 +35,7 @@ export default function Activity() {
           <div><span>Confirmed</span><b className={s.ok}>{rows.filter((r) => r.st === "Confirmed").length}</b></div>
           <div><span>Pending</span><b className={s.warn}>{rows.filter((r) => r.st === "Pending").length}</b></div>
           <div><span>Chain</span><b>RH 46630</b></div>
-          <div><span>Indexed to</span><b>18,204,117</b></div>
+          <div><span>Latest block</span><b>{A.live && rows[0] ? rows[0].block : "—"}</b></div>
         </div>
         <div className={a.bar}>
           <div className={a.tabs}>{filters.map((x) => <button key={x} className={f === x ? a.on : ""} onClick={() => setF(x)}>{x}</button>)}</div>
@@ -47,7 +47,7 @@ export default function Activity() {
             <div key={r.tx + r.type} className={a.row}>
               <span className={a.type}><i data-t={group[r.type]} />{r.type}</span>
               <span>{r.amt}</span>
-              <span>{r.tx === "—" ? "—" : <a href={r.txFull ? txUrl(r.txFull) : "https://explorer.testnet.chain.robinhood.com"} target="_blank" rel="noreferrer">{r.txFull ? `${r.tx.slice(0, 6)}…${r.tx.slice(-4)}` : r.tx} ↗</a>}</span>
+              <span>{r.txFull ? <a href={txUrl(r.txFull)} target="_blank" rel="noreferrer">{`${r.tx.slice(0, 6)}…${r.tx.slice(-4)}`} ↗</a> : <span className={a.dim}>{r.tx}</span>}</span>
               <span className={a.dim}>{r.block}</span>
               <span className={a.dim}>{r.time}</span>
               <span><em className={r.st === "Confirmed" ? a.ok : r.st === "Pending" ? a.pend : a.prev}>{r.st}</em></span>

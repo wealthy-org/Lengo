@@ -21,14 +21,16 @@ const EVENTS: { name: string; type: string; group: string; arg: string; fmt: (a:
 export function useActivity() {
   const { address, isConnected, chainId } = useAccount();
   const client = usePublicClient({ chainId: rhTestnet.id });
-  const live = isDeployed && isConnected && chainId === rhTestnet.id && !!address && !!client;
+  const mine = isDeployed && isConnected && chainId === rhTestnet.id && !!address && !!client;
+  // Without a wallet, show recent market-wide events so every hash links to a real tx.
+  const live = isDeployed && !!client;
   const q = useQuery({
-    queryKey: ["activity", address],
+    queryKey: ["activity", mine ? address : "market"],
     enabled: live,
     queryFn: async () => {
       // 1) DB read model (Neon) when configured; 2) otherwise straight from RPC logs.
       try {
-        const res = await fetch(`/api/activity?account=${address}`);
+        const res = await fetch(mine ? `/api/activity?account=${address}` : "/api/activity");
         if (res.status === 200) {
           const j = await res.json() as { rows: { tx_hash: string; log_index: number; block_number: string; event: string; amount_a: string | null; amount_b: string | null }[] };
           const fmt = (e: string, a: string | null, b: string | null) => {
@@ -44,7 +46,7 @@ export function useActivity() {
         const logs = await client!.getContractEvents({
           address: deployment.market!, abi: marketAbi,
           eventName: e.name as "Borrowed",
-          args: { [e.arg]: address } as never,
+          args: (mine ? { [e.arg]: address } : undefined) as never,
           fromBlock: deployment.startBlock, toBlock: "latest",
         });
         return logs.map((l) => ({ type: e.type, group: e.group, amt: e.fmt(l.args as unknown as Record<string, bigint>), tx: l.transactionHash, block: l.blockNumber, logIndex: l.logIndex }));
@@ -54,5 +56,5 @@ export function useActivity() {
         .sort((a, b) => (a.block === b.block ? b.logIndex - a.logIndex : Number(b.block - a.block)));
     },
   });
-  return { live, rows: q.data as ActivityRow[] | undefined, loading: q.isLoading, error: q.error };
+  return { live, mine, rows: q.data as ActivityRow[] | undefined, loading: q.isLoading, error: q.error };
 }
