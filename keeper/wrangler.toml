@@ -8,7 +8,7 @@ compatibility_flags = ["nodejs_compat"]
 crons = ["*/4 * * * *", "*/5 * * * *"]
 
 [vars]
-KEEPER_ON = "true"                 # set "false" during a liquidation demo so the $70k override isn't overwritten
+KEEPER_ON = "false"                 # set "false" during a liquidation demo so the $70k override isn't overwritten
 RPC_URL = "https://rpc.testnet.chain.robinhood.com"
 CHAIN_ID = "46630"
 ORACLE = "0x7e4B30ef399EFE0fab110Ad9ADc3b39c8d19D5cE"
