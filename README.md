@@ -1,50 +1,166 @@
-# Lengo v0.1
+<p align="center">
+  <img src="public/logo.png" alt="Lengo" width="96" />
+</p>
 
-**Live:** https://lengo-two.vercel.app · **Release package / proof index:** [docs/HANDOFF.md](docs/HANDOFF.md) · **BTC research:** [docs/M5-BTC-SPIKE.md](docs/M5-BTC-SPIKE.md)
+<h1 align="center">Lengo</h1>
 
-Cross-chain lending on Robinhood Chain. Release 0.1 runs the lending lifecycle on RH testnet (chain 46630) with demo assets, plus a NEAR Intents 1Click route preview (`dry: true`, no funds moved).
+<p align="center">
+  Cross-chain lending, settled on Robinhood Chain.<br/>
+  <a href="https://lengoapp.tech">lengoapp.tech</a> · <a href="https://x.com/lengoapp">@lengoapp</a> · <a href="https://explorer.testnet.chain.robinhood.com/address/0xA4f36BEb211186C42B0A6B50Cf85DB062C5e5E25">Explorer</a>
+</p>
 
-## Run the app
+---
+
+Lengo lets you borrow against collateral on Robinhood Chain and preview how the loan can be paid out on other chains through **NEAR Intents**.
+
+**Release 0.1 runs on Robinhood Chain testnet (chain 46630) with demo assets.** The lending lifecycle is live onchain. Cross-chain payout is a real 1Click quote in preview mode (`dry: true`); no funds are moved.
+
+| | Status |
+|---|---|
+| Isolated lending market (tBTC / tUSDC) | ✅ Live on RH testnet |
+| Deposit, borrow, repay all, withdraw all | ✅ Live, every tx on the explorer |
+| Liquidation (50% close factor, 5% bonus) | ✅ Live, proven with two wallets |
+| Cross-chain payout via NEAR Intents 1Click | 🟡 Real quotes, preview only |
+| Native BTC / ZEC collateral | 🔬 Research ([docs/M5-BTC-SPIKE.md](docs/M5-BTC-SPIKE.md)) |
+| Mainnet, audit | ⏳ Not yet |
+
+## How it works
+
+```
+ Collateral (tBTC)          Lending engine                     Payout route
+┌────────────────┐   ┌───────────────────────────┐   ┌───────────────────────────┐
+│ deposit        │──▶│ LengoMarket (RH testnet)  │──▶│ NEAR Intents 1Click       │
+│ withdraw       │   │ debt shares + RAY index   │   │ USDG (RH) → USDC Solana/  │
+└────────────────┘   │ lender shares, liquidation│   │ Base … quote, dry run     │
+                     └─────────────▲─────────────┘   └───────────────────────────┘
+                                   │ price (8 dec, timestamp)
+                     ┌─────────────┴─────────────┐
+                     │ DemoOracle ◀── keeper     │  Cloudflare Worker, every 4 min
+                     └───────────────────────────┘
+```
+
+- **One isolated market per collateral.** Collateral is never lent out as lender cash; invariant tests enforce this.
+- **Debt shares with a borrow index (RAY).** Interest accrues per second at a fixed 8% APR. Repay All clears debt to exactly zero, with no dust left behind.
+- **Lender shares with a virtual offset**, which blunt first-depositor inflation and donation attacks.
+- **Stale-oracle guard.** Borrowing and withdrawals that leave debt are paused when a price is older than 300 s. Repay and debt-free exit always work.
+- **Liquidation** opens at HF < 1, repays up to 50% of the debt per call and pays the liquidator a 5% bonus. Bad debt is written off when collateral runs out.
+
+### Market parameters (testnet demo)
+
+| Max LTV | Liquidation threshold | Liquidatable | Bonus | Close factor | Borrow APR | Oracle freshness |
+|---|---|---|---|---|---|---|
+| 60% | 75% | HF < 1 | 5% | 50% | 8% fixed | 300 s |
+
+## Deployed contracts: Robinhood Chain testnet (46630)
+
+All four contracts are verified on Blockscout.
+
+| Contract | Address |
+|---|---|
+| LengoMarket | [`0xA4f36BEb211186C42B0A6B50Cf85DB062C5e5E25`](https://explorer.testnet.chain.robinhood.com/address/0xA4f36BEb211186C42B0A6B50Cf85DB062C5e5E25) |
+| TestToken tBTC (8 dec) | [`0x2e179ff76ef528821f2dE00D7079F1999ccdEB88`](https://explorer.testnet.chain.robinhood.com/address/0x2e179ff76ef528821f2dE00D7079F1999ccdEB88) |
+| TestToken tUSDC (6 dec) | [`0xe1f1C4292C7AED0D0E99DD1233607e776826762d`](https://explorer.testnet.chain.robinhood.com/address/0xe1f1C4292C7AED0D0E99DD1233607e776826762d) |
+| DemoOracle | [`0x7e4B30ef399EFE0fab110Ad9ADc3b39c8d19D5cE`](https://explorer.testnet.chain.robinhood.com/address/0x7e4B30ef399EFE0fab110Ad9ADc3b39c8d19D5cE) |
+
+Start block `153087385` · Solidity 0.8.24, optimizer 200 · OpenZeppelin 5.1.0 · machine-readable: [`contracts/deployments/46630.json`](contracts/deployments/46630.json).
+
+The full deployment manifest and a 16-transaction proof index (M1 lifecycle, M2 two-wallet liquidation) are in [docs/HANDOFF.md](docs/HANDOFF.md).
+
+## App
+
+| Page | What it does |
+|---|---|
+| `/` | Landing |
+| `/app` | Markets: deposit, borrow, repay, withdraw, lend; live health factor, LTV and liquidation price; HF alerts |
+| `/app/routes` | NEAR Intents 1Click route preview (live discovery and quotes, `dry: true`) |
+| `/app/activity` | Onchain event history, each tx linked to the explorer |
+| `/faucet` | Mint demo tBTC / tUSDC (capped, 24 h cooldown, no value) |
+| `/docs` | Formulas, parameters, limits |
+
+Each transaction shows a step modal (confirm in wallet → pending → confirmed) and a toast that links to the tx on the explorer.
+
+### API
+
+| Route | Purpose |
+|---|---|
+| `GET /api/routes/tokens` | 1Click token discovery (cached) |
+| `POST /api/routes/quote` | Server proxy to 1Click `/v0/quote`, always `dry: true`; quotes are logged with the recipient hashed |
+| `GET /api/activity[?account=0x…]` | Market-wide or per-account events from the Neon read model |
+| `POST /api/index/sync` | Indexer trigger (needs `INDEXER_SECRET`) |
+| `POST /api/oracle/refresh` | Optional on-demand stale-price refresh (rate-limited) |
+
+## Stack
+
+- **Web:** Next.js 15, React 19, wagmi + viem, TanStack Query, GSAP + Lenis on the landing page.
+- **Contracts:** Foundry, OpenZeppelin 5.1.0.
+- **Keeper and indexer:** Cloudflare Worker (`keeper/`). Crons `*/4` refresh the oracle baseline and `*/5` index events.
+- **Read model:** Neon Postgres (`db/schema.sql`). The app falls back to RPC logs when the database is not configured.
+- **Cross-chain:** NEAR Intents 1Click API.
+
+## Repository
+
+```
+contracts/   Foundry: src/, test/ (unit, fuzz, edge, invariant), script/Deploy.s.sol, deployments/
+src/app/     Next.js app: landing, /app, /faucet, /docs, /dev/scenarios, API routes
+src/lib/     chain config, ABI, wagmi, hooks (useLengo, useActivity), 1Click client, DB, indexer
+keeper/      Cloudflare Worker: oracle keeper + event indexer
+db/          Postgres schema
+scripts/     migrations, e2e fork checks, testnet proof scripts, deployment replay
+docs/        HANDOFF (release package), M5 BTC research, recording guide
+```
+
+## Run locally
 
 ```bash
 npm install
-cp .env.example .env.local   # fill contract addresses after deploying
-npm run dev                  # http://localhost:3000
+cp .env.example .env.local     # fill NEXT_PUBLIC_LENGO_* from contracts/deployments/46630.json
+npm run dev                    # http://localhost:3000
 ```
 
-Without contract addresses the app runs in **demo mode**: the UI labels every number as simulated. Route preview always uses real 1Click discovery and quotes.
+Without contract addresses the app runs in **demo mode** and labels every number as simulated. Optional:
 
-## Contracts (Foundry)
+```bash
+npm run db:migrate             # create the Neon schema (needs DATABASE_URL)
+npm run replay:deploy          # animated replay of the real testnet deployment (sends nothing)
+```
+
+## Contracts
 
 ```bash
 cd contracts
 forge build
-forge test        # 24 tests: unit, fuzz, edge cases and 6 invariants (128k random calls)
+forge test
 ```
 
-| Contract | Role |
-|---|---|
-| `TestToken` | tBTC (8 dec) and tUSDC (6 dec), capped faucet, 24h cooldown, no value |
-| `DemoOracle` | USD prices (8 dec) with timestamp; overrides emit `demoOverride = true` |
-| `LengoMarket` | Collateral, debt shares + borrow index, lender shares, liquidation, bad-debt recognition |
+**24 tests pass:**
+- 12 unit and fuzz tests: HF fixture 1.875, LTV caps, stale oracle, Repay All with no dust, lender interest, two-wallet liquidation, bad debt, faucet cooldown.
+- 11 edge-case tests: HF exactly 1, donation and first-depositor attacks, rounding, close-factor repeats, owner-only oracle.
+- 6 invariants over 128,000 random calls.
 
-## Deploy to RH testnet
+`scripts/e2e-fork.sh` runs 16 end-to-end checks against the deployed contracts on a local fork.
 
-Use a **testnet-only** wallet funded with RH testnet ETH. The script refuses any chain except 46630 (and local anvil).
+### Deploy (testnet only)
 
 ```bash
 cd contracts
-PRIVATE_KEY=<testnet key> forge script script/Deploy.s.sol --rpc-url rh_testnet --broadcast
+PRIVATE_KEY=<testnet-only key> forge script script/Deploy.s.sol --rpc-url rh_testnet --broadcast
 ```
 
-The script writes `contracts/deployments/46630.json`. Copy its addresses into `.env.local` (`NEXT_PUBLIC_LENGO_*`), set `NEXT_PUBLIC_LENGO_START_BLOCK`, and restart `npm run dev`. The app then reads balances, positions and activity from the chain.
+The script refuses any chain except 46630 and local anvil. Use a throwaway wallet funded with RH testnet ETH. Never use a key that holds real assets.
 
-## Pages
+### Keeper
 
-`/` landing · `/app` markets · `/app/routes` route preview · `/app/activity` events · `/faucet` · `/docs`
+```bash
+cd keeper
+npx wrangler deploy            # secrets: KEEPER_PRIVATE_KEY, DATABASE_URL (wrangler secret put …)
+```
 
-API: `GET /api/routes/tokens`, `POST /api/routes/quote` (server proxy to 1Click, always `dry: true`).
+Set `KEEPER_ON = "false"` in `keeper/wrangler.toml` to pause price refreshes, for example during a liquidation demo with a price override.
 
-## Not in v0.1
+## Limits in v0.1
 
-Native BTC/ZEC collateral, private positions, executed cross-chain payouts, mainnet. Contracts are not audited.
+- **Testnet only.** tBTC has no Bitcoin backing, and tUSDC is not Circle USDC. Demo assets have no value.
+- **Contracts are not audited.**
+- **Demo oracle.** Prices come from a keeper-maintained baseline, not a market feed. Overrides emit `demoOverride = true`.
+- **Route preview only.** It never executes a swap or issues a deposit address. 1Click quotes are mainnet market estimates.
+- Native BTC/ZEC collateral, private positions and executed cross-chain payouts are on the roadmap.
