@@ -36,6 +36,9 @@ export default function TopNav() {
         ))}
       </nav>
       <div className={s.right}>
+        <a className={s.social} href="https://x.com/lengoapp" target="_blank" rel="noreferrer" aria-label="Lengo on X" title="@lengoapp on X">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 2H22l-7.6 8.7L23.3 22h-7l-5.5-7.2L4.5 22H1.4l8.1-9.3L1 2h7.2l5 6.6L18.9 2Zm-1.1 18h1.7L7.3 3.9H5.5L17.8 20Z"/></svg>
+        </a>
         <button className={`${s.chain} ${wrong ? s.wrong : ""}`} title="Robinhood Chain Testnet · 46630"
           onClick={() => isConnected && switchChain({ chainId: rhTestnet.id })}>
           <span className={s.chainIco}><Image src="/logo-mark.png" alt="" width={16} height={16} /></span>

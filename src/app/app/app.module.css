@@ -9,6 +9,8 @@
 .nav .on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--tx)}
 .right{display:flex;align-items:center;gap:8px;padding:0 20px;border-left:1px solid var(--line)}
 .chain,.connect{display:flex;align-items:center;gap:10px;height:42px;padding:0 14px;border:1px solid var(--line2);background:var(--panel);font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx2);transition:.2s}
+.social{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border:1px solid var(--line2);background:var(--panel);color:var(--tx2);transition:.2s}
+.social:hover{border-color:var(--tx3);color:var(--tx)}
 .chain:hover,.connect:hover{border-color:var(--tx3);color:var(--tx)}
 .chain i{font-style:normal;font-size:9px;color:var(--tx3)}
 .chainIco{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--bg);border:1px solid var(--line2)}

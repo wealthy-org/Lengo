@@ -196,7 +196,7 @@ Liq. price     = D / (qty × liqThreshold)`}</pre>
       </section>
 
       <footer className={`${s.foot} bevel`}>
-        <Link href="/app">Markets</Link><Link href="/app/routes">Routes</Link><Link href="/app/activity">Activity</Link><a href="#">Faucet</a><a href="#">Docs</a>
+        <Link href="/app">Markets</Link><Link href="/app/routes">Routes</Link><Link href="/app/activity">Activity</Link><Link href="/faucet">Faucet</Link><Link href="/docs">Docs</Link><a href="https://x.com/lengoapp" target="_blank" rel="noreferrer">X · @lengoapp</a>
         <span>Demo assets · no value</span><span className={s.status}>Status <i /></span>
       </footer>
     </div>
