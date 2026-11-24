@@ -7,7 +7,9 @@
     "build": "next build --turbopack",
     "start": "next start",
     "db:migrate": "node --env-file=.env.local scripts/db-migrate.mjs",
-    "index:sync": "curl -s -X POST http://localhost:3000/api/index/sync"
+    "index:sync": "curl -s -X POST http://localhost:3000/api/index/sync",
+    "replay:deploy": "node scripts/deploy-replay.mjs",
+    "showcase": "node --env-file-if-exists=.env.local scripts/showcase.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
