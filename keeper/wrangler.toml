@@ -44,6 +44,3 @@ REFRESH_AFTER_S = "180"
 [observability.logs]
 enabled = true
 invocation_logs = true
-
-[observability.traces]
-enabled = false

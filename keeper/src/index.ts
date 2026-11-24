@@ -4,7 +4,7 @@ import { createPublicClient, createWalletClient, defineChain, http, parseUnits, 
 import { privateKeyToAccount } from "viem/accounts";
 import { neon } from "@neondatabase/serverless";
 import { marketAbi, oracleAbi, priceOracleAbi } from "../../src/lib/abi";
-import { exceedsDeviationBps, fetchLiveUsdPrice8Dec, type AssetSymbol } from "../../src/lib/priceFeed";
+import { exceedsDeviationBps, fetchLiveUsdPrice8Dec, type AssetSymbol } from "./priceFeed";
 
 export interface Env {
   KEEPER_ON: string;
