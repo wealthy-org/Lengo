@@ -5,6 +5,7 @@ import { useConnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import s from "./trade.module.css";
 import HealthAlert from "./HealthAlert";
+import TradingChart, { type ChartData } from "./TradingChart";
 import { useToast } from "../Toaster";
 import { useLengo, useLengoTx } from "@/lib/useLengo";
 import { MAINNET_MARKETS, TESTNET_MARKET, type MarketSpec } from "@/lib/markets";
@@ -37,7 +38,7 @@ export default function Markets() {
 
   const [supplyAmt, setSupplyAmt] = useState("");
   const [lendTab, setLendTab] = useState<"Supply" | "WithdrawSupply">("Supply");
-  const [hist, setHist] = useState<null | { source: string; closes: number[]; high: number; low: number; latest: number; changePct: number }>(null);
+  const [hist, setHist] = useState<ChartData | null>(null);
 
   // Fetch real 48h hourly price history for the selected market's collateral asset
   useEffect(() => {
@@ -151,22 +152,6 @@ export default function Markets() {
     setAmt("");
   }
 
-  const W = 1000, H = 300;
-  const path = useMemo(() => {
-    if (hist && hist.closes.length >= 2) {
-      if (!isMainnet && P && hist.latest > 0) {
-        const scale = P.price / hist.latest;
-        return hist.closes.map((c) => c * scale);
-      }
-      return hist.closes;
-    }
-    return Array.from({ length: 48 }, (_, i) => PRICE * (1 + 0.015 * Math.sin(i / 5)));
-  }, [hist, isMainnet, P, PRICE]);
-  const minP = Math.min(...path, liqP > 0 ? liqP : Infinity);
-  const maxP = Math.max(...path, PRICE);
-  const lo = minP * 0.96, hi = maxP * 1.04;
-  const y = (p: number) => H - ((p - lo) / Math.max(0.0001, hi - lo)) * H;
-  const line = path.map((p, i) => `${(i / (path.length - 1)) * W},${y(p).toFixed(1)}`).join(" ");
   const priceDigits = PRICE >= 1000 ? 0 : PRICE >= 2 ? 2 : 4;
 
   return (
@@ -244,27 +229,16 @@ export default function Markets() {
 
           <div className={s.viewBody}>
             {view === "Chart" && (
-              <>
-                <div className={s.chartHead}>
-                  <div>
-                    <span>{collSym} price · {hist?.source === "pyth-pro" ? "Pyth Pro 48h" : "Market 48h"}</span>
-                    <b>{usd(PRICE, priceDigits)}</b>
-                    <small>
-                      {hist
-                        ? `${hist.source === "pyth-pro" ? "Live Pyth Pro candles" : "Live market candles"} · 48h ${hist.changePct >= 0 ? "+" : ""}${hist.changePct.toFixed(2)}%`
-                        : `Chainlink ${collSym}/USD onchain feed`}
-                    </small>
-                  </div>
-                  <div className={s.legend}><i className={s.lgP} />Price {usd(PRICE, priceDigits)}<i className={s.lgL} />Liq. {liqP ? usd(liqP, priceDigits) : "None"}</div>
-                </div>
-                <svg viewBox={`0 0 ${W} ${H}`} className={s.chart} preserveAspectRatio="none">
-                  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#c9f27a" stopOpacity=".18" /><stop offset="1" stopColor="#c9f27a" stopOpacity="0" /></linearGradient></defs>
-                  {[0.25, 0.5, 0.75].map((f) => <line key={f} x1="0" x2={W} y1={H * f} y2={H * f} stroke="var(--line)" />)}
-                  <polygon points={`0,${H} ${line} ${W},${H}`} fill="url(#g)" />
-                  <polyline points={line} fill="none" stroke="var(--lime)" strokeWidth="1.6" vectorEffect="non-scaling-stroke" />
-                  {liqP > lo && liqP < hi && <><line x1="0" x2={W} y1={y(liqP)} y2={y(liqP)} stroke="var(--red)" strokeDasharray="6 6" vectorEffect="non-scaling-stroke" /><text x={W - 8} y={y(liqP) - 8} textAnchor="end" fill="var(--red)" fontSize="13" fontFamily="var(--mono)">LIQ {usd(liqP, priceDigits)}</text></>}
-                </svg>
-              </>
+              <TradingChart
+                symbol={spec.id}
+                collSym={collSym}
+                pairLabel={pairLabel}
+                currentPrice={PRICE}
+                priceDigits={priceDigits}
+                liqPrice={liqP}
+                hist={hist}
+                isMainnet={isMainnet}
+              />
             )}
             {view === "Position" && (
               <div className={s.kv}>
