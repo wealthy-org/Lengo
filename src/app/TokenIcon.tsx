@@ -6,6 +6,8 @@ import s from "./token.module.css";
 const CG = "https://coin-images.coingecko.com/coins/images";
 const LOGOS: Record<string, string> = {
   BTC: `${CG}/1/large/bitcoin.png`,
+  cbBTC: `${CG}/1/large/bitcoin.png`,
+  WBTC: `${CG}/1/large/bitcoin.png`,
   USDC: `${CG}/6319/large/USDC.png`,
   ZEC: `${CG}/486/large/Brandmark-Yellow_%281%29.png`,
   SOL: `${CG}/4128/large/solana.png`,

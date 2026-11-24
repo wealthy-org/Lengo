@@ -43,7 +43,12 @@ export default function TopNav() {
     return () => window.removeEventListener("mousedown", onDown);
   }, [menuOpen]);
 
-  // AUTO-SWITCH DEFAULT TO RH TESTNET (46630) whenever a wallet is connected on a different chain!
+  // Clear switching spinner immediately once wallet reports the target chain
+  useEffect(() => {
+    if (chainId === net.chain.id && switching) setSwitching(false);
+  }, [chainId, net.chain.id, switching]);
+
+  // AUTO-SWITCH wallet whenever connected on a different chain than the active network
   useEffect(() => {
     if (!mounted || !isConnected || !address) return;
     if (chainId === net.chain.id) return;
@@ -51,14 +56,12 @@ export default function TopNav() {
     if (autoAttemptedRef.current === key) return;
     autoAttemptedRef.current = key;
 
-    let cancelled = false;
     setSwitching(true);
+    const timer = setTimeout(() => setSwitching(false), 6000);
     ensureWalletChain(net.chain, connector, switchChainAsync).finally(() => {
-      if (!cancelled) setSwitching(false);
+      clearTimeout(timer);
+      setSwitching(false);
     });
-    return () => {
-      cancelled = true;
-    };
   }, [mounted, isConnected, address, chainId, net.chain, connector, switchChainAsync]);
 
   const wrong = mounted && isConnected && chainId !== net.chain.id;

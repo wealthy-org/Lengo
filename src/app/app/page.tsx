@@ -190,12 +190,18 @@ export default function Markets() {
   const y = (p: number) => H - ((p - lo) / Math.max(1, hi - lo)) * H;
   const line = path.map((p, i) => `${(i / (path.length - 1)) * W},${y(p).toFixed(1)}`).join(" ");
 
-  const markets = [
-    { pair: "tBTC/tUSDC", sub: "RH Testnet · 8% APR", mode: "testnet" as const, ready: DEPLOYMENTS.testnet.isDeployed },
-    { pair: "WETH/USDG", sub: "RH Mainnet · 8% APR", mode: "mainnet" as const, ready: true },
-    { pair: "BTC/USDC", sub: "Native BTC · spike", mode: null, ready: false },
-    { pair: "ZEC/USDG", sub: "Research", mode: null, ready: false },
-  ];
+  const markets = isMainnet
+    ? [
+        { pair: "WETH/USDG", sub: "Isolated · 8% APR", active: true },
+        { pair: "cbBTC/USDG", sub: "CCIP Wrapped BTC", active: false },
+        { pair: "BTC/USDC", sub: "Native BTC · spike", active: false },
+        { pair: "ZEC/USDG", sub: "NEAR Intents", active: false },
+      ]
+    : [
+        { pair: "tBTC/tUSDC", sub: "RH Testnet · 8% APR", active: DEPLOYMENTS.testnet.isDeployed },
+        { pair: "BTC/USDC", sub: "Native BTC · spike", active: false },
+        { pair: "ZEC/USDG", sub: "Research", active: false },
+      ];
 
   return (
     <>
@@ -212,21 +218,17 @@ export default function Markets() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
             <input placeholder="Search markets" value={q} onChange={(e) => setQ(e.target.value)} />
           </label>
-          {markets.filter((m) => m.pair.toLowerCase().includes(q.toLowerCase())).map((m) => {
-            const active = m.mode === net.mode;
-            return (
-              <button
-                key={m.pair}
-                className={`${s.mkt} ${active ? s.mktOn : ""}`}
-                disabled={!m.ready}
-                onClick={() => m.mode && net.setMode(m.mode)}
-              >
-                <Pair a={m.pair.split("/")[0]} b={m.pair.split("/")[1]} />
-                <span><b>{m.pair}</b><small>{m.sub}</small></span>
-                {!m.ready && <em>Soon</em>}
-              </button>
-            );
-          })}
+          {markets.filter((m) => m.pair.toLowerCase().includes(q.toLowerCase())).map((m) => (
+            <button
+              key={m.pair}
+              className={`${s.mkt} ${m.active ? s.mktOn : ""}`}
+              disabled={!m.active}
+            >
+              <Pair a={m.pair.split("/")[0]} b={m.pair.split("/")[1]} />
+              <span><b>{m.pair}</b><small>{m.sub}</small></span>
+              {!m.active && <em>Soon</em>}
+            </button>
+          ))}
         </aside>
 
         <section className={s.center}>

@@ -4,14 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import s from "./console.module.css";
 
 const assets = [
-  { sym: "tBTC", name: "tBTC / tUSDC", st: "ACTIVE", note: "RH Testnet (Default)", c: "#f2a93b" },
-  { sym: "WETH", name: "WETH / USDG", st: "READY", note: "RH Mainnet · 4663", c: "#627eea" },
+  { sym: "WETH", name: "WETH / USDG", st: "ACTIVE", note: "RH Mainnet · 4663", c: "#627eea" },
   { sym: "USDG", name: "USDG → USDC", st: "LIVE", note: "1Click Cross-Chain", c: "#7fe0b4" },
+  { sym: "USDC", name: "USDC · Solana/Base", st: "LIVE", note: "Payout Route", c: "#7fb6f2" },
+  { sym: "cbBTC", name: "cbBTC / USDG", st: "NEXT", note: "CCIP Collateral", c: "#f2a93b" },
   { sym: "BTC", name: "BTC · Bitcoin", st: "RESEARCH", note: "Native Collateral", c: "#f2a93b" },
   { sym: "ZEC", name: "ZEC · Zcash", st: "ROADMAP", note: "NEAR Intents", c: "#e8c46b" },
   { sym: "SOL", name: "SOL · Solana", st: "ROADMAP", note: "SVM Collateral", c: "#9b8cf2" },
   { sym: "HYPE", name: "HYPE · Hyperliquid", st: "ROADMAP", note: "HyperEVM", c: "#48e59b" },
-  { sym: "USDC", name: "USDC · Solana/Base", st: "LIVE", note: "Payout Route", c: "#7fb6f2" },
 ];
 export function MarketList() {
   return (
@@ -38,7 +38,7 @@ export function EventStream() {
   useEffect(() => {
     const mk = (): Ev => {
       const k = kinds[(Math.random() * kinds.length) | 0];
-      return { id: n.current++, k, h: hex(), b: 18204117 + n.current, amt: k === "DEPOSIT" || k === "TOPUP" || k === "WITHDRAW" ? (Math.random() * 0.3).toFixed(4) + " tBTC" : k === "QUOTE" ? "Route preview" : (Math.random() * 5000).toFixed(0) + " tUSDC" };
+      return { id: n.current++, k, h: hex(), b: 122321000 + n.current, amt: k === "DEPOSIT" || k === "TOPUP" || k === "WITHDRAW" ? (Math.random() * 1.5 + 0.05).toFixed(3) + " WETH" : k === "QUOTE" ? "USDG → USDC" : (Math.random() * 2000 + 50).toFixed(0) + " USDG" };
     };
     setEvs(Array.from({ length: 7 }, mk));
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -52,10 +52,10 @@ export function EventStream() {
         <div key={e.id} className={`${s.ev} ${i === 0 ? s.evNew : ""}`}>
           <span className={s.blk}>{e.b}</span>
           <div><b>{e.k}</b><small>{e.h} · {e.amt}</small></div>
-          <em>{e.k === "QUOTE" ? "PREVIEW" : "OK"}</em>
+          <em>{e.k === "QUOTE" ? "1CLICK" : "OK"}</em>
         </div>
       ))}
-      <div className={s.foot}>CHAIN 46630 · RH TESTNET</div>
+      <div className={s.foot}>CHAIN 4663 · ROBINHOOD MAINNET</div>
     </div>
   );
 }
