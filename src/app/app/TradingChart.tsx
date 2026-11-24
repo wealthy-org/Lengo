@@ -44,6 +44,28 @@ const formatVol = (v: number) => {
   return v.toFixed(0);
 };
 
+function CandleIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" style={{ flexShrink: 0 }}>
+      {/* Candle 1 (left) */}
+      <line x1="4.5" y1="1.5" x2="4.5" y2="14.5" />
+      <rect x="2.5" y="4.5" width="4" height="6.5" fill="currentColor" rx="0.5" stroke="none" />
+      {/* Candle 2 (right) */}
+      <line x1="11.5" y1="2.5" x2="11.5" y2="13.5" />
+      <rect x="9.5" y="6" width="4" height="5" fill="none" stroke="currentColor" strokeWidth="1.2" rx="0.5" />
+    </svg>
+  );
+}
+
+function LineChartIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <path d="M1.5 12L5 7.5L9 10L14.5 3.5" />
+      <circle cx="14.5" cy="3.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export default function TradingChart({
   collSym,
   currentPrice,
@@ -257,7 +279,10 @@ export default function TradingChart({
           <span
             className={`${s.changeBadge} ${overallChange >= 0 ? s.changeUp : s.changeDown}`}
           >
-            {overallChange >= 0 ? "▲ +" : "▼ "}
+            <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block" }}>
+              <path d={overallChange >= 0 ? "M2 6.5L5 3.5L8 6.5" : "M2 3.5L5 6.5L8 3.5"} />
+            </svg>
+            {overallChange >= 0 ? "+" : ""}
             {overallChange.toFixed(2)}%
           </span>
           <span className={s.liveTag}>
@@ -296,14 +321,16 @@ export default function TradingChart({
               onClick={() => setChartType("candles")}
               title="Candlestick Chart"
             >
-              🕯️ Candles
+              <CandleIcon />
+              <span>Candles</span>
             </button>
             <button
               className={chartType === "line" ? s.activeBtn : ""}
               onClick={() => setChartType("line")}
               title="Line Chart"
             >
-              📈 Line
+              <LineChartIcon />
+              <span>Line</span>
             </button>
           </div>
         </div>

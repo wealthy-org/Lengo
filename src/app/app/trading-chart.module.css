@@ -101,6 +101,9 @@
   color: var(--tx3);
   border-right: 1px solid var(--line2);
   transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .btnGroup button:last-child {
