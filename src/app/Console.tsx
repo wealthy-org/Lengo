@@ -4,14 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import s from "./console.module.css";
 
 const assets = [
-  { sym: "WETH", name: "WETH / USDG", st: "ACTIVE", note: "RH Mainnet · 4663", c: "#627eea" },
+  { sym: "WETH", name: "WETH / USDG", st: "ACTIVE", note: "Crypto · 60% LTV", c: "#627eea" },
+  { sym: "cbBTC", name: "cbBTC / USDG", st: "ACTIVE", note: "Crypto · 65% LTV", c: "#f2a93b" },
+  { sym: "WBTC", name: "WBTC / USDG", st: "ACTIVE", note: "Crypto · 65% LTV", c: "#f2a93b" },
+  { sym: "USDe", name: "USDe / USDG", st: "ACTIVE", note: "Ethena · 80% LTV", c: "#8ab4f8" },
+  { sym: "NVDA", name: "NVDA / USDG", st: "ACTIVE", note: "RH Stock · 24/7", c: "#76b900" },
+  { sym: "TSLA", name: "TSLA / USDG", st: "ACTIVE", note: "RH Stock · 24/7", c: "#e82127" },
+  { sym: "AAPL", name: "AAPL / USDG", st: "ACTIVE", note: "RH Stock · Equity", c: "#d4d8dc" },
   { sym: "USDG", name: "USDG → USDC", st: "LIVE", note: "1Click Cross-Chain", c: "#7fe0b4" },
-  { sym: "USDC", name: "USDC · Solana/Base", st: "LIVE", note: "Payout Route", c: "#7fb6f2" },
-  { sym: "cbBTC", name: "cbBTC / USDG", st: "NEXT", note: "CCIP Collateral", c: "#f2a93b" },
-  { sym: "BTC", name: "BTC · Bitcoin", st: "RESEARCH", note: "Native Collateral", c: "#f2a93b" },
-  { sym: "ZEC", name: "ZEC · Zcash", st: "ROADMAP", note: "NEAR Intents", c: "#e8c46b" },
-  { sym: "SOL", name: "SOL · Solana", st: "ROADMAP", note: "SVM Collateral", c: "#9b8cf2" },
-  { sym: "HYPE", name: "HYPE · Hyperliquid", st: "ROADMAP", note: "HyperEVM", c: "#48e59b" },
 ];
 export function MarketList() {
   return (

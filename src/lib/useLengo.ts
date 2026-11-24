@@ -1,8 +1,9 @@
 "use client";
 import { useCallback, useState } from "react";
-import { formatUnits, maxUint256, parseUnits, type Address } from "viem";
+import { formatUnits, maxUint256, parseAbi, parseUnits, type Address } from "viem";
 import { useAccount, useReadContracts, useWriteContract, usePublicClient, useSwitchChain } from "wagmi";
 import { marketAbi, priceOracleAbi, tokenAbi } from "./abi";
+import type { MarketSpec } from "./markets";
 import { useNetwork } from "./useNetwork";
 import { ensureWalletChain } from "./walletChain";
 import { useToast } from "@/app/Toaster";
@@ -10,83 +11,146 @@ import { useToast } from "@/app/Toaster";
 export type Act = "Deposit" | "Borrow" | "Repay" | "Withdraw" | "Supply" | "WithdrawSupply";
 export type TxStep = { label: string; hash?: string; state: "wait" | "sign" | "pending" | "done" | "failed" };
 
+const clAggAbi = parseAbi([
+  "function latestRoundData() external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)",
+]);
+
 const n = (v: unknown, d: number) => (typeof v === "bigint" ? Number(formatUnits(v, d)) : 0);
 
-/** Reads position, market, and wallet state from the active Robinhood Chain network (Testnet 46630 default, or Mainnet 4663). */
-export function useLengo() {
+/** Reads position, pool, direct Chainlink feed, and wallet balances for the selected MarketSpec. */
+export function useLengo(spec?: MarketSpec) {
   const net = useNetwork();
   const { address, isConnected, chainId } = useAccount();
+
+  const marketAddr = spec ? spec.market : net.market;
+  const collAddr = spec ? spec.collateral : net.collateral!;
+  const debtAddr = spec ? spec.debtAsset : net.debtAsset!;
+  const oracleAddr = spec ? spec.oracle : net.oracle;
+  const collDec = spec ? spec.collDecimals : net.collDecimals;
+  const debtDec = spec ? spec.debtDecimals : net.debtDecimals;
+  const clFeed = spec?.chainlinkFeed;
+  const marketDeployed = !!(marketAddr && collAddr && debtAddr && oracleAddr);
+
   const onActiveChain = isConnected && chainId === net.chain.id;
-  const live = net.isDeployed && onActiveChain && !!address;
-  const m = { address: net.market!, abi: marketAbi, chainId: net.chain.id } as const;
   const acct = (address ?? "0x0000000000000000000000000000000000000000") as Address;
+
+  // Wallet token balances ALWAYS read onchain even before a secondary LengoMarket contract is deployed!
+  const balQuery = useReadContracts({
+    allowFailure: true,
+    query: { enabled: !!address },
+    contracts: [
+      { address: collAddr, abi: tokenAbi, functionName: "balanceOf", args: [acct], chainId: net.chain.id },
+      { address: debtAddr, abi: tokenAbi, functionName: "balanceOf", args: [acct], chainId: net.chain.id },
+    ],
+  });
+
+  // Direct Chainlink feed read on Mainnet so every market shows live onchain Chainlink price + age immediately!
+  const feedQuery = useReadContracts({
+    allowFailure: true,
+    query: { enabled: !!clFeed && net.mode === "mainnet" },
+    contracts: clFeed ? [{ address: clFeed, abi: clAggAbi, functionName: "latestRoundData", chainId: net.chain.id }] : [],
+  });
+
+  const m = { address: (marketAddr ?? "0x0000000000000000000000000000000000000000") as Address, abi: marketAbi, chainId: net.chain.id } as const;
 
   const q = useReadContracts({
     allowFailure: true,
-    query: { enabled: net.isDeployed && !!address },
+    query: { enabled: marketDeployed && !!address },
     contracts: [
       { ...m, functionName: "getPosition", args: [acct] },
       { ...m, functionName: "getMarketState" },
       { ...m, functionName: "claimOf", args: [acct] },
-      { address: net.collateral!, abi: tokenAbi, functionName: "balanceOf", args: [acct], chainId: net.chain.id },
-      { address: net.debtAsset!, abi: tokenAbi, functionName: "balanceOf", args: [acct], chainId: net.chain.id },
       { ...m, functionName: "maxOracleAge" },
       { ...m, functionName: "paused" },
     ],
   });
+
+  const pq = useReadContracts({
+    allowFailure: true,
+    query: { enabled: marketDeployed },
+    contracts: [
+      { ...m, functionName: "getMarketState" },
+      { ...m, functionName: "maxOracleAge" },
+      { address: (oracleAddr ?? "0x0000000000000000000000000000000000000000") as Address, abi: priceOracleAbi, functionName: "getPrice", args: [debtAddr], chainId: net.chain.id },
+      { ...m, functionName: "paused" },
+    ],
+  });
+
+  const collBal = n(balQuery.data?.[0]?.result, collDec);
+  const debtBal = n(balQuery.data?.[1]?.result, debtDec);
+
+  const clRound = feedQuery.data?.[0]?.result as readonly [bigint, bigint, bigint, bigint, bigint] | undefined;
+  const clPrice = clRound && clRound[1] > 0n ? Number(formatUnits(clRound[1], 8)) : null;
+  const clUpdatedAt = clRound ? Number(clRound[3]) : 0;
 
   const r = q.data;
   const pos = r?.[0]?.result as readonly bigint[] | undefined;
   const mkt = r?.[1]?.result as readonly bigint[] | undefined;
-  const data = net.isDeployed && !!address && pos && mkt ? {
-    coll: n(pos[0], net.collDecimals),
-    debt: n(pos[1], net.debtDecimals),
-    hf: pos[2] === maxUint256 ? Infinity : n(pos[2], 18),
-    supplied: n(mkt[0], net.debtDecimals),
-    borrowed: n(mkt[1], net.debtDecimals),
-    available: n(mkt[2], net.debtDecimals),
-    price: n(mkt[4], 8),
-    priceAt: Number(mkt[5] ?? 0n),
-    claim: n(r?.[2]?.result, net.debtDecimals),
-    collBal: n(r?.[3]?.result, net.collDecimals),
-    debtBal: n(r?.[4]?.result, net.debtDecimals),
-    // Backwards-compatible aliases
-    tBTC: n(r?.[3]?.result, net.collDecimals),
-    tUSDC: n(r?.[4]?.result, net.debtDecimals),
-    maxAge: Number((r?.[5]?.result as bigint | undefined) ?? 300n),
-    paused: Boolean(r?.[6]?.result ?? false),
+  const data = !!address ? {
+    coll: marketDeployed && pos ? n(pos[0], collDec) : 0,
+    debt: marketDeployed && pos ? n(pos[1], debtDec) : 0,
+    hf: marketDeployed && pos ? (pos[2] === maxUint256 ? Infinity : n(pos[2], 18)) : Infinity,
+    supplied: marketDeployed && mkt ? n(mkt[0], debtDec) : 0,
+    borrowed: marketDeployed && mkt ? n(mkt[1], debtDec) : 0,
+    available: marketDeployed && mkt ? n(mkt[2], debtDec) : 0,
+    price: marketDeployed && mkt ? n(mkt[4], 8) : (clPrice ?? spec?.fallbackPrice ?? net.simPrice),
+    priceAt: marketDeployed && mkt ? Number(mkt[5] ?? 0n) : clUpdatedAt,
+    claim: marketDeployed ? n(r?.[2]?.result, debtDec) : 0,
+    collBal,
+    debtBal,
+    tBTC: collBal,
+    tUSDC: debtBal,
+    maxAge: marketDeployed ? Number((r?.[3]?.result as bigint | undefined) ?? BigInt(spec?.maxOracleAge ?? 300)) : (spec?.maxOracleAge ?? 90000),
+    paused: marketDeployed ? Boolean(r?.[4]?.result ?? false) : false,
   } : null;
 
-  // Pool state is public: read it even without a wallet so /app never shows demo numbers once deployed.
-  const pq = useReadContracts({
-    allowFailure: true,
-    query: { enabled: net.isDeployed },
-    contracts: [
-      { ...m, functionName: "getMarketState" },
-      { ...m, functionName: "maxOracleAge" },
-      { address: net.oracle!, abi: priceOracleAbi, functionName: "getPrice", args: [net.debtAsset!], chainId: net.chain.id },
-      { ...m, functionName: "paused" },
-    ],
-  });
   const pm = pq.data?.[0]?.result as readonly bigint[] | undefined;
   const du = pq.data?.[2]?.result as readonly bigint[] | undefined;
-  const pool = pm ? {
-    supplied: n(pm[0], net.debtDecimals),
-    borrowed: n(pm[1], net.debtDecimals),
-    available: n(pm[2], net.debtDecimals),
+  const pool = marketDeployed && pm ? {
+    supplied: n(pm[0], debtDec),
+    borrowed: n(pm[1], debtDec),
+    available: n(pm[2], debtDec),
     price: n(pm[4], 8),
     priceAt: Number(pm[5] ?? 0n),
     debtPriceAt: Number(du?.[1] ?? 0n),
-    maxAge: Number((pq.data?.[1]?.result as bigint | undefined) ?? 300n),
+    maxAge: Number((pq.data?.[1]?.result as bigint | undefined) ?? BigInt(spec?.maxOracleAge ?? 300)),
     paused: Boolean(pq.data?.[3]?.result ?? false),
+  } : clPrice ? {
+    supplied: 0,
+    borrowed: 0,
+    available: 0,
+    price: clPrice,
+    priceAt: clUpdatedAt,
+    debtPriceAt: Math.floor(Date.now() / 1000),
+    maxAge: spec?.maxOracleAge ?? 90000,
+    paused: false,
   } : null;
 
-  const refetch = () => { pq.refetch(); return q.refetch(); };
-  return { net, live, isConnected, onActiveChain, address, data, pool, loading: live && q.isLoading, error: q.error, refetch };
+  const refetch = () => {
+    balQuery.refetch();
+    feedQuery.refetch();
+    pq.refetch();
+    return q.refetch();
+  };
+
+  return {
+    net,
+    marketDeployed,
+    marketAddr,
+    live: marketDeployed && onActiveChain && !!address,
+    isConnected,
+    onActiveChain,
+    address,
+    data,
+    pool,
+    loading: q.isLoading,
+    error: q.error,
+    refetch,
+  };
 }
 
-/** Runs auto-chain-switch → approve → write → receipt for one action and reports each step for the modal. */
-export function useLengoTx(onDone: () => void) {
+/** Runs auto-chain-switch → approve → write → receipt for the selected MarketSpec. */
+export function useLengoTx(onDone: () => void, spec?: MarketSpec) {
   const net = useNetwork();
   const { chainId, connector } = useAccount();
   const { switchChainAsync } = useSwitchChain();
@@ -96,8 +160,16 @@ export function useLengoTx(onDone: () => void) {
   const [steps, setSteps] = useState<TxStep[] | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const marketAddr = spec ? spec.market : net.market;
+  const collAddr = spec ? spec.collateral : net.collateral;
+  const debtAddr = spec ? spec.debtAsset : net.debtAsset;
+  const collDec = spec ? spec.collDecimals : net.collDecimals;
+  const debtDec = spec ? spec.debtDecimals : net.debtDecimals;
+  const collSym = spec ? spec.collSymbol : net.collSymbol;
+  const debtSym = spec ? spec.debtSymbol : net.debtSymbol;
+
   const run = useCallback(async (act: Act, amount: string, opts: { all?: boolean; debt?: number } = {}) => {
-    if (busy || !client || !net.isDeployed) return;
+    if (busy || !client || !marketAddr || !collAddr || !debtAddr) return;
     if (chainId !== net.chain.id) {
       const switched = await ensureWalletChain(net.chain, connector, switchChainAsync);
       if (!switched) {
@@ -107,9 +179,9 @@ export function useLengoTx(onDone: () => void) {
     }
 
     const isColl = act === "Deposit" || act === "Withdraw";
-    const dec = isColl ? net.collDecimals : net.debtDecimals;
-    const sym = isColl ? net.collSymbol : net.debtSymbol;
-    const token = isColl ? net.collateral! : net.debtAsset!;
+    const dec = isColl ? collDec : debtDec;
+    const sym = isColl ? collSym : debtSym;
+    const token = isColl ? collAddr : debtAddr;
     const needsApprove = act === "Deposit" || act === "Repay" || act === "Supply";
     let units = parseUnits(amount, dec);
     let approveUnits = units;
@@ -118,7 +190,7 @@ export function useLengoTx(onDone: () => void) {
       units = maxUint256;
     }
     const list: TxStep[] = [
-      ...(needsApprove ? [{ label: `Approve ${formatUnits(approveUnits, dec)} ${sym} to LengoMarket`, state: "wait" as const }] : []),
+      ...(needsApprove ? [{ label: `Approve ${formatUnits(approveUnits, dec)} ${sym} to ${collSym}/${debtSym} Market`, state: "wait" as const }] : []),
       { label: "Confirm in wallet", state: "wait" },
       { label: "Pending onchain", state: "wait" },
       { label: "Confirmed", state: "wait" },
@@ -129,7 +201,7 @@ export function useLengoTx(onDone: () => void) {
     try {
       if (needsApprove) {
         upd(0, { state: "sign" });
-        const h = await writeContractAsync({ address: token, abi: tokenAbi, functionName: "approve", args: [net.market!, approveUnits], chainId: net.chain.id });
+        const h = await writeContractAsync({ address: token, abi: tokenAbi, functionName: "approve", args: [marketAddr, approveUnits], chainId: net.chain.id });
         upd(0, { state: "pending", hash: h });
         const rc = await client.waitForTransactionReceipt({ hash: h, timeout: 120_000 });
         if (rc.status !== "success") throw new Error("Approval reverted");
@@ -139,7 +211,7 @@ export function useLengoTx(onDone: () => void) {
       const fn = { Deposit: "depositCollateral", Withdraw: "withdrawCollateral", Borrow: "borrow", Repay: "repay", Supply: "supply", WithdrawSupply: "withdrawSupply" }[act] as
         "depositCollateral" | "withdrawCollateral" | "borrow" | "repay" | "supply" | "withdrawSupply";
       upd(i, { state: "sign" });
-      const h = await writeContractAsync({ address: net.market!, abi: marketAbi, functionName: fn, args: [units], chainId: net.chain.id });
+      const h = await writeContractAsync({ address: marketAddr, abi: marketAbi, functionName: fn, args: [units], chainId: net.chain.id });
       upd(i, { state: "done", hash: h }); upd(i + 1, { state: "pending", hash: h });
       const rc = await client.waitForTransactionReceipt({ hash: h, timeout: 120_000 });
       if (rc.status !== "success") { upd(i + 1, { state: "failed" }); throw new Error("Transaction reverted"); }
@@ -154,7 +226,7 @@ export function useLengoTx(onDone: () => void) {
         : { kind: "err", title: /rejected|denied/i.test(msg) ? "Rejected in wallet" : `${act} failed`, detail: /rejected|denied/i.test(msg) ? undefined : msg.split("\n")[0].slice(0, 140) });
       setSteps((s) => s && s.map((x) => (x.state === "sign" || x.state === "pending" ? { ...x, state: timeout ? "pending" : "failed", label: timeout ? x.label + " · unknown, check explorer" : /rejected|denied/i.test(msg) ? "Rejected in wallet" : x.label } : x)));
     } finally { setBusy(false); }
-  }, [busy, client, net, chainId, connector, switchChainAsync, writeContractAsync, onDone, toast]);
+  }, [busy, client, marketAddr, collAddr, debtAddr, collDec, debtDec, collSym, debtSym, net, chainId, connector, switchChainAsync, writeContractAsync, onDone, toast]);
 
   return { steps, busy, run, close: () => setSteps(null) };
 }

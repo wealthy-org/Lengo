@@ -1,0 +1,14 @@
+{
+  "chainId": 4663,
+  "oracle": "0xAc892397986B84ff42894739F05fE884D1D4c6da",
+  "debtAsset": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+  "markets": {
+    "WETH": "0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900",
+    "cbBTC": "",
+    "WBTC": "",
+    "USDe": "",
+    "NVDA": "",
+    "TSLA": "",
+    "AAPL": ""
+  }
+}
