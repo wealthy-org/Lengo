@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { injected } from "wagmi/connectors";
-import { DEPLOYMENTS, useNetwork, type NetworkMode } from "@/lib/chain";
+import { DEPLOYMENTS, type NetworkMode } from "@/lib/chain";
+import { useNetwork } from "@/lib/useNetwork";
 import { ensureWalletChain } from "@/lib/walletChain";
 import s from "./app/app.module.css";
 

@@ -5,7 +5,8 @@ import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import s from "../../app/trade.module.css";
 import d from "./scenarios.module.css";
 import { marketAbi, oracleAbi, tokenAbi } from "@/lib/abi";
-import { deployment, isDeployed, rhTestnet, txUrl, addrUrl, useNetwork } from "@/lib/chain";
+import { deployment, isDeployed, rhTestnet, txUrl, addrUrl } from "@/lib/chain";
+import { useNetwork } from "@/lib/useNetwork";
 import { useToast } from "../../Toaster";
 
 type Pos = { account: Address; coll: number; debt: number; hf: number };

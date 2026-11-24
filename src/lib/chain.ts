@@ -1,5 +1,4 @@
 import { defineChain, type Address, type Chain } from "viem";
-import { useSyncExternalStore } from "react";
 
 export type NetworkMode = "testnet" | "mainnet";
 
@@ -155,12 +154,7 @@ export function setNetworkMode(next: NetworkMode) {
   listeners.forEach((l) => l());
 }
 
-function subscribe(cb: () => void) {
+export function subscribeNetworkMode(cb: () => void) {
   listeners.add(cb);
   return () => listeners.delete(cb);
-}
-
-export function useNetwork(): NetworkDeployment & { setMode: (m: NetworkMode) => void } {
-  const mode = useSyncExternalStore(subscribe, getNetworkMode, () => DEFAULT_NETWORK);
-  return { ...DEPLOYMENTS[mode], setMode: setNetworkMode };
 }

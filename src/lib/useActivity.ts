@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 import { useAccount, usePublicClient } from "wagmi";
 import { marketAbi } from "./abi";
-import { useNetwork } from "./chain";
+import { useNetwork } from "./useNetwork";
 
 export type ActivityRow = { type: string; amt: string; tx: string; block: bigint; logIndex: number; group: string };
 

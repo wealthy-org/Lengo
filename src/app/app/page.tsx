@@ -7,7 +7,8 @@ import s from "./trade.module.css";
 import HealthAlert from "./HealthAlert";
 import { useToast } from "../Toaster";
 import { useLengo, useLengoTx } from "@/lib/useLengo";
-import { DEPLOYMENTS, txUrl, addrUrl, useNetwork } from "@/lib/chain";
+import { DEPLOYMENTS, txUrl, addrUrl } from "@/lib/chain";
+import { useNetwork } from "@/lib/useNetwork";
 
 const MAX_LTV = 0.6, LIQ = 0.75, APR = 0.08;
 type Act = "Deposit" | "Borrow" | "Repay" | "Withdraw";

@@ -8,7 +8,8 @@ import { injected } from "wagmi/connectors";
 import s from "../app/trade.module.css";
 import f from "./faucet.module.css";
 import { tokenAbi } from "@/lib/abi";
-import { DEPLOYMENTS, rhTestnet, txUrl, addrUrl, useNetwork } from "@/lib/chain";
+import { DEPLOYMENTS, rhTestnet, txUrl, addrUrl } from "@/lib/chain";
+import { useNetwork } from "@/lib/useNetwork";
 import { ensureWalletChain } from "@/lib/walletChain";
 import { useToast } from "../Toaster";
 

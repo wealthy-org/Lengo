@@ -3,7 +3,7 @@ import { useCallback, useState } from "react";
 import { formatUnits, maxUint256, parseUnits, type Address } from "viem";
 import { useAccount, useReadContracts, useWriteContract, usePublicClient, useSwitchChain } from "wagmi";
 import { marketAbi, priceOracleAbi, tokenAbi } from "./abi";
-import { useNetwork } from "./chain";
+import { useNetwork } from "./useNetwork";
 import { ensureWalletChain } from "./walletChain";
 import { useToast } from "@/app/Toaster";
 
