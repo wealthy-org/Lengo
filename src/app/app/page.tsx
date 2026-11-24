@@ -255,7 +255,7 @@ export default function Markets() {
                         : `Chainlink ${collSym}/USD onchain feed`}
                     </small>
                   </div>
-                  <div className={s.legend}><i className={s.lgP} />Price<i className={s.lgL} />Your liq. price</div>
+                  <div className={s.legend}><i className={s.lgP} />Price {usd(PRICE, priceDigits)}<i className={s.lgL} />Liq. {liqP ? usd(liqP, priceDigits) : "None"}</div>
                 </div>
                 <svg viewBox={`0 0 ${W} ${H}`} className={s.chart} preserveAspectRatio="none">
                   <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#c9f27a" stopOpacity=".18" /><stop offset="1" stopColor="#c9f27a" stopOpacity="0" /></linearGradient></defs>
