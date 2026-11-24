@@ -9,6 +9,7 @@ import Story from "./Story";
 import RiskCalc from "./RiskCalc";
 import Motion from "./Motion";
 import TopNav from "./TopNav";
+import CopyCA from "./CopyCA";
 
 const tick = [["tBTC/tUSDC","APR","8.00%"],["Max LTV","","60%"],["Liq. threshold","","75%"],["BTC → USDC","route","Solana"],["USDG → USDC","route","Preview"],["Chain","Robinhood","46630"],["Intents","1Click","Route Preview"],["Liq. bonus","","5%"]];
 const params = [["Max borrow LTV","60%"],["Liquidation threshold","75%"],["Eligible when","HF < 1"],["Liquidator bonus","5%"],["Close factor","50% per call"],["Borrow APR","8% fixed"],["Protocol reserve","0%"],["Oracle freshness","300 s"]];
@@ -79,6 +80,7 @@ export default function Landing() {
               <a href="#twosides" className="btn">Explore Cross-chain Flow</a>
               <Link href="/app/routes" className="btn">Route Preview</Link>
             </div>
+            <CopyCA address="0xc256e0fb1f93164b8e499746bba593a8e40a7eef" />
             <div className={s.badgesRow}>
               <span>Testnet lending</span>
               <span>Cross-chain route preview</span>
