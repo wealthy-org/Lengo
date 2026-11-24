@@ -64,7 +64,45 @@ async function prices(env: Env) {
   };
 }
 
+// Keep Testnet (46630) DemoOracle fresh with free testnet ETH even when primary Worker env is Mainnet (4663)
+async function refreshTestnetBaseline(keeperKey?: Hex) {
+  if (!keeperKey) return { skipped: "KEEPER_PRIVATE_KEY not set" };
+  const tnChain = defineChain({
+    id: 46630,
+    name: "Robinhood Chain Testnet",
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: { default: { http: ["https://46630.rpc.thirdweb.com", "https://rpc.testnet.chain.robinhood.com"] } },
+  });
+  const ORACLE = "0x7e4B30ef399EFE0fab110Ad9ADc3b39c8d19D5cE" as Address;
+  const TBTC = "0x2e179ff76ef528821f2dE00D7079F1999ccdEB88" as Address;
+  const TUSDC = "0xe1f1C4292C7AED0D0E99DD1233607e776826762d" as Address;
+  const pub = createPublicClient({ chain: tnChain, transport: http() });
+  const [b, u] = await Promise.all(
+    [TBTC, TUSDC].map((a) => pub.readContract({ address: ORACLE, abi: oracleAbi, functionName: "getPrice", args: [a] }) as Promise<readonly [bigint, bigint]>)
+  );
+  const now = Math.floor(Date.now() / 1000);
+  const bAge = now - Number(b[1]);
+  const uAge = now - Number(u[1]);
+  if (bAge <= 180 && uAge <= 180) return { mode: "testnet-keepalive", ages: { tBTC: bAge, tUSDC: uAge }, skipped: "fresh" };
+
+  const account = privateKeyToAccount(keeperKey);
+  const wallet = createWalletClient({ account, chain: tnChain, transport: http() });
+  let nonce = await pub.getTransactionCount({ address: account.address, blockTag: "pending" });
+  const sent: Record<string, Hex> = {};
+  if (bAge > 180) {
+    sent.tBTC = await wallet.writeContract({ address: ORACLE, abi: oracleAbi, functionName: "setPrice", args: [TBTC, parseUnits("100000", 8), false], nonce: nonce++ });
+  }
+  if (uAge > 180) {
+    sent.tUSDC = await wallet.writeContract({ address: ORACLE, abi: oracleAbi, functionName: "setPrice", args: [TUSDC, parseUnits("1", 8), false], nonce: nonce++ });
+  }
+  return { mode: "testnet-keepalive", ages: { tBTC: bAge, tUSDC: uAge }, sent };
+}
+
 export async function runKeeper(env: Env) {
+  // On Mainnet (4663) ChainlinkOracle is keeperless, so use the */4 cron to keep Testnet DemoOracle fresh for free!
+  if (isMainnet(env) && env.KEEPER_ON !== "true") {
+    return refreshTestnetBaseline(env.KEEPER_PRIVATE_KEY);
+  }
   if (env.KEEPER_ON !== "true") return { skipped: "KEEPER_ON is not true" };
   if (!env.KEEPER_PRIVATE_KEY) return { skipped: "KEEPER_PRIVATE_KEY not set" };
 

@@ -28,9 +28,25 @@ async function resolveProvider(connector?: Connector): Promise<Eip1193Provider |
   return null;
 }
 
+function withTimeout<T>(promise: Promise<T>, ms = 3500): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const id = setTimeout(() => reject(new Error("wallet_switch_timeout")), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(id);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(id);
+        reject(e);
+      }
+    );
+  });
+}
+
 /**
- * Ensures the connected wallet is switched to `targetChain` (e.g. RH Testnet 46630 by default).
- * Automatically calls `wallet_addEthereumChain` if the network is not yet configured in the wallet.
+ * Ensures the connected wallet is switched to `targetChain`.
+ * Bounded by short timeouts so multi-extension browsers (Rabby + Phantom + MetaMask) never hang UI state.
  */
 export async function ensureWalletChain(
   targetChain: Chain,
@@ -42,54 +58,53 @@ export async function ensureWalletChain(
 
   if (provider) {
     try {
-      const currentHex = (await provider.request({ method: "eth_chainId" })) as string;
+      const currentHex = (await withTimeout(provider.request({ method: "eth_chainId" }), 1500)) as string;
       if (parseInt(currentHex, 16) === targetChain.id) return true;
     } catch {
       /* continue */
     }
   }
 
-  // 1) Try wagmi switchChainAsync first so wagmi state updates immediately
   if (switchChainAsync) {
     try {
-      await switchChainAsync({ chainId: targetChain.id });
+      await withTimeout(switchChainAsync({ chainId: targetChain.id }), 4000);
       return true;
     } catch (err) {
       if (isUserRejected(err)) return false;
-      // Fall through to explicit EIP-3085 add + switch
     }
   }
 
   if (!provider) return false;
 
-  // 2) Try direct wallet_switchEthereumChain, and on ANY non-rejection error add the chain via wallet_addEthereumChain
   try {
-    await provider.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: hexChainId }],
-    });
+    await withTimeout(
+      provider.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: hexChainId }],
+      }),
+      4000
+    );
     return true;
   } catch (switchErr) {
     if (isUserRejected(switchErr)) return false;
     try {
-      await provider.request({
-        method: "wallet_addEthereumChain",
-        params: [
-          {
-            chainId: hexChainId,
-            chainName: targetChain.name,
-            nativeCurrency: targetChain.nativeCurrency,
-            rpcUrls: targetChain.rpcUrls.default.http,
-            blockExplorerUrls: targetChain.blockExplorers?.default?.url
-              ? [targetChain.blockExplorers.default.url]
-              : undefined,
-          },
-        ],
-      });
-      await provider.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: hexChainId }],
-      });
+      await withTimeout(
+        provider.request({
+          method: "wallet_addEthereumChain",
+          params: [
+            {
+              chainId: hexChainId,
+              chainName: targetChain.name,
+              nativeCurrency: targetChain.nativeCurrency,
+              rpcUrls: [targetChain.rpcUrls.default.http[0]],
+              blockExplorerUrls: targetChain.blockExplorers?.default?.url
+                ? [targetChain.blockExplorers.default.url]
+                : undefined,
+            },
+          ],
+        }),
+        4000
+      );
       return true;
     } catch {
       return false;

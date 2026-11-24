@@ -102,7 +102,7 @@ export default function TopNav() {
     setMenuOpen(false);
     net.setMode(nextMode);
     const target = DEPLOYMENTS[nextMode].chain;
-    if (isConnected) {
+    if (isConnected && chainId !== target.id) {
       autoAttemptedRef.current = `${(address ?? "").toLowerCase()}:${target.id}`;
       setSwitching(true);
       await ensureWalletChain(target, connector, switchChainAsync);
@@ -111,14 +111,12 @@ export default function TopNav() {
   }
 
   async function onChainButtonClick() {
-    // If wallet is connected on the wrong chain, immediately switch it to the active network (RH Testnet by default)
+    setMenuOpen((o) => !o);
     if (wrong && !switching) {
       setSwitching(true);
-      const ok = await ensureWalletChain(net.chain, connector, switchChainAsync);
+      await ensureWalletChain(net.chain, connector, switchChainAsync);
       setSwitching(false);
-      if (ok) return;
     }
-    setMenuOpen((o) => !o);
   }
 
   return (
@@ -142,14 +140,14 @@ export default function TopNav() {
         <div className={s.chainWrap} ref={menuRef}>
           <button
             type="button"
-            className={`${s.chain} ${wrong ? s.wrong : ""}`}
+            className={s.chain}
             title={`${net.chain.name} · ${net.chain.id}`}
             onClick={onChainButtonClick}
           >
             <span className={s.chainIco}>
               <Image src="/logo-mark.png" alt="" width={16} height={16} />
             </span>
-            <span>{switching ? `Switching to ${chainTitle}…` : wrong ? `Switch to ${chainTitle}` : chainTitle}</span> <i>▾</i>
+            <span>{chainTitle}</span> <i>▾</i>
           </button>
           {menuOpen && (
             <div className={s.chainMenu} role="menu">
