@@ -2,6 +2,7 @@ import "server-only";
 import { createPublicClient, http, type Log } from "viem";
 import { marketAbi } from "./abi";
 import { DEFAULT_NETWORK, DEPLOYMENTS, type NetworkMode } from "./chain";
+import { MAINNET_MARKETS } from "./markets";
 import { db } from "./db";
 
 const CHUNK = 999n;       // thirdweb / public RPCs cap eth_getLogs at 1,000 blocks inclusive
@@ -34,12 +35,16 @@ export async function syncIndex(mode: NetworkMode = DEFAULT_NETWORK) {
   const head = await client.getBlockNumber();
   await sql`delete from activity where chain_id = ${chainId} and block_number >= ${from.toString()}`;
 
+  const targetMarkets =
+    mode === "mainnet"
+      ? MAINNET_MARKETS.map((m) => m.market).filter((x): x is NonNullable<typeof x> => !!x)
+      : [net.market!];
   let inserted = 0;
   let chunks = 0;
   let lastEnd = from;
   for (let start = from; start <= head && chunks < MAX_CHUNKS; start += CHUNK + 1n, chunks++) {
     const end = start + CHUNK > head ? head : start + CHUNK;
-    const logs = (await client.getContractEvents({ address: net.market!, abi: marketAbi, fromBlock: start, toBlock: end })) as (Log & { eventName: string; args: Record<string, unknown> })[];
+    const logs = (await client.getContractEvents({ address: targetMarkets, abi: marketAbi, fromBlock: start, toBlock: end })) as (Log & { eventName: string; args: Record<string, unknown> })[];
     for (const l of logs) {
       const f = map[l.eventName];
       if (!f) continue;

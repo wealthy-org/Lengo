@@ -1,6 +1,7 @@
 import s from "../app/trade.module.css";
 import d from "./docs.module.css";
 import { DEPLOYMENTS, addrUrl } from "@/lib/chain";
+import { MAINNET_MARKETS } from "@/lib/markets";
 
 const toc = [
   ["start", "Getting started"],
@@ -29,10 +30,9 @@ const CHAINLINK_ETH_USD = "0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9";
 
 export default function Docs() {
   const mainnetAddrs: [string, string | undefined][] = [
-    ["LengoMarket (WETH / USDG)", DEPLOYMENTS.mainnet.market],
+    ...MAINNET_MARKETS.map((m) => [`LengoMarket (${m.pair})`, m.market] as [string, string | undefined]),
     ["ChainlinkOracle (Adapter)", DEPLOYMENTS.mainnet.oracle],
     ["Chainlink ETH / USD Proxy", CHAINLINK_ETH_USD],
-    ["WETH Collateral (18 dec)", DEPLOYMENTS.mainnet.collateral],
     ["USDG Debt Asset (6 dec)", DEPLOYMENTS.mainnet.debtAsset],
   ];
   const testnetAddrs: [string, string | undefined][] = [

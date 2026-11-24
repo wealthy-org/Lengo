@@ -186,11 +186,22 @@ const map: Record<string, (x: Record<string, unknown>) => Row> = {
   BadDebt: (x) => ({ event: "Bad debt", account: x.borrower as string, counterparty: null, a: x.assets as bigint, b: null }),
 };
 
+const MAINNET_ALL_MARKETS: Address[] = [
+  "0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900", // WETH
+  "0x75ae697448233142Ca295262b25B55e65856352E", // cbBTC
+  "0xC11B5cEd0A906aF856937ea64aBEeEfF04ACfAd3", // WBTC
+  "0x781435104117c5583c6D175784007Ca171d47f30", // USDe
+  "0x7D81A78F6a52264E0064764b2b1250385E5e193A", // NVDA
+  "0xa4CaCae0e5221d6B5a2B1630f7F6f36e6b9eF99a", // TSLA
+  "0xDF97819e82A634ff82689c282067b74D574467A3", // AAPL
+];
+
 export async function runIndexer(env: Env) {
   if (!env.DATABASE_URL) return { skipped: "DATABASE_URL not set" };
   const sql = neon(env.DATABASE_URL);
   const pub = createPublicClient({ chain: chainOf(env), transport: http() });
   const chainId = Number(env.CHAIN_ID);
+  const targetMarkets = chainId === 4663 ? MAINNET_ALL_MARKETS : [env.MARKET];
   const start = BigInt(env.START_BLOCK);
   const cur = (await sql`select last_block from indexer_cursor where chain_id = ${chainId}`) as { last_block: string }[];
   let from = cur[0] ? BigInt(cur[0].last_block) - 20n : start;
@@ -205,7 +216,7 @@ export async function runIndexer(env: Env) {
   for (let s = from; s <= head && chunks < 35; s += 1_000n, chunks++) {
     const e = s + 999n > head ? head : s + 999n;
     const logs = (await pub.getContractEvents({
-      address: env.MARKET,
+      address: targetMarkets,
       abi: marketAbi,
       fromBlock: s,
       toBlock: e,

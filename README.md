@@ -15,24 +15,28 @@ Lengo lets you borrow `USDG` against `WETH` collateral on **Robinhood Chain Main
 
 | | Status |
 |---|---|
-| Isolated lending market (`WETH / USDG`) | ✅ Live on Robinhood Chain Mainnet (`4663`, capped beta) |
-| Keeperless oracle (`ChainlinkOracle` → Chainlink `ETH/USD`) | ✅ Live onchain (`0xAc892397986B84ff42894739F05fE884D1D4c6da`) |
+| 7 Isolated lending markets (`WETH`, `cbBTC`, `WBTC`, `USDe`, `NVDA`, `TSLA`, `AAPL` / `USDG`) | ✅ Live on Robinhood Chain Mainnet (`4663`, capped beta) |
+| Keeperless oracle (`ChainlinkOracle` → 7 Chainlink feeds) | ✅ Live onchain (`0xAc892397986B84ff42894739F05fE884D1D4c6da`) |
 | Cross-chain payout via NEAR Intents 1Click | ✅ Live quotes (`dry: true`) + Live execution (`dry: false`) |
 | Testnet sandbox (`tBTC / tUSDC`, chain `46630`) | ✅ Live for risk & liquidation testing |
 | Native BTC / ZEC collateral | 🔬 Research ([docs/M5-BTC-SPIKE.md](docs/M5-BTC-SPIKE.md)) |
-| External security audit | ⏳ Capped beta (`25 WETH` / `50,000 USDG`) |
+| External security audit | ⏳ Capped beta |
 
 ## Deployed contracts: Robinhood Chain Mainnet (4663)
 
 | Contract | Address |
 |---|---|
 | LengoMarket (`WETH / USDG`) | [`0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900`](https://robinhoodchain.blockscout.com/address/0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900) |
-| ChainlinkOracle | [`0xAc892397986B84ff42894739F05fE884D1D4c6da`](https://robinhoodchain.blockscout.com/address/0xAc892397986B84ff42894739F05fE884D1D4c6da) |
-| Chainlink `ETH / USD` Proxy | [`0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9`](https://robinhoodchain.blockscout.com/address/0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9) |
-| Collateral `WETH` (18 dec) | [`0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73`](https://robinhoodchain.blockscout.com/address/0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73) |
+| LengoMarket (`cbBTC / USDG`) | [`0x75ae697448233142Ca295262b25B55e65856352E`](https://robinhoodchain.blockscout.com/address/0x75ae697448233142Ca295262b25B55e65856352E) |
+| LengoMarket (`WBTC / USDG`) | [`0xC11B5cEd0A906aF856937ea64aBEeEfF04ACfAd3`](https://robinhoodchain.blockscout.com/address/0xC11B5cEd0A906aF856937ea64aBEeEfF04ACfAd3) |
+| LengoMarket (`USDe / USDG`) | [`0x781435104117c5583c6D175784007Ca171d47f30`](https://robinhoodchain.blockscout.com/address/0x781435104117c5583c6D175784007Ca171d47f30) |
+| LengoMarket (`NVDA / USDG`) | [`0x7D81A78F6a52264E0064764b2b1250385E5e193A`](https://robinhoodchain.blockscout.com/address/0x7D81A78F6a52264E0064764b2b1250385E5e193A) |
+| LengoMarket (`TSLA / USDG`) | [`0xa4CaCae0e5221d6B5a2B1630f7F6f36e6b9eF99a`](https://robinhoodchain.blockscout.com/address/0xa4CaCae0e5221d6B5a2B1630f7F6f36e6b9eF99a) |
+| LengoMarket (`AAPL / USDG`) | [`0xDF97819e82A634ff82689c282067b74D574467A3`](https://robinhoodchain.blockscout.com/address/0xDF97819e82A634ff82689c282067b74D574467A3) |
+| ChainlinkOracle (Keeperless Adapter) | [`0xAc892397986B84ff42894739F05fE884D1D4c6da`](https://robinhoodchain.blockscout.com/address/0xAc892397986B84ff42894739F05fE884D1D4c6da) |
 | Debt `USDG` (6 dec) | [`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`](https://robinhoodchain.blockscout.com/address/0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168) |
 
-Start block `122296154` · Manifest: [`contracts/deployments/4663.json`](contracts/deployments/4663.json).
+Start block `122296154` · Manifests: [`contracts/deployments/4663.json`](contracts/deployments/4663.json) & [`contracts/deployments/4663-markets.json`](contracts/deployments/4663-markets.json).
 
 ## How it works
 
