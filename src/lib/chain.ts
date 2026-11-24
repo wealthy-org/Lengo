@@ -2,12 +2,19 @@ import { defineChain, type Address, type Chain } from "viem";
 
 export type NetworkMode = "testnet" | "mainnet";
 
+const MULTICALL3 = "0xcA11bde05977b3631167028862bE2a173976CA11" as Address;
+
 export const rhTestnet = defineChain({
   id: 46630,
   name: "Robinhood Chain Testnet",
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: { default: { http: ["https://rpc.testnet.chain.robinhood.com"] } },
+  rpcUrls: {
+    default: {
+      http: ["https://46630.rpc.thirdweb.com", "https://rpc.testnet.chain.robinhood.com"],
+    },
+  },
   blockExplorers: { default: { name: "RH Testnet Explorer", url: "https://explorer.testnet.chain.robinhood.com" } },
+  contracts: { multicall3: { address: MULTICALL3 } },
   testnet: true,
 });
 
@@ -24,6 +31,7 @@ export const rhMainnet = defineChain({
     },
   },
   blockExplorers: { default: { name: "RH Explorer", url: "https://robinhoodchain.blockscout.com" } },
+  contracts: { multicall3: { address: MULTICALL3 } },
   testnet: false,
 });
 

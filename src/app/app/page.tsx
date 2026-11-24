@@ -50,9 +50,9 @@ export default function Markets() {
 
   const D = L.data;
   const hasRealMarket = net.isDeployed && !!L.address;
-  const coll = D ? D.coll : isMainnet ? 2.5 : simColl;
-  const debt = D ? D.debt : isMainnet ? 1600 : simDebt;
-  const wallet = D ? { coll: D.collBal, debt: D.debtBal } : isMainnet ? { coll: 1.5, debt: 2500 } : simWallet;
+  const coll = net.isDeployed ? (D ? D.coll : 0) : simColl;
+  const debt = net.isDeployed ? (D ? D.debt : 0) : simDebt;
+  const wallet = net.isDeployed ? (D ? { coll: D.collBal, debt: D.debtBal } : { coll: 0, debt: 0 }) : simWallet;
   const P = L.pool;
   const PRICE = P ? P.price : isMainnet && hist ? hist.latest : net.simPrice;
   const nowS = Math.floor(Date.now() / 1000);
@@ -103,7 +103,11 @@ export default function Markets() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  const pool = P ? { supplied: P.supplied, borrowed: P.borrowed } : isMainnet ? { supplied: 50_000, borrowed: 18_400 } : { supplied: 250_000, borrowed: 118_400 };
+  const pool = net.isDeployed
+    ? P
+      ? { supplied: P.supplied, borrowed: P.borrowed }
+      : { supplied: 0, borrowed: 0 }
+    : { supplied: 250_000, borrowed: 118_400 };
   const avail = Math.max(0, pool.supplied - pool.borrowed);
 
   const a = parseFloat(amt) || 0;
