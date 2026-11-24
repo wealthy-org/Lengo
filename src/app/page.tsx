@@ -23,18 +23,18 @@ const disclosure = [
   ["Safety rails", "Capped TVL + non-custodial pause", "Timelock multisig"],
 ];
 const phases = [
-  ["Phase 1", "LIVE", "Lending lifecycle", ["Isolated tBTC/tUSDC market", "Faucet + dashboard", "Deposit → withdraw on RH"], 100],
-  ["Phase 2", "BUILDING", "Risk demo", ["Demo oracle scenarios", "Two-wallet liquidation", "Accounting invariants"], 60],
-  ["Phase 3", "BUILDING", "Multichain preview", ["1Click token discovery", "Route preview quotes", "Expiry + error states"], 40],
-  ["Phase 4", "NEXT", "Release package", ["Public testnet app", "Docs + QA", "Proof index"], 10],
-  ["Phase 5", "RESEARCH", "Native BTC", ["Custody + signer model", "Proof and redemption", "Liquidation feasibility"], 0],
+  ["Phase 1", "LIVE", "Lending engine", ["Isolated WETH/USDG market", "RAY debt index + virtual shares", "Live on RH Mainnet (4663)"], 100],
+  ["Phase 2", "LIVE", "Keeperless risk", ["Chainlink ETH/USD oracle", "50% close factor liquidation", "Capped TVL + non-custodial pause"], 100],
+  ["Phase 3", "LIVE", "Multichain routing", ["NEAR Intents 1Click live execute", "USDG → USDC Solana/Base/Arb", "SOL & Base → WETH inflow"], 100],
+  ["Phase 4", "NEXT", "Market expansion", ["cbBTC / USDG CCIP market", "External security audit", "Higher TVL caps"], 35],
+  ["Phase 5", "RESEARCH", "Native BTC & ZEC", ["Custody + signer model", "Proof and redemption", "Liquidation feasibility"], 10],
 ] as const;
 const contracts = [
-  ["TestCollateralToken.sol", "tBTC, 8 decimals, capped mint, testnet only", "Asset"],
-  ["TestDebtToken.sol", "tUSDC, 6 decimals, capped mint, testnet only", "Asset"],
-  ["DemoOracle.sol", "Price + timestamp, validity checks, labeled overrides", "Oracle"],
-  ["LengoMarket.sol", "Collateral, lender shares, debt index, liquidate", "Core"],
-  ["Indexer / API", "Events, quotes, alerts. Cannot touch balances", "Read"],
+  ["LengoMarket.sol", "0x8f1C…5900 · WETH/USDG isolated market, RAY index, liquidate", "Core"],
+  ["ChainlinkOracle.sol", "0xAc89…c6da · Keeperless Chainlink ETH/USD adapter", "Oracle"],
+  ["WETH (Mainnet)", "0x0Bd7…AD73 · Wrapped Ether, 18 decimals, collateral", "Asset"],
+  ["USDG (Mainnet)", "0x5fc5…d168 · Global Dollar, 6 decimals, borrow & supply", "Asset"],
+  ["Indexer / 1Click API", "Neon event read-model + NEAR Intents routing proxy", "Read"],
 ];
 
 function Head({ n, label, a, b, aside }: { n: string; label: string; a: string; b: string; aside?: string }) {
@@ -127,9 +127,9 @@ export default function Landing() {
       </section>
 
       <section className={s.section}>
-        <Head n="03" label="Liquidation demo" a="Two wallets." b="One price drop. Proof onchain." aside="An authorized testnet operator moves the demo oracle under a visible Demo price override. Once HF drops below 1, a separate liquidator repays up to half the debt and takes tBTC plus a 5% bonus." />
+        <Head n="03" label="Liquidation engine" a="Chainlink feed." b="Deterministic liquidation. Proof onchain." aside="Chainlink updates ETH/USD directly on Robinhood Chain. If a borrower's Health Factor drops below 1.00, any liquidator can repay up to 50% of the USDG debt and seize WETH collateral plus a 5% bonus." />
         <div className={s.liq} data-stagger>
-          {[["01", "Oracle update", "Demo price override event"], ["02", "HF < 1", "Position becomes eligible"], ["03", "Liquidate ≤ 50%", "Liquidator pays tUSDC"], ["04", "Settle", "tBTC + 5% bonus out, debt down"]].map(([n, t, d], i) => (
+          {[["01", "Chainlink round", "Onchain ETH/USD price drop"], ["02", "HF < 1", "Position becomes eligible"], ["03", "Liquidate ≤ 50%", "Liquidator repays USDG"], ["04", "Settle", "WETH + 5% bonus out, debt down"]].map(([n, t, d], i) => (
             <div key={n} className={`${s.liqStep} ${i === 2 ? s.liqHot : ""}`}><span>{n}</span><b>{t}</b><p>{d}</p></div>
           ))}
         </div>
@@ -148,9 +148,9 @@ Liq. price     = D / (qty × liqThreshold)`}</pre>
       </section>
 
       <section id="disclosure" className={s.section}>
-        <Head n="05" label="Disclosure" a="What is real." b="What is preview." aside="Claims are only useful when they are exact. This is what release 0.1 actually does, including everything it does not." />
+        <Head n="05" label="Disclosure" a="What is live." b="What is next." aside="Claims are only useful when they are exact. Every live capability below is deployed and verifiable on Robinhood Chain Mainnet (4663)." />
         <div className={`${s.table} bevel`} data-reveal>
-          <div className={s.tHead}><span>Capability</span><span><i className={s.pill}>● v0.1 testnet</i></span><span><i className={s.pill}>○ Next</i></span></div>
+          <div className={s.tHead}><span>Capability</span><span><i className={s.pill}>● Mainnet · 4663</i></span><span><i className={s.pill}>○ Next</i></span></div>
           {disclosure.map(([a, b, c]) => (
             <div key={a} className={s.tRow}><span>{a}</span><span className={b.startsWith("Not") ? s.muted : ""}>{b}</span><span className={s.muted}>{c}</span></div>
           ))}
@@ -189,7 +189,7 @@ Liq. price     = D / (qty × liqThreshold)`}</pre>
       <section className={s.cta}>
         <div className={`${s.ctaBox} bevel`} data-reveal>
           <h2 data-split><span>Deposit.</span><span>Borrow.</span><span className={s.dim}>Route.</span></h2>
-          <p>Mint test assets, open a position, push it toward liquidation, and check every tx on the explorer.</p>
+          <p>Supply USDG, deposit WETH collateral, route payouts across chains via NEAR Intents, and verify every tx on Robinhood Chain.</p>
         </div>
         <div className={`${s.ctaBtns} bevel`}>
           <a href="https://robinhoodchain.blockscout.com/address/0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900" target="_blank" rel="noreferrer" className="btn">RH Mainnet explorer ↗</a>
@@ -198,8 +198,8 @@ Liq. price     = D / (qty × liqThreshold)`}</pre>
       </section>
 
       <footer className={`${s.foot} bevel`}>
-        <Link href="/app">Markets</Link><Link href="/app/routes">Routes</Link><Link href="/app/activity">Activity</Link><Link href="/faucet">Faucet</Link><Link href="/docs">Docs</Link><a href="https://x.com/lengoapp" target="_blank" rel="noreferrer">X · @lengoapp</a>
-        <span>Demo assets · no value</span><span className={s.status}>Status <i /></span>
+        <Link href="/app">Markets</Link><Link href="/app/routes">Routes</Link><Link href="/app/activity">Activity</Link><Link href="/docs">Docs</Link><a href="https://robinhoodchain.blockscout.com/address/0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900" target="_blank" rel="noreferrer">Contract · 0x8f1C…5900</a><a href="https://x.com/lengoapp" target="_blank" rel="noreferrer">X · @lengoapp</a>
+        <span>Robinhood Chain Mainnet · Capped Beta</span><span className={s.status}>Mainnet <i /></span>
       </footer>
     </div>
   );

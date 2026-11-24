@@ -2,88 +2,165 @@ import s from "../app/trade.module.css";
 import d from "./docs.module.css";
 import { DEPLOYMENTS, addrUrl } from "@/lib/chain";
 
-const toc = [["start", "Getting started"], ["formulas", "Formulas"], ["params", "Parameters"], ["contracts", "Contracts"], ["routes", "Cross-chain routes"], ["limits", "Limits & safety"], ["roadmap", "Roadmap"]];
-const params = [["Max borrow LTV", "60%"], ["Liquidation threshold", "75%"], ["Liquidation eligibility", "HF < 1"], ["Liquidator bonus", "5% of repaid debt value"], ["Close factor", "≤ 50% of debt per call"], ["Borrow APR", "8% fixed, simple accrual into a global index"], ["Safety rails", "Configurable collateral/supply TVL caps + guardian pause (never blocks repay or exit)"], ["Oracle freshness", "300 s (testnet) / 900 s (mainnet). Borrow & withdraw-with-debt require a fresh price"]];
+const toc = [
+  ["start", "Getting started"],
+  ["formulas", "Formulas"],
+  ["params", "Parameters"],
+  ["contracts", "Contracts"],
+  ["routes", "Cross-chain routes"],
+  ["limits", "Safety & limits"],
+  ["roadmap", "Roadmap"],
+];
+
+const params = [
+  ["Market pair", "WETH (18 dec collateral) / USDG (6 dec debt)"],
+  ["Max borrow LTV", "60%"],
+  ["Liquidation threshold", "75%"],
+  ["Liquidation eligibility", "HF < 1.00"],
+  ["Liquidator bonus", "5% of repaid debt value"],
+  ["Close factor", "≤ 50% of debt per liquidation call"],
+  ["Borrow APR", "8% fixed, per-second accrual into a global RAY index"],
+  ["Beta TVL caps", "25 WETH collateral cap · 50,000 USDG supply cap"],
+  ["Emergency pause", "Guardian can pause new deposits/borrows; repay, withdraw & liquidate never pause"],
+  ["Price oracle", "Chainlink ETH/USD proxy (7,200 s heartbeat guard, keeperless) + $1.00 USDG peg"],
+];
+
+const CHAINLINK_ETH_USD = "0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9";
 
 export default function Docs() {
+  const mainnetAddrs: [string, string | undefined][] = [
+    ["LengoMarket (WETH / USDG)", DEPLOYMENTS.mainnet.market],
+    ["ChainlinkOracle (Adapter)", DEPLOYMENTS.mainnet.oracle],
+    ["Chainlink ETH / USD Proxy", CHAINLINK_ETH_USD],
+    ["WETH Collateral (18 dec)", DEPLOYMENTS.mainnet.collateral],
+    ["USDG Debt Asset (6 dec)", DEPLOYMENTS.mainnet.debtAsset],
+  ];
   const testnetAddrs: [string, string | undefined][] = [
     ["LengoMarket (Testnet · 46630)", DEPLOYMENTS.testnet.market],
+    ["DemoOracle (Testnet)", DEPLOYMENTS.testnet.oracle],
     ["tBTC (8 dec · Testnet)", DEPLOYMENTS.testnet.collateral],
     ["tUSDC (6 dec · Testnet)", DEPLOYMENTS.testnet.debtAsset],
-    ["DemoOracle (Testnet)", DEPLOYMENTS.testnet.oracle],
   ];
-  const mainnetAddrs: [string, string | undefined][] = [
-    ["LengoMarket (Mainnet · 4663)", DEPLOYMENTS.mainnet.market],
-    ["WETH (18 dec · Mainnet)", DEPLOYMENTS.mainnet.collateral],
-    ["USDG (6 dec · Mainnet)", DEPLOYMENTS.mainnet.debtAsset],
-    ["PriceOracle (Mainnet)", DEPLOYMENTS.mainnet.oracle],
-  ];
+
   return (
     <>
       <div className={s.pageHead}>
-        <div><h1>Docs</h1><p>How Lengo v0.1 works, what it computes, and what it does not do yet.</p></div>
-        <span>Release 0.1 · Robinhood Chain Testnet</span>
+        <div>
+          <h1>Docs</h1>
+          <p>Architecture, risk math, deployed Robinhood Chain Mainnet contracts, and cross-chain routing.</p>
+        </div>
+        <span>Mainnet Beta · Robinhood Chain · 4663</span>
       </div>
       <div className={d.wrap}>
-        <nav className={d.toc}>{toc.map(([id, t], i) => <a key={id} href={`#${id}`}><span>{String(i + 1).padStart(2, "0")}</span>{t}</a>)}</nav>
+        <nav className={d.toc}>
+          {toc.map(([id, t], i) => (
+            <a key={id} href={`#${id}`}>
+              <span>{String(i + 1).padStart(2, "0")}</span>
+              {t}
+            </a>
+          ))}
+        </nav>
         <article className={d.body}>
           <section id="start">
-            <h2>Getting started</h2>
+            <h2>Getting started on Mainnet</h2>
             <ol>
-              <li>Connect an EVM wallet and switch to Robinhood Chain Testnet (chain ID 46630).</li>
-              <li>Get testnet ETH for gas, then mint tBTC and tUSDC on the <a href="/faucet">Faucet</a>.</li>
-              <li>On <a href="/app">Markets</a>, deposit tBTC, borrow tUSDC inside 60% LTV, then repay and withdraw.</li>
-              <li>Every action is a real testnet transaction with an explorer link. <a href="/app/activity">Activity</a> is rebuilt from contract events.</li>
+              <li>Connect an EVM wallet — Lengo automatically configures and switches to <b>Robinhood Chain Mainnet (chain ID 4663)</b>.</li>
+              <li>Need WETH or ETH on Robinhood Chain? Use <a href="/app/routes">Routes</a> (e.g. <code>SOL → WETH</code> or <code>USDC Base → WETH</code>) via NEAR Intents 1Click.</li>
+              <li>On <a href="/app">Markets</a>, supply <b>USDG</b> to earn borrower interest, or deposit <b>WETH</b> collateral and borrow <b>USDG</b> up to 60% LTV.</li>
+              <li>Route borrowed <b>USDG</b> out to <b>USDC</b> on Solana, Base, Arbitrum, or Ethereum in <a href="/app/routes">Routes</a> (<b>Execute</b> mode), and verify every event in <a href="/app/activity">Activity</a>.</li>
             </ol>
           </section>
+
           <section id="formulas">
             <h2>Formulas</h2>
-            <pre>{`C = collateral value in USD (oracle price × quantity)
-D = debt including accrued interest, valued with the debt price at read time
+            <pre>{`C = collateral value in USD (Chainlink ETH/USD price × WETH quantity)
+D = USDG debt including accrued interest (debtShares × projectedBorrowIndex / 1e27)
 
 LTV                     = D / C
 Health factor           = (C × liquidationThreshold) / D
 Extra borrow capacity   = max(0, C × maxBorrowLTV − D)
 Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pre>
-            <p>With D = 0 the UI shows <b>No debt</b>, never NaN. A position without collateral cannot borrow. The liquidation price is an estimate: it moves as interest accrues or the debt price changes.</p>
-            <p className={d.ex}>Fixture: C = $10,000, D = $4,000 → LTV 40%, HF 1.875, extra capacity $2,000.</p>
+            <p>With D = 0 the UI displays <b>No debt</b>, never NaN. Repay All passes <code>type(uint256).max</code> so debt shares clear to exact zero with no dust.</p>
+            <p className={d.ex}>Example: 2 WETH at $1,700 ($3,400) with 1,360 USDG debt → LTV 40.0%, HF 1.875, liquidation price $906.67.</p>
           </section>
+
           <section id="params">
-            <h2>Parameters</h2>
-            <p>Testnet demo values set at deployment, not mainnet recommendations. Changing them means deploying a new market.</p>
-            <div className={d.table}>{params.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div>
-          </section>
-          <section id="contracts">
-            <h2>Contracts</h2>
+            <h2>Mainnet parameters (WETH / USDG)</h2>
+            <p>Immutable risk parameters deployed on Robinhood Chain Mainnet (4663), paired with conservative beta TVL caps.</p>
             <div className={d.table}>
-              {testnetAddrs.map(([k, v]) => <div key={k}><span>{k}</span><b>{v ? <a href={addrUrl(v, "testnet")} target="_blank" rel="noreferrer">{v} ↗</a> : "Not deployed yet"}</b></div>)}
-              {mainnetAddrs.map(([k, v]) => <div key={k}><span>{k}</span><b>{v ? <a href={addrUrl(v, "mainnet")} target="_blank" rel="noreferrer">{v} ↗</a> : "Ready to deploy via DeployMainnet.s.sol"}</b></div>)}
+              {params.map(([k, v]) => (
+                <div key={k}>
+                  <span>{k}</span>
+                  <b>{v}</b>
+                </div>
+              ))}
             </div>
-            <p>Solidity 0.8.24, Foundry, OpenZeppelin 5.1 (pinned). Mainnet uses <code>PriceOracle</code> (Ownable2Step + keeper role + min/max bounds + per-update deviation circuit breaker, no demoOverride) and <code>LengoMarket</code> with TVL caps and non-custodial pause guards.</p>
           </section>
+
+          <section id="contracts">
+            <h2>Deployed contracts — Robinhood Chain Mainnet (4663)</h2>
+            <div className={d.table}>
+              {mainnetAddrs.map(([k, v]) => (
+                <div key={k}>
+                  <span>{k}</span>
+                  <b>{v ? <a href={addrUrl(v, "mainnet")} target="_blank" rel="noreferrer">{v} ↗</a> : "—"}</b>
+                </div>
+              ))}
+            </div>
+            <p>
+              Built with Solidity 0.8.24, Foundry, and pinned OpenZeppelin 5.1.0. Verified on Sourcify &amp; Blockscout.{" "}
+              <code>ChainlinkOracle</code> is completely keeperless — it reads Chainlink&apos;s official <code>ETH / USD</code> proxy directly via <code>latestRoundData()</code> with round-completeness and heartbeat staleness checks, with zero manual price override functions.
+            </p>
+            <h3 style={{ marginTop: 24, fontSize: 13, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--tx2)" }}>
+              Testnet sandbox — Robinhood Chain Testnet (46630)
+            </h3>
+            <div className={d.table}>
+              {testnetAddrs.map(([k, v]) => (
+                <div key={k}>
+                  <span>{k}</span>
+                  <b>{v ? <a href={addrUrl(v, "testnet")} target="_blank" rel="noreferrer">{v} ↗</a> : "—"}</b>
+                </div>
+              ))}
+            </div>
+          </section>
+
           <section id="routes">
             <h2>Cross-chain routes (Preview &amp; Live Execute)</h2>
-            <p>The Routes page connects to NEAR Intents 1Click in two modes: <b>Quote Preview</b> (<code>dry: true</code>, no deposit address) and <b>Live Execute</b> (<code>dry: false</code>, issues a real deposit address, supports 1-click wallet transfer on Robinhood Chain Mainnet, submits txHash to solvers, and polls live settlement status).</p>
+            <p>
+              The <a href="/app/routes">Routes</a> page integrates NEAR Intents 1Click in two modes: <b>Quote Preview</b> (<code>dry: true</code>, instant market quotes with no deposit address) and <b>Live Execute</b> (<code>dry: false</code>, issues a real deposit address, supports 1-click wallet transfer on Robinhood Chain Mainnet, submits <code>txHash</code> to solvers, and polls live settlement status).
+            </p>
             <ul>
-              <li><b>Borrow payout</b>: route borrowed USDG on Robinhood Chain (<code>hood</code>) directly to USDC on Solana, Base, Arbitrum, or Ethereum.</li>
-              <li><b>Collateral inflow</b>: route USDC from Base into WETH on Robinhood Chain Mainnet.</li>
-              <li><b>Asset routing</b>: BTC/ZEC swap quotes via NEAR Intents. A swap is not native collateral.</li>
+              <li><b>Borrow payout</b>: convert borrowed <code>USDG</code> on Robinhood Chain directly into <code>USDC</code> on Solana, Base, Arbitrum, or Ethereum.</li>
+              <li><b>Collateral inflow</b>: bridge <code>SOL</code> from Solana or <code>USDC</code> from Base directly into <code>WETH</code> on Robinhood Chain Mainnet.</li>
+              <li><b>Asset routing</b>: cross-chain <code>BTC</code> / <code>ZEC</code> swap quotes via NEAR Intents (distinct from native collateral locking).</li>
             </ul>
           </section>
+
           <section id="limits">
-            <h2>Limits in v0.1</h2>
+            <h2>Safety &amp; current scope</h2>
             <ul>
-              <li>tBTC has no Bitcoin backing. tUSDC has no value and is not Circle USDC.</li>
-              <li>Native BTC/ZEC collateral is under development. No real deposits are accepted.</li>
-              <li>No private positions. Confidential swap settlement does not hide collateral, debt or HF on a public RH contract.</li>
-              <li>Liquidation demo uses an authorized oracle override labeled <code>Demo price override</code>, emitted onchain.</li>
-              <li>Browser notifications only work while the app is open.</li>
+              <li><b>Capped Mainnet Beta</b>: Contracts are verified and covered by unit, fuzz, edge-case, and 128,000-call invariant suites, but have not yet undergone an external third-party audit. TVL is capped at 25 WETH / 50,000 USDG during beta.</li>
+              <li><b>Non-custodial exit guarantee</b>: Even if the guardian pauses new deposits/borrows or if the oracle goes stale, <code>repay</code>, debt-free <code>withdrawCollateral</code>, and <code>withdrawSupply</code> remain permanently open.</li>
+              <li><b>Native BTC / ZEC collateral</b>: Currently in research (Mainnet uses <code>WETH</code> collateral today, with <code>cbBTC</code> CCIP market next).</li>
+              <li><b>Charts</b>: Historical market candles in the UI are powered by Pyth Pro, while all onchain LTV and liquidation checks strictly read Chainlink on Robinhood Chain.</li>
             </ul>
           </section>
+
           <section id="roadmap">
             <h2>Roadmap</h2>
             <div className={d.table}>
-              {[["M1", "Lending lifecycle on RH testnet"], ["M2", "Risk demo: oracle scenarios, two-wallet liquidation"], ["M3", "Multichain preview: discovery, dry quotes, error states"], ["M4", "Release package: public testnet, docs, QA, proof index"], ["M5", "BTC spike: custody, proof, redemption, liquidation feasibility"]].map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}
+              {[
+                ["Phase 1 · LIVE", "Isolated lending engine + Testnet sandbox (46630)"],
+                ["Phase 2 · LIVE", "Robinhood Chain Mainnet (4663) WETH / USDG + keeperless ChainlinkOracle"],
+                ["Phase 3 · LIVE", "NEAR Intents 1Click cross-chain Quote Preview + Live Execution"],
+                ["Phase 4 · NEXT", "cbBTC / USDG isolated market (CCIP) + external security audit"],
+                ["Phase 5 · RESEARCH", "Native BTC & ZEC collateral locking, proof & redemption"],
+              ].map(([k, v]) => (
+                <div key={k}>
+                  <span>{k}</span>
+                  <b>{v}</b>
+                </div>
+              ))}
             </div>
           </section>
         </article>
