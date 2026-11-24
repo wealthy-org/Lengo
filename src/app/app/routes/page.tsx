@@ -32,11 +32,13 @@ type Quote = {
 };
 
 const chainKey: Record<string, string> = { Solana: "sol", Ethereum: "eth", Base: "base", Arbitrum: "arb", "Robinhood (hood)": "hood", Bitcoin: "btc", Zcash: "zec" };
+const isEvmLabel = (label: string) => ["Ethereum", "Base", "Arbitrum", "Robinhood (hood)"].includes(label);
 const kinds = [
-  { id: "payout", label: "Borrow payout", sub: "USDG hood → USDC", from: "USDG", fromChain: "Robinhood (hood)", to: "USDC", dests: ["Solana", "Ethereum", "Base", "Arbitrum"], note: "Convert borrowed USDG on Robinhood Chain to USDC on your target chain via NEAR Intents 1Click.", c1: "#7fe0b4", c2: "#7fb6f2", t1: "G", t2: "$" },
-  { id: "inflow", label: "Collateral inflow", sub: "USDC → WETH hood", from: "USDC", fromChain: "Base", to: "WETH", dests: ["Robinhood (hood)"], note: "Route USDC from Base directly into WETH on Robinhood Chain Mainnet to deposit as collateral.", c1: "#7fb6f2", c2: "#627eea", t1: "$", t2: "Ξ" },
-  { id: "asset", label: "Asset routing", sub: "BTC → USDC · swap", from: "BTC", fromChain: "Bitcoin", to: "USDC", dests: ["Solana", "Base", "Robinhood (hood)"], note: "A cross-chain swap quote via NEAR Intents. Does not lock native BTC as lending collateral.", c1: "#f2a93b", c2: "#7fb6f2", t1: "₿", t2: "$" },
-  { id: "zec", label: "Asset routing", sub: "ZEC → USDC · swap", from: "ZEC", fromChain: "Zcash", to: "USDC", dests: ["Solana", "Base"], note: "Transparent vs shielded support depends on the provider.", c1: "#e8c46b", c2: "#7fb6f2", t1: "Z", t2: "$" },
+  { id: "payout", label: "Borrow payout", sub: "USDG hood → USDC", from: "USDG", fromChain: "Robinhood (hood)", to: "USDC", dests: ["Solana", "Base", "Arbitrum", "Ethereum"], defaultAmt: "100", note: "Convert borrowed USDG on Robinhood Chain to USDC on your target chain via NEAR Intents 1Click." },
+  { id: "sol-inflow", label: "Solana bridge", sub: "SOL → WETH hood", from: "SOL", fromChain: "Solana", to: "WETH", dests: ["Robinhood (hood)"], defaultAmt: "1", note: "Bridge SOL from Solana directly into WETH collateral on Robinhood Chain Mainnet." },
+  { id: "inflow", label: "EVM inflow", sub: "USDC Base → WETH hood", from: "USDC", fromChain: "Base", to: "WETH", dests: ["Robinhood (hood)"], defaultAmt: "100", note: "Route USDC from Base directly into WETH on Robinhood Chain Mainnet to deposit as collateral." },
+  { id: "asset", label: "Asset routing", sub: "BTC → USDC · swap", from: "BTC", fromChain: "Bitcoin", to: "USDC", dests: ["Solana", "Base"], defaultAmt: "0.01", note: "A cross-chain swap quote via NEAR Intents. Does not lock native BTC as lending collateral." },
+  { id: "zec", label: "Asset routing", sub: "ZEC → USDC · swap", from: "ZEC", fromChain: "Zcash", to: "USDC", dests: ["Solana", "Base"], defaultAmt: "1", note: "Transparent t-address routing via NEAR Intents 1Click." },
 ];
 
 export default function Routes() {
@@ -65,19 +67,30 @@ export default function Routes() {
   const reqId = useRef(0);
 
   const pick = (x: typeof kinds[number]) => {
+    const nextDest = x.dests[0];
     setK(x);
-    setDest(x.dests[0]);
+    setAmt(x.defaultAmt);
+    setDest(nextDest);
     setState("idle");
     setQ(null);
     setSwapStatus(null);
     setDepositTx(null);
+    setRefundTo(isEvmLabel(x.fromChain) && address ? address : "");
+    setRecipient(isEvmLabel(nextDest) && address ? address : "");
   };
 
-  // Auto-fill Robinhood refund/recipient with connected EVM wallet when blank
+  // Sync EVM wallet address ONLY onto EVM origin/destination fields, clearing mismatched 0x addresses on non-EVM chains
   useEffect(() => {
-    if (!address) return;
-    if (k.fromChain === "Robinhood (hood)" && !refundTo) setRefundTo(address);
-    if (dest === "Robinhood (hood)" && !recipient) setRecipient(address);
+    if (isEvmLabel(k.fromChain)) {
+      if (address && !refundTo) setRefundTo(address);
+    } else if (refundTo.startsWith("0x")) {
+      setRefundTo("");
+    }
+    if (isEvmLabel(dest)) {
+      if (address && !recipient) setRecipient(address);
+    } else if (recipient.startsWith("0x")) {
+      setRecipient("");
+    }
   }, [address, k.fromChain, dest, refundTo, recipient]);
 
   useEffect(() => {
@@ -341,8 +354,8 @@ export default function Routes() {
               </div>
               <div className={s.fRow}><input value={state === "ok" ? q?.amountOut ?? "—" : "—"} readOnly aria-label="Amount out" /><span className={s.tok}>{k.to}</span></div>
             </div>
-            <label className={s.field}><div className={s.fTop}><span>Recipient · {dest}</span><span>{execMode ? "your wallet" : "required"}</span></div><input className={r.addr} placeholder={`${chainKey[dest] ?? ""} address`} value={recipient} onChange={(e) => setRecipient(e.target.value)} /></label>
-            <label className={s.field}><div className={s.fTop}><span>Refund · {k.fromChain}</span><span>origin chain</span></div><input className={r.addr} placeholder={`${chainKey[k.fromChain] ?? ""} address`} value={refundTo} onChange={(e) => setRefundTo(e.target.value)} /></label>
+            <label className={s.field}><div className={s.fTop}><span>Recipient · {dest}</span><span>{execMode ? "required (live)" : "optional in preview"}</span></div><input className={r.addr} placeholder={execMode ? `Your ${dest} address` : `Optional (${dest} preview)`} value={recipient} onChange={(e) => setRecipient(e.target.value)} /></label>
+            <label className={s.field}><div className={s.fTop}><span>Refund · {k.fromChain}</span><span>{execMode ? "required (live)" : "optional in preview"}</span></div><input className={r.addr} placeholder={execMode ? `Your ${k.fromChain} address` : `Optional (${k.fromChain} preview)`} value={refundTo} onChange={(e) => setRefundTo(e.target.value)} /></label>
             <div className={s.sim}><div><span>Slippage limit</span><b>0.5%</b></div><div><span>Mode</span><b>{execMode ? "dry:false (LIVE)" : "dry:true"}</b></div></div>
             {state === "unavailable" && <p className={`${s.note} ${s.warn}`}>{q?.reason ?? "Unavailable"}.</p>}
             {toks && !available.length && <p className={`${s.note} ${s.warn}`}>No destination for {k.to} found in current discovery.</p>}

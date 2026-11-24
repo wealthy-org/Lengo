@@ -3,6 +3,32 @@ import { createHash } from "node:crypto";
 import { ONECLICK, getTokens, toUnits } from "@/lib/oneclick";
 import { db } from "@/lib/db";
 
+const EVM_CHAINS = new Set(["eth", "base", "arb", "hood", "op", "pol", "bsc", "avax"]);
+
+// Safe format-valid preview fixtures used ONLY when dry:true (never used when execute:true)
+const PREVIEW_FIXTURES: Record<string, string> = {
+  evm: "0x000000000000000000000000000000000000dEaD",
+  sol: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
+  btc: "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq",
+  zec: "t1HxutHFt2Sejz7fs92wFVAbsFM7NDjsBG6",
+};
+
+function matchesChainFormat(addr: string, chain: string): boolean {
+  if (!addr) return false;
+  if (EVM_CHAINS.has(chain)) return /^0x[0-9a-fA-F]{40}$/.test(addr);
+  if (chain === "sol") return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr);
+  if (chain === "btc") return /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/.test(addr);
+  if (chain === "zec") return /^t[13][a-km-zA-HJ-NP-Z1-9]{33}$/.test(addr);
+  return addr.length >= 16;
+}
+
+function previewFallbackFor(chain: string): string | undefined {
+  const envVal = process.env[`QUOTE_RECIPIENT_${chain.toUpperCase()}`] || process.env[`QUOTE_REFUND_${chain.toUpperCase()}`];
+  if (envVal && matchesChainFormat(envVal, chain)) return envVal;
+  if (EVM_CHAINS.has(chain)) return PREVIEW_FIXTURES.evm;
+  return PREVIEW_FIXTURES[chain];
+}
+
 /** Stores a sanitized quote record when Neon is configured. Addresses are hashed; failures never break the quote. */
 async function logQuote(x: { o: string; d: string; amount: bigint; out?: string; status: string; reason?: string; recipient: string; correlationId?: string; quotedAt?: string; expiresAt?: string }) {
   const sql = db();
@@ -21,7 +47,7 @@ type Body = {
   recipient?: string;
   refundTo?: string;
   slippageBps?: number;
-  execute?: boolean; // when true, requests a live executable 1Click quote (dry: false) with depositAddress
+  execute?: boolean;
 };
 
 export async function POST(req: Request) {
@@ -38,20 +64,22 @@ export async function POST(req: Request) {
   if (units <= 0n) return NextResponse.json({ status: "invalid", reason: "Amount must be positive" }, { status: 422 });
 
   const execute = b.execute === true;
-  // Live execution NEVER uses team fixture addresses — user must supply explicit recipient & refund addresses
-  const recipient = execute
-    ? b.recipient?.trim()
-    : b.recipient?.trim() || process.env[`QUOTE_RECIPIENT_${d.blockchain.toUpperCase()}`];
-  const refundTo = execute
-    ? b.refundTo?.trim()
-    : b.refundTo?.trim() || process.env[`QUOTE_REFUND_${o.blockchain.toUpperCase()}`];
+  const rawRecipient = b.recipient?.trim() || "";
+  const rawRefund = b.refundTo?.trim() || "";
+
+  let recipient = matchesChainFormat(rawRecipient, d.blockchain) ? rawRecipient : undefined;
+  let refundTo = matchesChainFormat(rawRefund, o.blockchain) ? rawRefund : undefined;
+
+  if (!execute) {
+    // In dry:true preview mode, fall back to safe format-valid fixtures so 1-click Quote always works out-of-the-box
+    if (!recipient) recipient = previewFallbackFor(d.blockchain);
+    if (!refundTo) refundTo = previewFallbackFor(o.blockchain);
+  }
 
   if (!recipient || !refundTo) {
+    const missing = !recipient ? `${d.blockchain.toUpperCase()} recipient` : `${o.blockchain.toUpperCase()} refund`;
     return NextResponse.json(
-      {
-        status: "needs_address",
-        reason: `Enter your ${!recipient ? d.blockchain + " recipient" : o.blockchain + " refund"} address${execute ? " to execute live routing" : " for the quote request"}`,
-      },
+      { status: "needs_address", reason: `Enter a valid ${missing} address to execute live routing` },
       { status: 422 }
     );
   }
