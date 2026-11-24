@@ -8,7 +8,26 @@ compatibility_flags = ["nodejs_compat"]
 crons = ["*/4 * * * *", "*/5 * * * *"]
 
 [vars]
-KEEPER_ON = "true"                 # set "false" during a liquidation demo so the $70k override isn't overwritten
+# Mainnet (4663) uses keeperless ChainlinkOracle, so KEEPER_ON="false" (Rp 0 gas; Chainlink updates onchain).
+# The */5 cron still indexes Mainnet LengoMarket events into Neon Postgres, and GET / returns live Chainlink status!
+KEEPER_ON = "false"
+RPC_URL = "https://4663.rpc.thirdweb.com"
+CHAIN_ID = "4663"
+ORACLE = "0xAc892397986B84ff42894739F05fE884D1D4c6da"
+MARKET = "0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900"
+COLLATERAL = "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73"
+DEBT_ASSET = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168"
+COLLATERAL_SYMBOL = "WETH"
+DEBT_SYMBOL = "USDG"
+START_BLOCK = "122296154"
+REFRESH_AFTER_S = "300"
+DEVIATION_BPS = "100"
+
+# Optional Testnet profile (`npx wrangler deploy --env testnet`)
+[env.testnet]
+name = "lengo-keeper-testnet"
+[env.testnet.vars]
+KEEPER_ON = "true"
 RPC_URL = "https://rpc.testnet.chain.robinhood.com"
 CHAIN_ID = "46630"
 ORACLE = "0x7e4B30ef399EFE0fab110Ad9ADc3b39c8d19D5cE"
@@ -16,8 +35,8 @@ MARKET = "0xA4f36BEb211186C42B0A6B50Cf85DB062C5e5E25"
 TBTC = "0x2e179ff76ef528821f2dE00D7079F1999ccdEB88"
 TUSDC = "0xe1f1C4292C7AED0D0E99DD1233607e776826762d"
 START_BLOCK = "153087385"
-BTC_BASELINE_USD = "100000"        # keeper only ever re-posts this baseline; demo overrides stay manual
-REFRESH_AFTER_S = "180"            # skip the tx if the price is younger than this
+BTC_BASELINE_USD = "100000"
+REFRESH_AFTER_S = "180"
 
 # Secrets (never in this file):  npx wrangler secret put KEEPER_PRIVATE_KEY   /   npx wrangler secret put DATABASE_URL
 

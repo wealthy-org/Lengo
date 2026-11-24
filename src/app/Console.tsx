@@ -4,14 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import s from "./console.module.css";
 
 const assets = [
-  { sym: "tBTC", name: "tBTC / tUSDC", st: "ACTIVE", note: "RH Testnet", c: "#f2a93b" },
+  { sym: "tBTC", name: "tBTC / tUSDC", st: "ACTIVE", note: "RH Testnet (Default)", c: "#f2a93b" },
+  { sym: "WETH", name: "WETH / USDG", st: "READY", note: "RH Mainnet · 4663", c: "#627eea" },
+  { sym: "USDG", name: "USDG → USDC", st: "LIVE", note: "1Click Cross-Chain", c: "#7fe0b4" },
   { sym: "BTC", name: "BTC · Bitcoin", st: "RESEARCH", note: "Native Collateral", c: "#f2a93b" },
   { sym: "ZEC", name: "ZEC · Zcash", st: "ROADMAP", note: "NEAR Intents", c: "#e8c46b" },
   { sym: "SOL", name: "SOL · Solana", st: "ROADMAP", note: "SVM Collateral", c: "#9b8cf2" },
   { sym: "HYPE", name: "HYPE · Hyperliquid", st: "ROADMAP", note: "HyperEVM", c: "#48e59b" },
-  { sym: "ETH", name: "ETH · Ethereum", st: "ROADMAP", note: "EVM Inflow", c: "#627eea" },
-  { sym: "USDG", name: "USDG · Robinhood", st: "PREVIEW", note: "Payout Route", c: "#7fe0b4" },
-  { sym: "USDC", name: "USDC · Solana", st: "PREVIEW", note: "Payout Route", c: "#7fb6f2" },
+  { sym: "USDC", name: "USDC · Solana/Base", st: "LIVE", note: "Payout Route", c: "#7fb6f2" },
 ];
 export function MarketList() {
   return (
@@ -21,7 +21,7 @@ export function MarketList() {
         <div key={a.name} className={s.asset}>
           <TokenIcon sym={a.sym} size={24} />
           <div><b>{a.name}</b><small>{a.note}</small></div>
-          <em className={a.st === "ACTIVE" ? s.on : ""}>{a.st}</em>
+          <em className={a.st === "ACTIVE" || a.st === "LIVE" ? s.on : ""}>{a.st}</em>
         </div>
       ))}
       <div className={s.foot}><span className="dot" /> ORACLE FRESH · 300S WINDOW</div>

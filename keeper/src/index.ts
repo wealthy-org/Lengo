@@ -1,55 +1,139 @@
-// Lengo keeper: keeps the testnet DemoOracle fresh and advances the Neon event index.
+// Lengo keeper: updates PriceOracle (Mainnet live multi-source median) or DemoOracle (Testnet baseline)
+// and advances the Neon Postgres event index.
 import { createPublicClient, createWalletClient, defineChain, http, parseUnits, type Address, type Hex, type Log } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { neon } from "@neondatabase/serverless";
-import { marketAbi, oracleAbi } from "../../src/lib/abi";
+import { marketAbi, oracleAbi, priceOracleAbi } from "../../src/lib/abi";
+import { exceedsDeviationBps, fetchLiveUsdPrice8Dec, type AssetSymbol } from "../../src/lib/priceFeed";
 
 export interface Env {
-  KEEPER_ON: string; RPC_URL: string; CHAIN_ID: string;
-  ORACLE: Address; MARKET: Address; TBTC: Address; TUSDC: Address;
-  START_BLOCK: string; BTC_BASELINE_USD: string; REFRESH_AFTER_S: string;
-  KEEPER_PRIVATE_KEY?: Hex; DATABASE_URL?: string;
+  KEEPER_ON: string;
+  RPC_URL: string;
+  CHAIN_ID: string;
+  ORACLE: Address;
+  MARKET: Address;
+  COLLATERAL?: Address;
+  DEBT_ASSET?: Address;
+  COLLATERAL_SYMBOL?: AssetSymbol;
+  DEBT_SYMBOL?: AssetSymbol;
+  // Legacy testnet vars (supported for backwards compatibility)
+  TBTC?: Address;
+  TUSDC?: Address;
+  START_BLOCK: string;
+  BTC_BASELINE_USD?: string;
+  REFRESH_AFTER_S: string;
+  DEVIATION_BPS?: string;
+  KEEPER_PRIVATE_KEY?: Hex;
+  DATABASE_URL?: string;
 }
 
-const chainOf = (env: Env) => defineChain({
-  id: Number(env.CHAIN_ID), name: "Robinhood Chain Testnet",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: { default: { http: [env.RPC_URL] } },
-});
+const isMainnet = (env: Env) => Number(env.CHAIN_ID) === 4663;
+const collAddr = (env: Env): Address => (env.COLLATERAL || env.TBTC)!;
+const debtAddr = (env: Env): Address => (env.DEBT_ASSET || env.TUSDC)!;
+const collSym = (env: Env): AssetSymbol => env.COLLATERAL_SYMBOL || (isMainnet(env) ? "WETH" : "tBTC");
+const debtSym = (env: Env): AssetSymbol => env.DEBT_SYMBOL || (isMainnet(env) ? "USDG" : "tUSDC");
+
+const chainOf = (env: Env) =>
+  defineChain({
+    id: Number(env.CHAIN_ID),
+    name: isMainnet(env) ? "Robinhood Chain" : "Robinhood Chain Testnet",
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: { default: { http: [env.RPC_URL] } },
+  });
 
 async function prices(env: Env) {
   const pub = createPublicClient({ chain: chainOf(env), transport: http() });
-  const [b, u] = await Promise.all([env.TBTC, env.TUSDC].map((a) =>
-    pub.readContract({ address: env.ORACLE, abi: oracleAbi, functionName: "getPrice", args: [a] }) as Promise<readonly [bigint, bigint]>));
+  const cA = collAddr(env);
+  const dA = debtAddr(env);
+  const [c, d] = await Promise.all(
+    [cA, dA].map(
+      (a) =>
+        pub.readContract({
+          address: env.ORACLE,
+          abi: priceOracleAbi,
+          functionName: "getPrice",
+          args: [a],
+        }) as Promise<readonly [bigint, bigint]>
+    )
+  );
   const now = Math.floor(Date.now() / 1000);
-  return { pub, btc: { price: b[0], age: now - Number(b[1]) }, usd: { price: u[0], age: now - Number(u[1]) } };
+  return {
+    pub,
+    coll: { addr: cA, sym: collSym(env), price: c[0], age: now - Number(c[1]) },
+    debt: { addr: dA, sym: debtSym(env), price: d[0], age: now - Number(d[1]) },
+  };
 }
 
 export async function runKeeper(env: Env) {
   if (env.KEEPER_ON !== "true") return { skipped: "KEEPER_ON is not true" };
   if (!env.KEEPER_PRIVATE_KEY) return { skipped: "KEEPER_PRIVATE_KEY not set" };
-  const { pub, btc, usd } = await prices(env);
-  const after = Number(env.REFRESH_AFTER_S);
+
+  const { pub, coll, debt } = await prices(env);
+  const after = Number(env.REFRESH_AFTER_S || "180");
+  const devBps = Number(env.DEVIATION_BPS || "100"); // 1% move triggers early update on mainnet
+  const mainnet = isMainnet(env);
+
   const account = privateKeyToAccount(env.KEEPER_PRIVATE_KEY);
-  const owner = await pub.readContract({ address: env.ORACLE, abi: oracleAbi, functionName: "owner" }) as Address;
-  if (owner.toLowerCase() !== account.address.toLowerCase()) return { skipped: `keeper ${account.address} is not oracle owner ${owner}` };
+  const owner = (await pub.readContract({ address: env.ORACLE, abi: priceOracleAbi, functionName: "owner" })) as Address;
+  let authorized = owner.toLowerCase() === account.address.toLowerCase();
+  if (!authorized && mainnet) {
+    try {
+      const keeper = (await pub.readContract({ address: env.ORACLE, abi: priceOracleAbi, functionName: "keeper" })) as Address;
+      authorized = keeper.toLowerCase() === account.address.toLowerCase();
+    } catch {
+      /* DemoOracle has no keeper() */
+    }
+  }
+  if (!authorized) return { skipped: `keeper ${account.address} is not authorized on oracle ${env.ORACLE}` };
+
+  // Compute target prices: live multi-source median on Mainnet, baseline on Testnet unless LIVE_FEED is used
+  const nextColl = mainnet
+    ? (await fetchLiveUsdPrice8Dec(coll.sym)).price8Dec
+    : parseUnits(env.BTC_BASELINE_USD || "100000", 8);
+  const nextDebt = mainnet
+    ? (await fetchLiveUsdPrice8Dec(debt.sym)).price8Dec
+    : parseUnits("1", 8);
+
+  const shouldUpdateColl = coll.age > after || (mainnet && exceedsDeviationBps(coll.price, nextColl, devBps));
+  const shouldUpdateDebt = debt.age > after || (mainnet && exceedsDeviationBps(debt.price, nextDebt, devBps));
 
   const wallet = createWalletClient({ account, chain: chainOf(env), transport: http() });
   const sent: Record<string, Hex> = {};
-  // Only the baseline is ever posted, so a leaked keeper key can't set arbitrary prices through this path.
-  // That also means an active demo override gets replaced: set KEEPER_ON=false for the liquidation demo.
-  const baseline = parseUnits(env.BTC_BASELINE_USD, 8);
-  // Explicit nonces: a stateless Worker can't rely on a nonce manager between two back-to-back sends.
-  let nonce = await pub.getTransactionCount({ address: account.address, blockTag: "pending" });
   const errors: Record<string, string> = {};
-  const send = async (k: "tBTC" | "tUSDC", asset: Address, price: bigint) => {
+  let nonce = await pub.getTransactionCount({ address: account.address, blockTag: "pending" });
+
+  const send = async (label: string, asset: Address, price: bigint) => {
     try {
-      sent[k] = await wallet.writeContract({ address: env.ORACLE, abi: oracleAbi, functionName: "setPrice", args: [asset, price, false], nonce: nonce++ });
-    } catch (e) { errors[k] = String(e).split("\n")[0].slice(0, 200); }
+      sent[label] = mainnet
+        ? await wallet.writeContract({
+            address: env.ORACLE,
+            abi: priceOracleAbi,
+            functionName: "setPrice",
+            args: [asset, price],
+            nonce: nonce++,
+          })
+        : await wallet.writeContract({
+            address: env.ORACLE,
+            abi: oracleAbi,
+            functionName: "setPrice",
+            args: [asset, price, false],
+            nonce: nonce++,
+          });
+    } catch (e) {
+      errors[label] = String(e).split("\n")[0].slice(0, 200);
+    }
   };
-  if (btc.age > after) await send("tBTC", env.TBTC, baseline);
-  if (usd.age > after) await send("tUSDC", env.TUSDC, parseUnits("1", 8));
-  return { ages: { tBTC: btc.age, tUSDC: usd.age }, sent, errors };
+
+  if (shouldUpdateColl) await send(coll.sym, coll.addr, nextColl);
+  if (shouldUpdateDebt) await send(debt.sym, debt.addr, nextDebt);
+
+  return {
+    mode: mainnet ? "mainnet-live-feed" : "testnet-baseline",
+    ages: { [coll.sym]: coll.age, [debt.sym]: debt.age },
+    pricesUsd: { [coll.sym]: Number(nextColl) / 1e8, [debt.sym]: Number(nextDebt) / 1e8 },
+    sent,
+    errors,
+  };
 }
 
 type Row = { event: string; account: string; counterparty: string | null; a: bigint | null; b: bigint | null };
@@ -78,9 +162,15 @@ export async function runIndexer(env: Env) {
   let inserted = 0;
   for (let s = from; s <= head; s += 9_000n) {
     const e = s + 8_999n > head ? head : s + 8_999n;
-    const logs = (await pub.getContractEvents({ address: env.MARKET, abi: marketAbi, fromBlock: s, toBlock: e })) as (Log & { eventName: string; args: Record<string, unknown> })[];
+    const logs = (await pub.getContractEvents({
+      address: env.MARKET,
+      abi: marketAbi,
+      fromBlock: s,
+      toBlock: e,
+    })) as (Log & { eventName: string; args: Record<string, unknown> })[];
     for (const l of logs) {
-      const f = map[l.eventName]; if (!f) continue;
+      const f = map[l.eventName];
+      if (!f) continue;
       const r = f(l.args);
       await sql`insert into activity (chain_id, tx_hash, log_index, block_number, block_hash, event, account, counterparty, amount_a, amount_b)
         values (${chainId}, ${l.transactionHash}, ${l.logIndex}, ${l.blockNumber!.toString()}, ${l.blockHash}, ${r.event}, ${r.account.toLowerCase()},
@@ -97,14 +187,24 @@ export async function runIndexer(env: Env) {
 export default {
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
     const job = event.cron === "*/4 * * * *" ? runKeeper(env) : runIndexer(env);
-    ctx.waitUntil(job.then((r) => console.log(event.cron, JSON.stringify(r, (_, v) => (typeof v === "bigint" ? v.toString() : v))))
-      .catch((e) => console.error(event.cron, String(e))));
+    ctx.waitUntil(
+      job
+        .then((r) => console.log(event.cron, JSON.stringify(r, (_, v) => (typeof v === "bigint" ? v.toString() : v))))
+        .catch((e) => console.error(event.cron, String(e)))
+    );
   },
-  // Read-only status page; never triggers a write.
   async fetch(_req: Request, env: Env) {
     try {
-      const { btc, usd } = await prices(env);
-      return Response.json({ keeperOn: env.KEEPER_ON === "true", tBTC: { usd: Number(btc.price) / 1e8, ageS: btc.age }, tUSDC: { usd: Number(usd.price) / 1e8, ageS: usd.age } });
-    } catch (e) { return Response.json({ error: String(e) }, { status: 502 }); }
+      const { coll, debt } = await prices(env);
+      return Response.json({
+        chainId: Number(env.CHAIN_ID),
+        mode: isMainnet(env) ? "mainnet" : "testnet",
+        keeperOn: env.KEEPER_ON === "true",
+        [coll.sym]: { usd: Number(coll.price) / 1e8, ageS: coll.age },
+        [debt.sym]: { usd: Number(debt.price) / 1e8, ageS: debt.age },
+      });
+    } catch (e) {
+      return Response.json({ error: String(e) }, { status: 502 });
+    }
   },
 };

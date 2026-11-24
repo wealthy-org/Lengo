@@ -6,23 +6,33 @@
 
 <p align="center">
   Cross-chain lending, settled on Robinhood Chain.<br/>
-  <a href="https://lengoapp.tech">lengoapp.tech</a> · <a href="https://x.com/lengoapp">@lengoapp</a> · <a href="https://explorer.testnet.chain.robinhood.com/address/0xA4f36BEb211186C42B0A6B50Cf85DB062C5e5E25">Explorer</a>
+  <a href="https://lengoapp.tech">lengoapp.tech</a> · <a href="https://x.com/lengoapp">@lengoapp</a> · <a href="https://robinhoodchain.blockscout.com/address/0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900">Mainnet Explorer</a>
 </p>
 
 ---
 
-Lengo lets you borrow against collateral on Robinhood Chain and preview how the loan can be paid out on other chains through **NEAR Intents**.
-
-**Release 0.1 runs on Robinhood Chain testnet (chain 46630) with demo assets.** The lending lifecycle is live onchain. Cross-chain payout is a real 1Click quote in preview mode (`dry: true`); no funds are moved.
+Lengo lets you borrow `USDG` against `WETH` collateral on **Robinhood Chain Mainnet (chain 4663)** powered by **Chainlink** price feeds, and route payouts across chains through **NEAR Intents 1Click**.
 
 | | Status |
 |---|---|
-| Isolated lending market (tBTC / tUSDC) | ✅ Live on RH testnet |
-| Deposit, borrow, repay all, withdraw all | ✅ Live, every tx on the explorer |
-| Liquidation (50% close factor, 5% bonus) | ✅ Live, proven with two wallets |
-| Cross-chain payout via NEAR Intents 1Click | 🟡 Real quotes, preview only |
+| Isolated lending market (`WETH / USDG`) | ✅ Live on Robinhood Chain Mainnet (`4663`, capped beta) |
+| Keeperless oracle (`ChainlinkOracle` → Chainlink `ETH/USD`) | ✅ Live onchain (`0xAc892397986B84ff42894739F05fE884D1D4c6da`) |
+| Cross-chain payout via NEAR Intents 1Click | ✅ Live quotes (`dry: true`) + Live execution (`dry: false`) |
+| Testnet sandbox (`tBTC / tUSDC`, chain `46630`) | ✅ Live for risk & liquidation testing |
 | Native BTC / ZEC collateral | 🔬 Research ([docs/M5-BTC-SPIKE.md](docs/M5-BTC-SPIKE.md)) |
-| Mainnet, audit | ⏳ Not yet |
+| External security audit | ⏳ Capped beta (`25 WETH` / `50,000 USDG`) |
+
+## Deployed contracts: Robinhood Chain Mainnet (4663)
+
+| Contract | Address |
+|---|---|
+| LengoMarket (`WETH / USDG`) | [`0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900`](https://robinhoodchain.blockscout.com/address/0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900) |
+| ChainlinkOracle | [`0xAc892397986B84ff42894739F05fE884D1D4c6da`](https://robinhoodchain.blockscout.com/address/0xAc892397986B84ff42894739F05fE884D1D4c6da) |
+| Chainlink `ETH / USD` Proxy | [`0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9`](https://robinhoodchain.blockscout.com/address/0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9) |
+| Collateral `WETH` (18 dec) | [`0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73`](https://robinhoodchain.blockscout.com/address/0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73) |
+| Debt `USDG` (6 dec) | [`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`](https://robinhoodchain.blockscout.com/address/0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168) |
+
+Start block `122296154` · Manifest: [`contracts/deployments/4663.json`](contracts/deployments/4663.json).
 
 ## How it works
 

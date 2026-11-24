@@ -31,7 +31,7 @@ export default function CopyCA({ address }: { address: string }) {
       title="Copy contract address"
       aria-label={`Copy contract address ${address}`}
     >
-      <span className={s.caTag}>CA</span>
+      <span className={s.caTag}>TOKEN CA</span>
       <code className={s.caAddr}>{address}</code>
       <em className={s.caAction}>
         {copied ? (

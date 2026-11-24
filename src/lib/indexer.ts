@@ -1,7 +1,7 @@
 import "server-only";
 import { createPublicClient, http, type Log } from "viem";
 import { marketAbi } from "./abi";
-import { deployment, isDeployed, rhTestnet } from "./chain";
+import { DEFAULT_NETWORK, DEPLOYMENTS, type NetworkMode } from "./chain";
 import { db } from "./db";
 
 const CHUNK = 9_000n;     // stay under typical RPC getLogs range limits
@@ -19,23 +19,24 @@ const map: Record<string, (x: Record<string, unknown>) => Row> = {
   BadDebt: (x) => ({ event: "Bad debt", account: x.borrower as string, counterparty: null, a: x.assets as bigint, b: null }),
 };
 
-export async function syncIndex() {
+export async function syncIndex(mode: NetworkMode = DEFAULT_NETWORK) {
   const sql = db();
   if (!sql) return { ok: false, reason: "DATABASE_URL not set" };
-  if (!isDeployed) return { ok: false, reason: "contracts not deployed" };
-  const client = createPublicClient({ chain: rhTestnet, transport: http() });
-  const chainId = rhTestnet.id;
+  const net = DEPLOYMENTS[mode];
+  if (!net.isDeployed) return { ok: false, reason: `${mode} contracts not deployed` };
+  const client = createPublicClient({ chain: net.chain, transport: http() });
+  const chainId = net.chain.id;
 
   const cur = (await sql`select last_block from indexer_cursor where chain_id = ${chainId}`) as { last_block: string }[];
-  let from = cur[0] ? BigInt(cur[0].last_block) - REWIND : deployment.startBlock;
-  if (from < deployment.startBlock) from = deployment.startBlock;
+  let from = cur[0] ? BigInt(cur[0].last_block) - REWIND : net.startBlock;
+  if (from < net.startBlock) from = net.startBlock;
   const head = await client.getBlockNumber();
   await sql`delete from activity where chain_id = ${chainId} and block_number >= ${from.toString()}`;
 
   let inserted = 0;
   for (let start = from; start <= head; start += CHUNK) {
     const end = start + CHUNK - 1n > head ? head : start + CHUNK - 1n;
-    const logs = (await client.getContractEvents({ address: deployment.market!, abi: marketAbi, fromBlock: start, toBlock: end })) as (Log & { eventName: string; args: Record<string, unknown> })[];
+    const logs = (await client.getContractEvents({ address: net.market!, abi: marketAbi, fromBlock: start, toBlock: end })) as (Log & { eventName: string; args: Record<string, unknown> })[];
     for (const l of logs) {
       const f = map[l.eventName];
       if (!f) continue;
@@ -49,5 +50,5 @@ export async function syncIndex() {
     await sql`insert into indexer_cursor (chain_id, last_block, updated_at) values (${chainId}, ${end.toString()}, now())
       on conflict (chain_id) do update set last_block = excluded.last_block, updated_at = now()`;
   }
-  return { ok: true, from: from.toString(), to: head.toString(), inserted };
+  return { ok: true, mode, from: from.toString(), to: head.toString(), inserted };
 }

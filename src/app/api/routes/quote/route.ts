@@ -14,7 +14,15 @@ async function logQuote(x: { o: string; d: string; amount: bigint; out?: string;
   } catch { /* logging is best-effort */ }
 }
 
-type Body = { originAsset: string; destinationAsset: string; amount: string; recipient?: string; refundTo?: string; slippageBps?: number };
+type Body = {
+  originAsset: string;
+  destinationAsset: string;
+  amount: string;
+  recipient?: string;
+  refundTo?: string;
+  slippageBps?: number;
+  execute?: boolean; // when true, requests a live executable 1Click quote (dry: false) with depositAddress
+};
 
 export async function POST(req: Request) {
   let b: Body;
@@ -29,21 +37,40 @@ export async function POST(req: Request) {
   try { units = toUnits(b.amount, o.decimals); } catch (e) { return NextResponse.json({ status: "invalid", reason: (e as Error).message }, { status: 422 }); }
   if (units <= 0n) return NextResponse.json({ status: "invalid", reason: "Amount must be positive" }, { status: 422 });
 
-  // Fixture addresses are team-owned and labeled internal; a user-supplied address wins.
-  const recipient = b.recipient?.trim() || process.env[`QUOTE_RECIPIENT_${d.blockchain.toUpperCase()}`];
-  const refundTo = b.refundTo?.trim() || process.env[`QUOTE_REFUND_${o.blockchain.toUpperCase()}`];
+  const execute = b.execute === true;
+  // Live execution NEVER uses team fixture addresses — user must supply explicit recipient & refund addresses
+  const recipient = execute
+    ? b.recipient?.trim()
+    : b.recipient?.trim() || process.env[`QUOTE_RECIPIENT_${d.blockchain.toUpperCase()}`];
+  const refundTo = execute
+    ? b.refundTo?.trim()
+    : b.refundTo?.trim() || process.env[`QUOTE_REFUND_${o.blockchain.toUpperCase()}`];
+
   if (!recipient || !refundTo) {
-    return NextResponse.json({ status: "needs_address", reason: `Enter a ${!recipient ? d.blockchain + " recipient" : o.blockchain + " refund"} address for the quote request` }, { status: 422 });
+    return NextResponse.json(
+      {
+        status: "needs_address",
+        reason: `Enter your ${!recipient ? d.blockchain + " recipient" : o.blockchain + " refund"} address${execute ? " to execute live routing" : " for the quote request"}`,
+      },
+      { status: 422 }
+    );
   }
 
   const slippage = Math.min(Math.max(Math.round(b.slippageBps ?? 50), 1), 500);
   const deadline = new Date(Date.now() + 30 * 60_000).toISOString();
   const payload = {
-    dry: true, // v0.1: never executable, never a live deposit address
-    swapType: "EXACT_INPUT", slippageTolerance: slippage,
-    originAsset: o.assetId, depositType: "ORIGIN_CHAIN",
-    destinationAsset: d.assetId, amount: units.toString(),
-    refundTo, refundType: "ORIGIN_CHAIN", recipient, recipientType: "DESTINATION_CHAIN", deadline,
+    dry: !execute,
+    swapType: "EXACT_INPUT",
+    slippageTolerance: slippage,
+    originAsset: o.assetId,
+    depositType: "ORIGIN_CHAIN",
+    destinationAsset: d.assetId,
+    amount: units.toString(),
+    refundTo,
+    refundType: "ORIGIN_CHAIN",
+    recipient,
+    recipientType: "DESTINATION_CHAIN",
+    deadline,
   };
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (process.env.ONECLICK_JWT) headers.authorization = `Bearer ${process.env.ONECLICK_JWT}`;
@@ -56,18 +83,36 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: "rejected", reason: j?.message ?? `Provider ${r.status}` }, { status: 422 });
     }
     const q = j.quote ?? {};
-    await logQuote({ o: o.assetId, d: d.assetId, amount: units, out: q.amountOut, status: "ok", recipient, correlationId: j.correlationId, quotedAt: j.timestamp, expiresAt: deadline });
+    await logQuote({
+      o: o.assetId,
+      d: d.assetId,
+      amount: units,
+      out: q.amountOut,
+      status: execute ? "live_quote" : "ok",
+      recipient,
+      correlationId: j.correlationId,
+      quotedAt: j.timestamp,
+      expiresAt: q.deadline ?? deadline,
+    });
     return NextResponse.json({
       status: "ok",
       provider: "NEAR Intents 1Click",
-      dry: true,
-      origin: { symbol: o.symbol, chain: o.blockchain, decimals: o.decimals },
-      destination: { symbol: d.symbol, chain: d.blockchain, decimals: d.decimals },
-      amountIn: q.amountInFormatted, amountInUsd: q.amountInUsd,
-      amountOut: q.amountOutFormatted, amountOutUsd: q.amountOutUsd,
-      minAmountOut: q.minAmountOut, timeEstimate: q.timeEstimate,
+      dry: !execute,
+      depositAddress: execute ? (q.depositAddress as string | undefined) : undefined,
+      depositMemo: execute ? (q.depositMemo as string | undefined) : undefined,
+      origin: { symbol: o.symbol, chain: o.blockchain, decimals: o.decimals, contractAddress: o.contractAddress },
+      destination: { symbol: d.symbol, chain: d.blockchain, decimals: d.decimals, contractAddress: d.contractAddress },
+      amountInUnits: units.toString(),
+      amountIn: q.amountInFormatted,
+      amountInUsd: q.amountInUsd,
+      amountOut: q.amountOutFormatted,
+      amountOutUsd: q.amountOutUsd,
+      minAmountOut: q.minAmountOut,
+      timeEstimate: q.timeEstimate,
       fees: { refundFee: q.refundFee, withdrawFee: q.withdrawFee, appFees: j.quoteRequest?.appFees ?? [] },
-      deadline, quotedAt: j.timestamp, correlationId: j.correlationId,
+      deadline: q.deadline ?? deadline,
+      quotedAt: j.timestamp,
+      correlationId: j.correlationId,
     });
   } catch (e) {
     return NextResponse.json({ status: "unavailable", reason: "Provider unreachable: " + (e as Error).message }, { status: 502 });

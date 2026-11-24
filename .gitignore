@@ -50,3 +50,6 @@ next-env.d.ts
 # local tooling
 /.claude/
 /contracts/broadcast/**/*.lock
+
+/contracts/verify-*.json
+/contracts/verify-*.sol

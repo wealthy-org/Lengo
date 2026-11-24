@@ -12,9 +12,10 @@ const LOGOS: Record<string, string> = {
   USDG: `${CG}/51281/large/GDN_USDG_Token_200x200.png`,
   HYPE: "/tokens/hype.svg",
   ETH: `${CG}/279/large/ethereum.png`,
+  WETH: `${CG}/279/large/ethereum.png`,
   NEAR: `${CG}/10365/large/near.png`,
 };
-// Demo assets reuse the underlying logo but always carry a TEST badge.
+// Demo assets reuse the underlying logo and carry a TEST badge; Mainnet assets (WETH, USDG) do not.
 const TEST: Record<string, string> = { tBTC: "BTC", tUSDC: "USDC" };
 
 export function TokenIcon({ sym, size = 30 }: { sym: string; size?: number }) {

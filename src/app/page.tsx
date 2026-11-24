@@ -11,16 +11,16 @@ import Motion from "./Motion";
 import TopNav from "./TopNav";
 import CopyCA from "./CopyCA";
 
-const tick = [["tBTC/tUSDC","APR","8.00%"],["Max LTV","","60%"],["Liq. threshold","","75%"],["BTC → USDC","route","Solana"],["USDG → USDC","route","Preview"],["Chain","Robinhood","46630"],["Intents","1Click","Route Preview"],["Liq. bonus","","5%"]];
-const params = [["Max borrow LTV","60%"],["Liquidation threshold","75%"],["Eligible when","HF < 1"],["Liquidator bonus","5%"],["Close factor","50% per call"],["Borrow APR","8% fixed"],["Protocol reserve","0%"],["Oracle freshness","300 s"]];
+const tick = [["WETH/USDG","APR","8.00%"],["Max LTV","","60%"],["Liq. threshold","","75%"],["USDG → USDC","1Click","Live Execute"],["Oracle","Chainlink","ETH/USD"],["Chain","Robinhood","4663"],["Chart","Pyth Pro","Live 48h"],["Liq. bonus","","5%"]];
+const params = [["Max borrow LTV","60%"],["Liquidation threshold","75%"],["Eligible when","HF < 1"],["Liquidator bonus","5%"],["Close factor","50% per call"],["Borrow APR","8% fixed"],["TVL caps (beta)","25 WETH · 50k USDG"],["Oracle","Chainlink ETH/USD"]];
 const disclosure = [
-  ["Lending contracts", "Real testnet tx", "Mainnet after review"],
-  ["Collateral asset", "tBTC · no BTC backing", "Backed BTC, then ZEC, SOL"],
-  ["Borrow asset", "tUSDC · not Circle USDC", "Real RH stablecoin"],
-  ["Liquidation", "Two wallets, real tx", "Funded liquidators"],
-  ["Multichain payout", "Route preview only", "Execution + settlement"],
-  ["Native BTC / ZEC deposit", "Not offered", "Lock, proof, redemption"],
-  ["Private positions", "Not offered", "Separate design"],
+  ["Lending contracts", "Live on RH Mainnet (4663) + Testnet (46630)", "External security audit"],
+  ["Collateral asset", "WETH (18 dec) on RH Mainnet", "Native BTC, ZEC, SOL"],
+  ["Borrow asset", "USDG (6 dec) Global Dollar", "Additional markets"],
+  ["Price oracle", "Chainlink ETH/USD (keeperless)", "Multi-oracle fallback"],
+  ["Multichain payout", "NEAR Intents 1Click (Preview + Live Execute)", "1-tx borrow + route"],
+  ["Native BTC / ZEC deposit", "In research (testnet demo uses tBTC)", "Lock, proof, redemption"],
+  ["Safety rails", "Capped TVL + non-custodial pause", "Timelock multisig"],
 ];
 const phases = [
   ["Phase 1", "LIVE", "Lending lifecycle", ["Isolated tBTC/tUSDC market", "Faucet + dashboard", "Deposit → withdraw on RH"], 100],
@@ -63,7 +63,7 @@ export default function Landing() {
           <aside className={s.colL}><MarketList /></aside>
           <div className={s.center}>
             <div className={`${s.heroBox} bevel`}>
-              <div className={s.addr}><span>MARKET</span>0xLENGO…TBTC/TUSDC<em>TESTNET</em></div>
+              <div className={s.addr}><span>MARKET</span>0x8f1C…5900 · WETH/USDG<em>MAINNET · 4663</em></div>
               <div className={s.markWrap} data-hero-mark>
                 <Image src="/logo-mark.png" alt="Lengo" width={150} height={150} priority className={s.mark} />
               </div>
@@ -76,15 +76,15 @@ export default function Landing() {
             </div>
             <p className={`${s.sub} bevel`}>Your assets on one chain. Your liquidity on another. Borrow against collateral across networks, settled on Robinhood Chain.</p>
             <div className={s.ctas}>
-              <Link href="/app" className="btn btn-primary">Launch Testnet →</Link>
-              <a href="#twosides" className="btn">Explore Cross-chain Flow</a>
-              <Link href="/app/routes" className="btn">Route Preview</Link>
+              <Link href="/app" className="btn btn-primary">Launch App →</Link>
+              <a href="https://robinhoodchain.blockscout.com/address/0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900" target="_blank" rel="noreferrer" className="btn">Mainnet Contract ↗</a>
+              <Link href="/app/routes" className="btn">Cross-chain Routes</Link>
             </div>
             <CopyCA address="0xc256e0fb1f93164b8e499746bba593a8e40a7eef" />
             <div className={s.badgesRow}>
-              <span>Testnet lending</span>
-              <span>Cross-chain route preview</span>
-              <span>Native collateral in research</span>
+              <span>Live on Robinhood Chain (4663)</span>
+              <span>Chainlink Oracle · Keeperless</span>
+              <span>1Click Cross-Chain Execution</span>
             </div>
           </div>
           <aside className={s.colR}><EventStream /></aside>
@@ -192,7 +192,7 @@ Liq. price     = D / (qty × liqThreshold)`}</pre>
           <p>Mint test assets, open a position, push it toward liquidation, and check every tx on the explorer.</p>
         </div>
         <div className={`${s.ctaBtns} bevel`}>
-          <a href="https://explorer.testnet.chain.robinhood.com" target="_blank" rel="noreferrer" className="btn">RH explorer ↗</a>
+          <a href="https://robinhoodchain.blockscout.com/address/0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900" target="_blank" rel="noreferrer" className="btn">RH Mainnet explorer ↗</a>
           <Link href="/app" className="btn btn-primary">Launch app →</Link>
         </div>
       </section>

@@ -1,12 +1,23 @@
 import s from "../app/trade.module.css";
 import d from "./docs.module.css";
-import { deployment, addrUrl } from "@/lib/chain";
+import { DEPLOYMENTS, addrUrl } from "@/lib/chain";
 
-const toc = [["start", "Getting started"], ["formulas", "Formulas"], ["params", "Parameters"], ["contracts", "Contracts"], ["routes", "Route preview"], ["limits", "Limits"], ["roadmap", "Roadmap"]];
-const params = [["Max borrow LTV", "60%"], ["Liquidation threshold", "75%"], ["Liquidation eligibility", "HF < 1"], ["Liquidator bonus", "5% of repaid debt value"], ["Close factor", "≤ 50% of debt per call"], ["Borrow APR", "8% fixed, simple accrual into a global index"], ["Protocol reserve", "0%"], ["Oracle freshness", "300 s. Borrow and withdraw-with-debt need a fresh price; repay and debt-free exit do not"]];
+const toc = [["start", "Getting started"], ["formulas", "Formulas"], ["params", "Parameters"], ["contracts", "Contracts"], ["routes", "Cross-chain routes"], ["limits", "Limits & safety"], ["roadmap", "Roadmap"]];
+const params = [["Max borrow LTV", "60%"], ["Liquidation threshold", "75%"], ["Liquidation eligibility", "HF < 1"], ["Liquidator bonus", "5% of repaid debt value"], ["Close factor", "≤ 50% of debt per call"], ["Borrow APR", "8% fixed, simple accrual into a global index"], ["Safety rails", "Configurable collateral/supply TVL caps + guardian pause (never blocks repay or exit)"], ["Oracle freshness", "300 s (testnet) / 900 s (mainnet). Borrow & withdraw-with-debt require a fresh price"]];
 
 export default function Docs() {
-  const addrs: [string, string | undefined][] = [["LengoMarket", deployment.market], ["tBTC", deployment.tBTC], ["tUSDC", deployment.tUSDC], ["DemoOracle", deployment.oracle]];
+  const testnetAddrs: [string, string | undefined][] = [
+    ["LengoMarket (Testnet · 46630)", DEPLOYMENTS.testnet.market],
+    ["tBTC (8 dec · Testnet)", DEPLOYMENTS.testnet.collateral],
+    ["tUSDC (6 dec · Testnet)", DEPLOYMENTS.testnet.debtAsset],
+    ["DemoOracle (Testnet)", DEPLOYMENTS.testnet.oracle],
+  ];
+  const mainnetAddrs: [string, string | undefined][] = [
+    ["LengoMarket (Mainnet · 4663)", DEPLOYMENTS.mainnet.market],
+    ["WETH (18 dec · Mainnet)", DEPLOYMENTS.mainnet.collateral],
+    ["USDG (6 dec · Mainnet)", DEPLOYMENTS.mainnet.debtAsset],
+    ["PriceOracle (Mainnet)", DEPLOYMENTS.mainnet.oracle],
+  ];
   return (
     <>
       <div className={s.pageHead}>
@@ -45,17 +56,18 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
           <section id="contracts">
             <h2>Contracts</h2>
             <div className={d.table}>
-              {addrs.map(([k, v]) => <div key={k}><span>{k}</span><b>{v ? <a href={addrUrl(v)} target="_blank" rel="noreferrer">{v} ↗</a> : "Not deployed yet"}</b></div>)}
+              {testnetAddrs.map(([k, v]) => <div key={k}><span>{k}</span><b>{v ? <a href={addrUrl(v, "testnet")} target="_blank" rel="noreferrer">{v} ↗</a> : "Not deployed yet"}</b></div>)}
+              {mainnetAddrs.map(([k, v]) => <div key={k}><span>{k}</span><b>{v ? <a href={addrUrl(v, "mainnet")} target="_blank" rel="noreferrer">{v} ↗</a> : "Ready to deploy via DeployMainnet.s.sol"}</b></div>)}
             </div>
-            <p>Solidity 0.8.24, Foundry, OpenZeppelin 5.1 (pinned). Debt uses shares over a borrow index; lenders hold shares over idle liquidity plus outstanding debt, with a virtual-share offset against inflation attacks. Not audited. &ldquo;Verified&rdquo; is only claimed for contracts the explorer actually verified.</p>
+            <p>Solidity 0.8.24, Foundry, OpenZeppelin 5.1 (pinned). Mainnet uses <code>PriceOracle</code> (Ownable2Step + keeper role + min/max bounds + per-update deviation circuit breaker, no demoOverride) and <code>LengoMarket</code> with TVL caps and non-custodial pause guards.</p>
           </section>
           <section id="routes">
-            <h2>Route preview</h2>
-            <p>The Routes page asks NEAR Intents 1Click for a quote with <code>dry: true</code>, through a server proxy. It reads mainnet market data. No funds move, no deposit address is issued, and nothing connects a quote to your testnet debt.</p>
+            <h2>Cross-chain routes (Preview &amp; Live Execute)</h2>
+            <p>The Routes page connects to NEAR Intents 1Click in two modes: <b>Quote Preview</b> (<code>dry: true</code>, no deposit address) and <b>Live Execute</b> (<code>dry: false</code>, issues a real deposit address, supports 1-click wallet transfer on Robinhood Chain Mainnet, submits txHash to solvers, and polls live settlement status).</p>
             <ul>
-              <li><b>Borrow payout preview</b>: converting an RH debt asset (e.g. USDG on <code>hood</code>) to USDC on another chain. It does not prove USDC exists as a debt asset on RH.</li>
-              <li><b>Asset routing preview</b>: a BTC/ZEC swap quote. A swap is not collateral; selling BTC is never called BTC collateral.</li>
-              <li>Debt denomination and payout denomination stay separate. If debt is USDG and payout is USDC, the UI shows both and the conversion cost.</li>
+              <li><b>Borrow payout</b>: route borrowed USDG on Robinhood Chain (<code>hood</code>) directly to USDC on Solana, Base, Arbitrum, or Ethereum.</li>
+              <li><b>Collateral inflow</b>: route USDC from Base into WETH on Robinhood Chain Mainnet.</li>
+              <li><b>Asset routing</b>: BTC/ZEC swap quotes via NEAR Intents. A swap is not native collateral.</li>
             </ul>
           </section>
           <section id="limits">

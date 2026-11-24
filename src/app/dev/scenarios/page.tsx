@@ -5,7 +5,7 @@ import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import s from "../../app/trade.module.css";
 import d from "./scenarios.module.css";
 import { marketAbi, oracleAbi, tokenAbi } from "@/lib/abi";
-import { deployment, isDeployed, rhTestnet, txUrl, addrUrl } from "@/lib/chain";
+import { deployment, isDeployed, rhTestnet, txUrl, addrUrl, useNetwork } from "@/lib/chain";
 import { useToast } from "../../Toaster";
 
 type Pos = { account: Address; coll: number; debt: number; hf: number };
@@ -16,6 +16,7 @@ const fmtHf = (h: number) => (h === Infinity ? "No debt" : h.toFixed(3));
 const usd = (n: number) => "$" + n.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
 export default function Scenarios() {
+  const net = useNetwork();
   const { address, isConnected, chainId } = useAccount();
   const client = usePublicClient({ chainId: rhTestnet.id });
   const { writeContractAsync } = useWriteContract();
@@ -122,6 +123,18 @@ export default function Scenarios() {
 
   const supplyGap = acct ? Math.abs(acct.supplied - (acct.idle + acct.debt)) : 0;
   const balGap = acct ? acct.marketBal - acct.idle : 0;
+
+  if (net.mode === "mainnet") {
+    return (
+      <>
+        <div className={s.pageHead}>
+          <div><h1>Dev · Scenarios (Disabled on Mainnet)</h1><p>Mainnet uses PriceOracle without demoOverride — manual scenario overrides do not exist on Mainnet.</p></div>
+          <span className={d.warnTag}>Testnet-only tool</span>
+        </div>
+        <p className={d.banner}>Switch back to Robinhood Chain Testnet (46630) if you want to run the two-wallet DemoOracle liquidation scenario.</p>
+      </>
+    );
+  }
 
   return (
     <>

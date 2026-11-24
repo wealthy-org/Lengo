@@ -6,12 +6,13 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {DemoOracle} from "./DemoOracle.sol";
+import {IPriceOracle} from "./IPriceOracle.sol";
 
 /// @title LengoMarket
 /// @notice One isolated market: one collateral asset, one debt asset, one aggregate position per wallet.
 /// Debt uses shares over a global borrow index (fixed APR, simple per-second accrual folded into the index).
-/// Lenders hold supply shares over (idle liquidity + outstanding debt). No protocol reserve in v0.1.
+/// Lenders hold supply shares over (idle liquidity + outstanding debt).
+/// Mainnet guards: configurable collateral/supply caps and emergency pause that never blocks repay, exit, or liquidation.
 contract LengoMarket is ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Math for uint256;
@@ -24,7 +25,7 @@ contract LengoMarket is ReentrancyGuard {
 
     IERC20 public immutable collateral;
     IERC20 public immutable debtAsset;
-    DemoOracle public immutable oracle;
+    IPriceOracle public immutable oracle;
     uint8 public immutable collDec;
     uint8 public immutable debtDec;
 
@@ -39,9 +40,16 @@ contract LengoMarket is ReentrancyGuard {
     // global state
     uint256 public borrowIndex = RAY;
     uint256 public lastAccrual;
+    uint256 public totalCollateral;
     uint256 public totalDebtShares;
     uint256 public totalSupplyShares;
     uint256 public idle; // debt asset held for lenders/borrowers
+
+    // safety rails (guardian can bound TVL and pause new risk; exits & repayments are always open)
+    address public guardian;
+    bool public paused;
+    uint256 public collateralCap = type(uint256).max;
+    uint256 public supplyCap = type(uint256).max;
 
     struct Position { uint256 collateral; uint256 debtShares; }
     mapping(address => Position) public positions;
@@ -56,6 +64,9 @@ contract LengoMarket is ReentrancyGuard {
     event SupplyWithdrawn(address indexed account, uint256 assets, uint256 shares);
     event Liquidated(address indexed liquidator, address indexed borrower, uint256 repaid, uint256 seized);
     event BadDebt(address indexed borrower, uint256 assets);
+    event GuardianUpdated(address indexed previousGuardian, address indexed newGuardian);
+    event PauseUpdated(bool paused);
+    event CapsUpdated(uint256 collateralCap, uint256 supplyCap);
 
     error ZeroAmount();
     error InsufficientLiquidity();
@@ -63,6 +74,9 @@ contract LengoMarket is ReentrancyGuard {
     error StalePrice();
     error Healthy();
     error InsufficientCollateral();
+    error MarketPaused();
+    error CapExceeded();
+    error NotGuardian();
 
     struct Params {
         address collateral; address debtAsset; address oracle;
@@ -73,12 +87,35 @@ contract LengoMarket is ReentrancyGuard {
         require(p.maxLtv < p.liqThreshold && p.liqThreshold < WAD, "params");
         collateral = IERC20(p.collateral);
         debtAsset = IERC20(p.debtAsset);
-        oracle = DemoOracle(p.oracle);
+        oracle = IPriceOracle(p.oracle);
         collDec = IERC20Metadata(p.collateral).decimals();
         debtDec = IERC20Metadata(p.debtAsset).decimals();
         maxLtv = p.maxLtv; liqThreshold = p.liqThreshold; liqBonus = p.liqBonus;
         closeFactor = p.closeFactor; aprWad = p.aprWad; maxOracleAge = p.maxOracleAge;
         lastAccrual = block.timestamp;
+        guardian = msg.sender;
+    }
+
+    modifier onlyGuardian() {
+        if (msg.sender != guardian) revert NotGuardian();
+        _;
+    }
+
+    function setGuardian(address newGuardian) external onlyGuardian {
+        require(newGuardian != address(0), "zero guardian");
+        emit GuardianUpdated(guardian, newGuardian);
+        guardian = newGuardian;
+    }
+
+    function setPaused(bool paused_) external onlyGuardian {
+        paused = paused_;
+        emit PauseUpdated(paused_);
+    }
+
+    function setCaps(uint256 collateralCap_, uint256 supplyCap_) external onlyGuardian {
+        collateralCap = collateralCap_;
+        supplyCap = supplyCap_;
+        emit CapsUpdated(collateralCap_, supplyCap_);
     }
 
     // ---------------------------------------------------------------- accrual
@@ -140,8 +177,11 @@ contract LengoMarket is ReentrancyGuard {
     // ---------------------------------------------------------------- borrower
 
     function depositCollateral(uint256 assets) external nonReentrant {
+        if (paused) revert MarketPaused();
         if (assets == 0) revert ZeroAmount();
+        if (totalCollateral + assets > collateralCap) revert CapExceeded();
         positions[msg.sender].collateral += assets;
+        totalCollateral += assets;
         collateral.safeTransferFrom(msg.sender, address(this), assets);
         emit CollateralDeposited(msg.sender, assets);
     }
@@ -152,12 +192,14 @@ contract LengoMarket is ReentrancyGuard {
         Position storage p = positions[msg.sender];
         if (assets > p.collateral) revert InsufficientCollateral();
         p.collateral -= assets;
+        totalCollateral -= assets;
         _checkLtv(msg.sender); // debt-free exit skips oracle entirely
         collateral.safeTransfer(msg.sender, assets);
         emit CollateralWithdrawn(msg.sender, assets);
     }
 
     function borrow(uint256 assets) external nonReentrant {
+        if (paused) revert MarketPaused();
         if (assets == 0) revert ZeroAmount();
         accrue();
         if (assets > idle) revert InsufficientLiquidity();
@@ -203,8 +245,10 @@ contract LengoMarket is ReentrancyGuard {
     function claimOf(address a) external view returns (uint256) { return _toAssets(supplyShares[a], Math.Rounding.Floor); }
 
     function supply(uint256 assets) external nonReentrant returns (uint256 shares) {
+        if (paused) revert MarketPaused();
         if (assets == 0) revert ZeroAmount();
         accrue();
+        if (totalSupplyAssets() + assets > supplyCap) revert CapExceeded();
         shares = _toShares(assets, Math.Rounding.Floor);
         if (shares == 0) revert ZeroAmount();
         supplyShares[msg.sender] += shares;
@@ -249,6 +293,7 @@ contract LengoMarket is ReentrancyGuard {
         }
         _repay(msg.sender, borrower, repaid);
         p.collateral -= seized;
+        totalCollateral -= seized;
         collateral.safeTransfer(msg.sender, seized);
         emit Liquidated(msg.sender, borrower, repaid, seized);
 

@@ -13,4 +13,5 @@ fs_permissions = [{ access = "read-write", path = "./deployments" }]
 runs = 256
 
 [rpc_endpoints]
+rh_mainnet = "https://rpc.mainnet.chain.robinhood.com"
 rh_testnet = "https://rpc.testnet.chain.robinhood.com"
