@@ -198,8 +198,12 @@ export async function runIndexer(env: Env) {
   const head = await pub.getBlockNumber();
   await sql`delete from activity where chain_id = ${chainId} and block_number >= ${from.toString()}`;
   let inserted = 0;
-  for (let s = from; s <= head; s += 9_000n) {
-    const e = s + 8_999n > head ? head : s + 8_999n;
+  let chunks = 0;
+  let lastEnd = from;
+  // Use 999-block spans (1,000 blocks inclusive) to comply with thirdweb / public Orbit RPC getLogs limits,
+  // and cap at 35 chunks per cron invocation to stay well inside Cloudflare Worker subrequest budgets.
+  for (let s = from; s <= head && chunks < 35; s += 1_000n, chunks++) {
+    const e = s + 999n > head ? head : s + 999n;
     const logs = (await pub.getContractEvents({
       address: env.MARKET,
       abi: marketAbi,
@@ -216,10 +220,11 @@ export async function runIndexer(env: Env) {
         on conflict (chain_id, tx_hash, log_index) do nothing`;
       inserted++;
     }
+    lastEnd = e;
     await sql`insert into indexer_cursor (chain_id, last_block, updated_at) values (${chainId}, ${e.toString()}, now())
       on conflict (chain_id) do update set last_block = excluded.last_block, updated_at = now()`;
   }
-  return { from: from.toString(), to: head.toString(), inserted };
+  return { from: from.toString(), to: lastEnd.toString(), head: head.toString(), inserted };
 }
 
 export default {

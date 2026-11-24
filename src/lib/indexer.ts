@@ -4,7 +4,8 @@ import { marketAbi } from "./abi";
 import { DEFAULT_NETWORK, DEPLOYMENTS, type NetworkMode } from "./chain";
 import { db } from "./db";
 
-const CHUNK = 9_000n;     // stay under typical RPC getLogs range limits
+const CHUNK = 999n;       // thirdweb / public RPCs cap eth_getLogs at 1,000 blocks inclusive
+const MAX_CHUNKS = 35;    // stay safely within serverless subrequest limits
 const REWIND = 20n;       // re-scan recent blocks so a reorg can't leave stale rows
 
 type Row = { event: string; account: string; counterparty: string | null; a: bigint | null; b: bigint | null };
@@ -24,7 +25,7 @@ export async function syncIndex(mode: NetworkMode = DEFAULT_NETWORK) {
   if (!sql) return { ok: false, reason: "DATABASE_URL not set" };
   const net = DEPLOYMENTS[mode];
   if (!net.isDeployed) return { ok: false, reason: `${mode} contracts not deployed` };
-  const client = createPublicClient({ chain: net.chain, transport: http() });
+  const client = createPublicClient({ chain: net.chain, transport: http(net.chain.rpcUrls.default.http[0]) });
   const chainId = net.chain.id;
 
   const cur = (await sql`select last_block from indexer_cursor where chain_id = ${chainId}`) as { last_block: string }[];
@@ -34,8 +35,10 @@ export async function syncIndex(mode: NetworkMode = DEFAULT_NETWORK) {
   await sql`delete from activity where chain_id = ${chainId} and block_number >= ${from.toString()}`;
 
   let inserted = 0;
-  for (let start = from; start <= head; start += CHUNK) {
-    const end = start + CHUNK - 1n > head ? head : start + CHUNK - 1n;
+  let chunks = 0;
+  let lastEnd = from;
+  for (let start = from; start <= head && chunks < MAX_CHUNKS; start += CHUNK + 1n, chunks++) {
+    const end = start + CHUNK > head ? head : start + CHUNK;
     const logs = (await client.getContractEvents({ address: net.market!, abi: marketAbi, fromBlock: start, toBlock: end })) as (Log & { eventName: string; args: Record<string, unknown> })[];
     for (const l of logs) {
       const f = map[l.eventName];
@@ -47,8 +50,9 @@ export async function syncIndex(mode: NetworkMode = DEFAULT_NETWORK) {
         on conflict (chain_id, tx_hash, log_index) do nothing`;
       inserted++;
     }
+    lastEnd = end;
     await sql`insert into indexer_cursor (chain_id, last_block, updated_at) values (${chainId}, ${end.toString()}, now())
       on conflict (chain_id) do update set last_block = excluded.last_block, updated_at = now()`;
   }
-  return { ok: true, mode, from: from.toString(), to: head.toString(), inserted };
+  return { ok: true, mode, from: from.toString(), to: lastEnd.toString(), head: head.toString(), inserted };
 }
