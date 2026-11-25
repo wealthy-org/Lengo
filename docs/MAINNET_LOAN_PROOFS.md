@@ -3,7 +3,7 @@
 **Network:** Robinhood Chain Mainnet  
 **Chain ID:** `4663`  
 **RPC:** `https://rpc.mainnet.chain.robinhood.com` / `https://4663.rpc.thirdweb.com`  
-**Explorer:** `https://explorer.mainnet.chain.robinhood.com`  
+**Explorer:** `https://robinhoodchain.blockscout.com`  
 **Verification:** Sourcify (`exact_match`)  
 
 ---
@@ -12,10 +12,10 @@
 
 | Contract | Address | Explorer Link | Sourcify Status |
 |---|---|---|---|
-| **LengoMarket (WETH / USDG)** | `0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900` | [View on Explorer](https://explorer.mainnet.chain.robinhood.com/address/0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900) | `exact_match` ✅ |
-| **ChainlinkOracle Adapter** | `0xAc892397986B84ff42894739F05fE884D1D4c6da` | [View on Explorer](https://explorer.mainnet.chain.robinhood.com/address/0xAc892397986B84ff42894739F05fE884D1D4c6da) | `exact_match` ✅ |
-| **WETH Collateral Token** | `0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73` | [View on Explorer](https://explorer.mainnet.chain.robinhood.com/address/0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73) | Verified ERC-20 |
-| **USDG Debt Token** | `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` | [View on Explorer](https://explorer.mainnet.chain.robinhood.com/address/0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168) | Verified ERC-20 |
+| **LengoMarket (WETH / USDG)** | `0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900` | [View on Explorer](https://robinhoodchain.blockscout.com/address/0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900) | `exact_match` ✅ |
+| **ChainlinkOracle Adapter** | `0xAc892397986B84ff42894739F05fE884D1D4c6da` | [View on Explorer](https://robinhoodchain.blockscout.com/address/0xAc892397986B84ff42894739F05fE884D1D4c6da) | `exact_match` ✅ |
+| **WETH Collateral Token** | `0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73` | [View on Explorer](https://robinhoodchain.blockscout.com/address/0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73) | Verified ERC-20 |
+| **USDG Debt Token** | `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168` | [View on Explorer](https://robinhoodchain.blockscout.com/address/0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168) | Verified ERC-20 |
 
 ---
 
@@ -25,7 +25,7 @@
 - **Action:** `LengoMarket.depositCollateral(0.001 WETH)`
 - **Transaction Hash:** `0x3fe623a1df58f27027d14fe409074092b3bc9197cbeafc558c4c7980ee987244`
 - **Deposited Collateral:** `0.001 WETH` (~$1.67 USD at Chainlink oracle price ~$1,670)
-- **Explorer Proof:** [Tx 0x3fe623a1…7244 on Explorer](https://explorer.mainnet.chain.robinhood.com/tx/0x3fe623a1df58f27027d14fe409074092b3bc9197cbeafc558c4c7980ee987244)
+- **Explorer Proof:** [Tx 0x3fe623a1…7244 on Explorer](https://robinhoodchain.blockscout.com/tx/0x3fe623a1df58f27027d14fe409074092b3bc9197cbeafc558c4c7980ee987244)
 - **Onchain State Verification:**
   - `totalCollateral()`: `0.001 WETH` (`1000000000000000` wei)
   - `getPosition(account)`: `coll = 0.001 WETH`, `debt = 0`, `hf = Infinity`

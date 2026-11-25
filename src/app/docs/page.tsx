@@ -122,7 +122,7 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
               <div>
                 <span>First WETH Deposit</span>
                 <b>
-                  <a href="https://explorer.mainnet.chain.robinhood.com/tx/0x3fe623a1df58f27027d14fe409074092b3bc9197cbeafc558c4c7980ee987244" target="_blank" rel="noreferrer">
+                  <a href="https://robinhoodchain.blockscout.com/tx/0x3fe623a1df58f27027d14fe409074092b3bc9197cbeafc558c4c7980ee987244" target="_blank" rel="noreferrer">
                     0x3fe623a1…7244 ↗
                   </a>
                 </b>
