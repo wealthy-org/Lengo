@@ -186,9 +186,10 @@ export default function Routes() {
       }
       const dep = q.depositAddress as Address;
       const units = BigInt(q.amountInUnits);
-      const hash = origin.contractAddress
+      const erc20Addr = (origin.contractAddress || origin.assetId.match(/0x[a-fA-F0-9]{40}/)?.[0]) as Address | undefined;
+      const hash = erc20Addr
         ? await writeContractAsync({
-            address: origin.contractAddress as Address,
+            address: erc20Addr,
             abi: tokenAbi,
             functionName: "transfer",
             args: [dep, units],
