@@ -155,6 +155,14 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
                   </a>
                 </b>
               </div>
+              <div>
+                <span>1Click Route Deposit (RH)</span>
+                <b>
+                  <a href="https://robinhoodchain.blockscout.com/tx/0x9932efbe8bcacc06c39536a5413d3dc755e7834ab4bd45ee6780b3098c02409c" target="_blank" rel="noreferrer">
+                    0x9932efbe…409c ↗
+                  </a>
+                </b>
+              </div>
             </div>
             <h3 style={{ marginTop: 24, fontSize: 13, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--tx2)" }}>
               Testnet sandbox — Robinhood Chain Testnet (46630)
@@ -196,9 +204,9 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
             <div className={d.table}>
               {[
                 ["Phase 1 · LIVE", "Isolated lending engine + Testnet sandbox (46630)"],
-                ["Phase 2 · LIVE", "Robinhood Chain Mainnet (4663) WETH / USDG + keeperless ChainlinkOracle"],
-                ["Phase 3 · LIVE", "NEAR Intents 1Click cross-chain Quote Preview + Live Execution"],
-                ["Phase 4 · NEXT", "cbBTC / USDG isolated market (CCIP) + external security audit"],
+                ["Phase 2 · LIVE", "Robinhood Chain Mainnet Beta (4663) WETH / USDG + keeperless ChainlinkOracle"],
+                ["Phase 3 · PREVIEW", "NEAR Intents 1Click cross-chain Quote Preview + v1 Payout Rollout"],
+                ["Phase 4 · SEEDING", "Stock & BTC isolated markets deployed on Mainnet (pool seeding in progress)"],
                 ["Phase 5 · RESEARCH", "Native BTC & ZEC collateral locking, proof & redemption"],
               ].map(([k, v]) => (
                 <div key={k}>

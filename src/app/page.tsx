@@ -13,14 +13,14 @@ import CopyCA from "./CopyCA";
 
 const tick = [["WETH/USDG","APR","8.00%"],["Max LTV","","60%"],["Liq. threshold","","75%"],["USDG → USDC","1Click","Routing Preview"],["Oracle","Chainlink","ETH/USD"],["Chain","Robinhood","4663"],["Chart","Pyth Pro","Live 48h"],["Liq. bonus","","5%"]];
 const params = [["Max borrow LTV","60%"],["Liquidation threshold","75%"],["Eligible when","HF < 1"],["Liquidator bonus","5%"],["Close factor","50% per call"],["Borrow APR","8% fixed"],["TVL caps (beta)","25 WETH · 50k USDG"],["Oracle","Chainlink ETH/USD"]];
-const disclosure = [
-  ["Lending contracts", "Live on RH Mainnet (4663) + Testnet (46630)", "External security audit"],
-  ["Collateral asset", "WETH (18 dec) on RH Mainnet", "Native BTC, ZEC, SOL"],
-  ["Borrow asset", "USDG (6 dec) Global Dollar", "Additional markets"],
-  ["Price oracle", "Chainlink ETH/USD (keeperless)", "Multi-oracle fallback"],
-  ["Multichain payout", "NEAR Intents 1Click (Routing Preview · v1 Rollout)", "1-tx borrow + route"],
-  ["Native BTC / ZEC deposit", "In research (testnet demo uses tBTC)", "Lock, proof, redemption"],
-  ["Safety rails", "Capped TVL + non-custodial pause", "Timelock multisig"],
+const disclosure: [string, string, "live" | "preview" | "muted", string][] = [
+  ["Lending engine", "Isolated WETH / USDG market · Sourcify verified", "live", "External third-party security audit"],
+  ["Collateral markets", "WETH active · 6 BTC & equity pools seeding", "live", "Open cbBTC, WBTC, NVDA, TSLA & AAPL pools"],
+  ["Supply & borrow", "Public USDG lending · 8.0% fixed borrow APR", "live", "Dynamic utilization interest curve"],
+  ["Price oracle", "Chainlink ETH/USD feed · fully keeperless", "live", "Secondary oracle fallback guard"],
+  ["Cross-chain payout", "NEAR Intents 1Click route preview", "preview", "Live USDG → USDC payout (Solana & Base)"],
+  ["Native BTC & ZEC", "In research — not accepted on Mainnet yet", "muted", "Origin-chain lock, proof & redemption"],
+  ["Safety rails", "25 WETH beta cap · non-custodial exit always open", "live", "Timelock guardian multisig"],
 ];
 const phases = [
   ["Phase 1", "LIVE", "Lending engine", ["Isolated WETH/USDG market", "RAY debt index + virtual shares", "Live on RH Mainnet (4663)"], 100],
@@ -82,9 +82,9 @@ export default function Landing() {
             </div>
             <CopyCA address="0xc256e0fb1f93164b8e499746bba593a8e40a7eef" />
             <div className={s.badgesRow}>
-              <span>Live on Robinhood Chain (4663)</span>
+              <span>Mainnet Beta · RH 4663</span>
               <span>Chainlink Oracle · Keeperless</span>
-              <span>1Click Cross-Chain Execution</span>
+              <span>1Click Routing · Preview</span>
             </div>
           </div>
           <aside className={s.colR}><EventStream /></aside>
@@ -93,13 +93,13 @@ export default function Landing() {
       </section>
 
       <section id="twosides" className={s.section}>
-        <Head n="00" label="Cross-chain architecture" a="Two sides of lending." b="Collateral origin meets liquidity destination." aside="Target design: collateral stays on its origin network, debt and risk accounting live on Robinhood Chain, and stablecoins are routed to your chain via NEAR Intents. Today: testnet lending live, route preview only, native collateral in research." />
+        <Head n="00" label="Cross-chain architecture" a="Two sides of lending." b="Collateral origin meets liquidity destination." aside="Target design: collateral stays on its origin network, debt and risk accounting live on Robinhood Chain, and stablecoins are routed to your chain via NEAR Intents. Today: WETH/USDG Mainnet Beta is live (4663), 1Click route preview is active, and native BTC/ZEC locking is in research." />
         <div className={s.split} data-stagger>
           <div className={`${s.side} bevel`}>
             <span className={s.k}>Side A · collateral origin</span>
             <h3>Where your collateral lives</h3>
-            <p>BTC on Bitcoin, ZEC on Zcash, SOL on Solana, HYPE on Hyperliquid. Lengo must verify it is locked, not swapped. Collateral stays collateral. In research — testnet uses tBTC.</p>
-            <div className={s.chips}><i>BTC</i><i>ZEC</i><i>SOL</i><i>HYPE</i><i>ETH</i></div>
+            <p>Target: BTC on Bitcoin, ZEC on Zcash, SOL on Solana, HYPE on Hyperliquid — locked, not swapped. Native locking is in research; today Mainnet Beta uses WETH on Robinhood Chain.</p>
+            <div className={s.chips}><i>WETH · Live</i><i>BTC</i><i>ZEC</i><i>SOL</i><i>HYPE</i></div>
           </div>
           <div className={s.core}>
             <span className={s.beam} />
@@ -110,7 +110,7 @@ export default function Landing() {
           <div className={`${s.side} bevel`}>
             <span className={s.k}>Side B · payout destination</span>
             <h3>Where you need liquidity</h3>
-            <p>NEAR Intents 1Click previews routing the borrowed stablecoin to your chain. Debt stays on Robinhood Chain; conversion and fees are shown separately. Quote preview today.</p>
+            <p>NEAR Intents 1Click quotes routing borrowed USDG to USDC on your target chain. Debt stays on Robinhood Chain; v1 cross-chain payout rollout is in progress.</p>
             <div className={s.chips}><i>USDC · Solana</i><i>USDC · Base</i><i>USDC · Arbitrum</i><i>USDG · Robinhood</i></div>
           </div>
         </div>
@@ -148,11 +148,22 @@ Liq. price     = D / (qty × liqThreshold)`}</pre>
       </section>
 
       <section id="disclosure" className={s.section}>
-        <Head n="05" label="Disclosure" a="What is live." b="What is next." aside="Claims are only useful when they are exact. Every live capability below is deployed and verifiable on Robinhood Chain Mainnet (4663)." />
+        <Head n="05" label="Disclosure" a="What is live." b="What is next." aside="Every status below reflects what is deployed and verifiable today on Robinhood Chain Mainnet (4663) — zero inflated claims." />
         <div className={`${s.table} bevel`} data-reveal>
-          <div className={s.tHead}><span>Capability</span><span><i className={s.pill}>● Mainnet · 4663</i></span><span><i className={s.pill}>○ Next</i></span></div>
-          {disclosure.map(([a, b, c]) => (
-            <div key={a} className={s.tRow}><span>{a}</span><span className={b.startsWith("Not") ? s.muted : ""}>{b}</span><span className={s.muted}>{c}</span></div>
+          <div className={s.tHead}>
+            <span>Capability</span>
+            <span><i className={`${s.pill} ${s.pillLive}`}>● Mainnet Beta · 4663</i></span>
+            <span><i className={s.pill}>○ Next Milestone</i></span>
+          </div>
+          {disclosure.map(([cap, nowTxt, tone, nextTxt]) => (
+            <div key={cap} className={s.tRow}>
+              <span className={s.tCap}>{cap}</span>
+              <span className={tone === "muted" ? s.muted : tone === "preview" ? s.tPrev : s.tLive}>
+                <i className={s.tDot} />
+                {nowTxt}
+              </span>
+              <span className={s.muted}>{nextTxt}</span>
+            </div>
           ))}
         </div>
       </section>
@@ -199,7 +210,7 @@ Liq. price     = D / (qty × liqThreshold)`}</pre>
 
       <footer className={`${s.foot} bevel`}>
         <Link href="/app">Markets</Link><Link href="/app/routes">Routes</Link><Link href="/app/activity">Activity</Link><Link href="/docs">Docs</Link><a href="https://robinhoodchain.blockscout.com/address/0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900" target="_blank" rel="noreferrer">Contract · 0x8f1C…5900</a><a href="https://x.com/lengoapp" target="_blank" rel="noreferrer">X · @lengoapp</a>
-        <span>Robinhood Chain Mainnet · Capped Beta</span><span className={s.status}>Mainnet <i /></span>
+        <span>Robinhood Chain · Mainnet Beta</span><span className={s.status}>Mainnet Beta · 4663 <i /></span>
       </footer>
     </div>
   );

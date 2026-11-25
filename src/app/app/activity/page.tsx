@@ -55,7 +55,7 @@ export default function Activity() {
         <div className={s.stats} style={{ gridTemplateColumns: "repeat(5,1fr)" }}>
           <div><span>Records</span><b>{rows.length}</b></div>
           <div><span>Confirmed onchain</span><b className={s.ok}>{rows.filter((r) => r.st === "Confirmed").length}</b></div>
-          <div><span>1Click routes</span><b className={s.warn}>{rows.filter((r) => r.st !== "Confirmed").length}</b></div>
+          <div><span>1Click routes</span><b className={s.warn}>{rows.filter((r) => group[r.type] === "Routes").length}</b></div>
           <div><span>Chain</span><b>RH {A.net.chain.id}</b></div>
           <div><span>Indexed block</span><b>{latestBlk}</b></div>
         </div>

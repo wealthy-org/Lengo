@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 11px 16px;
   border-bottom: 1px solid var(--line);
   background: var(--panel);
   gap: 12px;
@@ -20,16 +20,17 @@
 
 .priceGroup {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .currentPrice {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 500;
   color: var(--tx);
   letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .changeBadge {
@@ -37,22 +38,23 @@
   padding: 2px 8px;
   border-radius: 2px;
   font-weight: 500;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
 .changeUp {
   color: var(--lime);
-  background: rgba(201, 242, 122, 0.12);
-  border: 1px solid rgba(201, 242, 122, 0.3);
+  background: rgba(201, 242, 122, 0.11);
+  border: 1px solid rgba(201, 242, 122, 0.28);
 }
 
 .changeDown {
   color: var(--red);
-  background: rgba(255, 107, 107, 0.12);
-  border: 1px solid rgba(255, 107, 107, 0.3);
+  background: rgba(255, 107, 107, 0.11);
+  border: 1px solid rgba(255, 107, 107, 0.28);
 }
 
 .liveTag {
@@ -71,19 +73,25 @@
   border-radius: 50%;
   background: var(--lime);
   box-shadow: 0 0 8px var(--lime);
-  animation: pulseDot 1.6s infinite ease-in-out;
+  animation: pulseDot 1.8s infinite ease-in-out;
+}
+
+.loadingDot {
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber);
 }
 
 @keyframes pulseDot {
-  0% { transform: scale(0.9); opacity: 0.7; }
-  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 12px var(--lime); }
-  100% { transform: scale(0.9); opacity: 0.7; }
+  0% { transform: scale(0.9); opacity: 0.65; }
+  50% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.65; }
 }
 
 .controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .btnGroup {
@@ -94,13 +102,13 @@
 }
 
 .btnGroup button {
-  padding: 5px 10px;
+  padding: 5px 9px;
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tx3);
   border-right: 1px solid var(--line2);
-  transition: all 0.15s ease;
+  transition: color 0.15s ease, background 0.15s ease;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -121,24 +129,39 @@
   box-shadow: inset 0 -2px 0 var(--lime);
 }
 
+.btnGroup .emaBtnOn {
+  color: var(--mint);
+  background: rgba(127, 224, 180, 0.08);
+  box-shadow: inset 0 -2px 0 var(--mint);
+}
+
+.emaDot {
+  width: 7px;
+  height: 2px;
+  background: var(--mint);
+  border-radius: 1px;
+  display: inline-block;
+}
+
 .hudBar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 16px;
+  padding: 7px 14px;
   background: var(--bg2);
   border-bottom: 1px solid var(--line);
-  font-size: 11px;
+  font-size: 10.5px;
   color: var(--tx3);
-  overflow-x: auto;
-  gap: 16px;
-  white-space: nowrap;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .hudValues {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .hudValues span {
@@ -160,24 +183,33 @@
   color: var(--red);
 }
 
+.hudValues b.mint {
+  color: var(--mint);
+}
+
 .hudTime {
   color: var(--tx3);
   font-size: 10px;
   letter-spacing: 0.05em;
 }
 
-.svgWrap {
-  position: relative;
-  width: 100%;
-  height: 330px;
-  overflow: hidden;
-  cursor: crosshair;
+.hudHint {
+  color: var(--tx3);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  opacity: 0.78;
 }
 
-.svg {
+.canvasWrap {
+  position: relative;
+  width: 100%;
+  height: 350px;
+  background: var(--bg);
+}
+
+.canvasInner {
   width: 100%;
   height: 100%;
-  display: block;
 }
 
 .liqLegend {
@@ -188,8 +220,8 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--red);
-  padding: 3px 8px;
-  border: 1px dashed rgba(255, 107, 107, 0.4);
+  padding: 2px 8px;
+  border: 1px dashed rgba(255, 107, 107, 0.42);
   background: rgba(255, 107, 107, 0.06);
 }
 
@@ -212,7 +244,10 @@
   .hudValues {
     gap: 8px;
   }
-  .svgWrap {
-    height: 280px;
+  .hudHint {
+    display: none;
+  }
+  .canvasWrap {
+    height: 290px;
   }
 }

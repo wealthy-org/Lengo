@@ -8,7 +8,7 @@
 .asset em,.ev em{font-style:normal;color:var(--tx3);font-size:9px;border:1px solid var(--line2);padding:2px 5px}
 .on{color:var(--lime)!important;border-color:rgba(201,242,122,.35)!important}
 .foot{margin-top:auto;display:flex;align-items:center;gap:8px;padding:12px 14px;color:var(--tx3);border-top:1px solid var(--line)}
-.ev{display:grid;grid-template-columns:62px 1fr auto;gap:8px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--line)}
+.ev{display:grid;grid-template-columns:68px 1fr auto;gap:8px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--line);transition:background .2s}
+.ev:hover{background:var(--panel2)}
+.evHot{background:rgba(201,242,122,.05)}
 .blk{color:var(--tx3);font-size:9px}
-.evNew{animation:in .6s ease-out}
-@keyframes in{from{background:rgba(201,242,122,.08);transform:translateY(-6px);opacity:0}}

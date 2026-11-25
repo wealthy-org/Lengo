@@ -6,6 +6,7 @@ import { injected } from "wagmi/connectors";
 import s from "./trade.module.css";
 import HealthAlert from "./HealthAlert";
 import TradingChart, { type ChartData } from "./TradingChart";
+import type { Timeframe } from "../api/prices/history/route";
 import { useToast } from "../Toaster";
 import { useLengo, useLengoTx } from "@/lib/useLengo";
 import { MAINNET_MARKETS, TESTNET_MARKET, type MarketSpec } from "@/lib/markets";
@@ -14,7 +15,13 @@ import { useNetwork } from "@/lib/useNetwork";
 
 type Act = "Deposit" | "Borrow" | "Repay" | "Withdraw";
 const usd = (n: number, d = 2) => "$" + n.toLocaleString("en-US", { maximumFractionDigits: d, minimumFractionDigits: d });
+const usdAuto = (n: number) => usd(n, n > 0 && n < 1000 ? 2 : 0);
 const hfTxt = (h: number) => (h === Infinity ? "No debt" : h.toFixed(2));
+const fmtAge = (sec: number) => {
+  if (sec < 60) return `${sec}s`;
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ${sec % 60}s`;
+  return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
+};
 
 export default function Markets() {
   const net = useNetwork();
@@ -38,23 +45,33 @@ export default function Markets() {
 
   const [supplyAmt, setSupplyAmt] = useState("");
   const [lendTab, setLendTab] = useState<"Supply" | "WithdrawSupply">("Supply");
+  const [tf, setTf] = useState<Timeframe>("1h");
   const [hist, setHist] = useState<ChartData | null>(null);
+  const [histLoading, setHistLoading] = useState(false);
 
-  // Fetch real 48h hourly price history for the selected market's collateral asset
+  // Reset history when market symbol changes so prices from another asset never flash
+  useEffect(() => {
+    setHist(null);
+  }, [isMainnet, spec.collSymbol]);
+
+  // Fetch multi-timeframe OHLCV candles for the selected market's collateral asset
   useEffect(() => {
     let cancelled = false;
-    setHist(null);
+    setHistLoading(true);
     const sym = isMainnet ? spec.collSymbol : "BTC";
-    fetch(`/api/prices/history?symbol=${encodeURIComponent(sym)}`)
+    fetch(`/api/prices/history?symbol=${encodeURIComponent(sym)}&tf=${tf}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!cancelled && d && Array.isArray(d.closes) && d.closes.length >= 2) setHist(d);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setHistLoading(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, [isMainnet, spec.collSymbol]);
+  }, [isMainnet, spec.collSymbol, tf]);
 
   const D = L.data;
   const P = L.pool;
@@ -218,7 +235,14 @@ export default function Markets() {
             const tvl = (totColl * PRICE) + pool.supplied;
             const utilization = pool.supplied > 0 ? (pool.borrowed / pool.supplied) * 100 : 0;
             const activePositions = totColl > 0 ? (pool.borrowed > 0 ? 2 : 1) : 0;
-            const remainingCap = !P || P.collateralCap === Infinity ? "Unlimited" : `${Math.max(0, P.collateralCap - totColl).toFixed(2)} ${collSym}`;
+            const remVal = P && P.collateralCap !== Infinity ? Math.max(0, P.collateralCap - totColl) : Infinity;
+            const remainingCap =
+              remVal === Infinity
+                ? "Unlimited"
+                : `${remVal.toLocaleString("en-US", {
+                    minimumFractionDigits: totColl > 0 && totColl < 1 ? 3 : 2,
+                    maximumFractionDigits: totColl > 0 && totColl < 1 ? 4 : 2,
+                  })} ${collSym}`;
             return (
               <div className={s.stats}>
                 <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Total Value Locked on Explorer">
@@ -230,26 +254,26 @@ export default function Markets() {
                 <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Active Positions on Explorer">
                   <span>Positions <em>↗</em></span><b>{activePositions} Active</b>
                 </a>
-                <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Collateral Cap on Explorer">
-                  <span>Remaining Cap <em>↗</em></span><b>{remainingCap}</b>
+                <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Remaining Collateral Cap on Explorer">
+                  <span>Cap Left <em>↗</em></span><b>{remainingCap}</b>
                 </a>
                 <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Total Supplied on Explorer">
-                  <span>Supplied <em>↗</em></span><b>{usd(pool.supplied, 0)}</b>
+                  <span>Supplied <em>↗</em></span><b>{usdAuto(pool.supplied)}</b>
                 </a>
                 <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Total Borrowed on Explorer">
-                  <span>Borrowed <em>↗</em></span><b>{usd(pool.borrowed, 0)}</b>
+                  <span>Borrowed <em>↗</em></span><b>{usdAuto(pool.borrowed)}</b>
                 </a>
                 <a href={addrUrl(spec.chainlinkFeed ?? spec.market ?? spec.collateral, net.mode)} target="_blank" rel="noreferrer" title="Verify Chainlink Oracle on Explorer">
                   <span>Oracle Price <em>↗</em></span><b>{usd(PRICE, priceDigits)}</b>
                 </a>
-                <a href={mktExp} target="_blank" rel="noreferrer" title="Fixed 8% APR">
+                <a href={mktExp} target="_blank" rel="noreferrer" title="Fixed Borrow APR">
                   <span>Borrow APR <em>↗</em></span><b>{(APR * 100).toFixed(2)}%</b>
                 </a>
               </div>
             );
           })()}
           <div className={s.strip}>
-            <span className={stale ? s.bad : ""}>Oracle · {net.oracleLabel} · {stale ? `stale ${priceAge}s` : `fresh ${priceAge}s`}</span>
+            <span className={stale ? s.bad : ""}>Oracle · {net.oracleLabel} · {stale ? `stale ${fmtAge(priceAge)}` : `fresh ${fmtAge(priceAge)}`}</span>
             <span className={s.ok}>HF {hfTxt(hf)}</span>
             <span className={spec.id === "WETH" ? s.ok : s.amberT}>
               {paused
@@ -273,6 +297,9 @@ export default function Markets() {
                 priceDigits={priceDigits}
                 liqPrice={liqP}
                 hist={hist}
+                loading={histLoading}
+                timeframe={tf}
+                onTimeframeChange={setTf}
                 isMainnet={isMainnet}
               />
             )}
@@ -286,19 +313,62 @@ export default function Markets() {
                 <div><span>Est. liq. price</span><b>{liqP ? usd(liqP, priceDigits) : "No debt"}</b><small>{collSym} / USD</small></div>
               </div>
             )}
-            {view === "Risk" && (
-              <div className={s.risk}>
-                <div className={s.bar}>
-                  <i style={{ width: `${Math.min(100, (ltv / 0.95) * 100)}%` }} />
-                  <em style={{ left: `${(MAX_LTV / 0.95) * 100}%` }}>MAX {Math.round(MAX_LTV * 100)}%</em>
-                  <em style={{ left: `${(LIQ / 0.95) * 100}%` }} className={s.bad}>LIQ {Math.round(LIQ * 100)}%</em>
-                </div>
-                <pre>{`LTV           = ${usd(debt)} / ${usd(C)} = ${(ltv * 100).toFixed(2)}%
+            {view === "Risk" && (() => {
+              const simActive = mode === "Borrow" && a > 0;
+              const effColl = simActive ? Math.max(0, next.c) : coll;
+              const effDebt = simActive ? Math.max(0, next.d) : debt;
+              const nextLtv = effColl > 0 && PRICE > 0 ? effDebt / (effColl * PRICE) : 0;
+              const maxPct = (MAX_LTV / 0.95) * 100;
+              const liqPct = (LIQ / 0.95) * 100;
+              const curPct = Math.min(100, (ltv / 0.95) * 100);
+              const projPct = Math.min(100, (nextLtv / 0.95) * 100);
+              return (
+                <div className={s.risk}>
+                  <div className={s.riskHead}>
+                    <span>
+                      Current LTV: <b>{(ltv * 100).toFixed(2)}%</b>
+                      {simActive && <> → Projected: <b className={nextLtv > MAX_LTV ? s.bad : s.ok}>{(nextLtv * 100).toFixed(2)}%</b></>}
+                    </span>
+                    <span>Safe ≤ {Math.round(MAX_LTV * 100)}% · Buffer {Math.round(MAX_LTV * 100)}–{Math.round(LIQ * 100)}% · Liq &gt; {Math.round(LIQ * 100)}%</span>
+                  </div>
+                  <div className={s.bar}>
+                    <span className={s.zoneSafe} style={{ width: `${maxPct}%` }} />
+                    <span className={s.zoneWarn} style={{ left: `${maxPct}%`, width: `${liqPct - maxPct}%` }} />
+                    <span className={s.zoneLiq} style={{ left: `${liqPct}%` }} />
+                    <i style={{ width: `${curPct}%` }} />
+                    {simActive && <span className={s.barProj} style={{ left: `${projPct}%` }} title={`Projected LTV ${(nextLtv * 100).toFixed(2)}%`} />}
+                    <em style={{ left: `${maxPct}%` }}>MAX {Math.round(MAX_LTV * 100)}%</em>
+                    <em style={{ left: `${liqPct}%` }} className={s.bad}>LIQ {Math.round(LIQ * 100)}%</em>
+                  </div>
+                  <pre>{`LTV           = ${usd(debt)} / ${usd(C)} = ${(ltv * 100).toFixed(2)}%
 Health factor = (C × ${LIQ.toFixed(2)}) / D = ${hfTxt(hf)}
 Liq. price    = D / (qty × ${LIQ.toFixed(2)}) = ${liqP ? usd(liqP, priceDigits) : "No debt"}`}</pre>
-                <p>Alerts at HF 1.30 and 1.15. Liquidator bonus 5%, close factor 50%.</p>
-              </div>
-            )}
+                  <div className={s.stressTitle}>
+                    <span>Price drop stress test {simActive ? "(incl. pending input)" : "(current position)"}</span>
+                    <span>{collSym} now {usd(PRICE, priceDigits)}</span>
+                  </div>
+                  <div className={s.stressGrid}>
+                    {[-0.15, -0.30, -0.50].map((drop) => {
+                      const sp = PRICE * (1 + drop);
+                      const sc = effColl * sp;
+                      const shf = effDebt <= 0 ? Infinity : (sc * LIQ) / effDebt;
+                      const status = effDebt <= 0 ? "NO DEBT" : shf >= 1.3 ? "SAFE" : shf >= 1.0 ? "AT RISK" : "LIQUIDATABLE";
+                      return (
+                        <div key={drop}>
+                          <span>
+                            {collSym} {Math.round(drop * 100)}%
+                            <em style={{ fontStyle: "normal" }} className={tone(shf)}>{status}</em>
+                          </span>
+                          <b className={tone(shf)}>HF {hfTxt(shf)}</b>
+                          <small>@ {usd(sp, priceDigits)} · Collat {usd(sc)}</small>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p>Alerts trigger at HF 1.30 and 1.15. Liquidator bonus 5%, close factor 50%.</p>
+                </div>
+              );
+            })()}
           </div>
           <div className={s.footLine}>
             {spec.market ? `Market ${spec.market}` : `Token ${spec.collateral} · Chainlink ${spec.chainlinkFeed}`} · chain is the source of truth
@@ -363,39 +433,66 @@ Liq. price    = D / (qty × ${LIQ.toFixed(2)}) = ${liqP ? usd(liqP, priceDigits)
                             : `${act} ${unit}`}
                 </button>
               </>
-            ) : (
-              <>
-                <div className={s.field}>
-                  <div className={s.fTop}>
-                    <span>{lendTab === "Supply" ? "You supply" : "You withdraw"}</span>
-                    <span>{lendTab === "Supply" ? `Balance ${wallet.debt.toFixed(2)}` : `Claim ${(D ? D.claim : 0).toFixed(2)}`}</span>
+            ) : (() => {
+              const maxLend = lendTab === "Supply" ? wallet.debt : Math.min(D ? D.claim : 0, avail);
+              const sVal = parseFloat(supplyAmt) || 0;
+              const overLend = sVal > maxLend + 1e-9;
+              return (
+                <>
+                  <div className={s.field}>
+                    <div className={s.fTop}>
+                      <span>{lendTab === "Supply" ? "You supply" : "You withdraw"}</span>
+                      <span>
+                        {lendTab === "Supply"
+                          ? `Max ${wallet.debt.toFixed(2)}`
+                          : `Max ${maxLend.toFixed(2)} (Claim ${(D ? D.claim : 0).toFixed(2)})`}
+                      </span>
+                    </div>
+                    <div className={s.fRow}>
+                      <input
+                        inputMode="decimal"
+                        placeholder="0.0"
+                        aria-label="Lend amount"
+                        value={supplyAmt}
+                        onChange={(e) => setSupplyAmt(e.target.value.replace(/[^0-9.]/g, ""))}
+                      />
+                      <button onClick={() => setSupplyAmt(String(+maxLend.toFixed(6)))}>Max</button>
+                      <span className={s.tok}>{debtSym}</span>
+                    </div>
                   </div>
-                  <div className={s.fRow}>
-                    <input placeholder="0.0" aria-label="Lend amount" value={supplyAmt} onChange={(e) => setSupplyAmt(e.target.value.replace(/[^0-9.]/g, ""))} />
-                    <span className={s.tok}>{debtSym}</span>
+                  <div className={s.sim}>
+                    <div><span>Supply APY (est.)</span><b>{pool.supplied > 0 ? ((pool.borrowed / pool.supplied) * APR * 100).toFixed(2) : "0.00"}%</b></div>
+                    <div><span>Idle liquidity</span><b>{usdAuto(avail)}</b></div>
+                    <div><span>Interest source</span><b>Borrowers</b></div>
+                    <div><span>Your claim</span><b>{usd(D ? D.claim : 0)}</b></div>
                   </div>
-                </div>
-                <div className={s.sim}>
-                  <div><span>Supply APY (est.)</span><b>{pool.supplied > 0 ? ((pool.borrowed / pool.supplied) * APR * 100).toFixed(2) : "0.00"}%</b></div>
-                  <div><span>Idle liquidity</span><b>{usd(avail, 0)}</b></div>
-                  <div><span>Interest source</span><b>Borrowers</b></div>
-                  <div><span>Your claim</span><b>{usd(D ? D.claim : 0)}</b></div>
-                </div>
-                <button
-                  className={s.cta}
-                  disabled={!L.marketDeployed || !parseFloat(supplyAmt) || (lendTab === "Supply" && (paused || parseFloat(supplyAmt) > wallet.debt)) || tx2.busy}
-                  onClick={async () => {
-                    if (!L.isConnected) {
-                      try { await connectAsync({ connector: injected(), chainId: net.chain.id }); } catch { return; }
-                    }
-                    tx2.run(lendTab, supplyAmt);
-                    setSupplyAmt("");
-                  }}
-                >
-                  {!L.marketDeployed ? `Deploy ${pairLabel} contract first` : !parseFloat(supplyAmt) ? "Enter amount" : lendTab === "Supply" ? `Supply ${debtSym}` : `Withdraw ${debtSym}`}
-                </button>
-              </>
-            )}
+                  {overLend && <p className={`${s.note} ${s.bad}`}>Exceeds available {lendTab === "Supply" ? "wallet balance" : "withdrawable liquidity"}.</p>}
+                  <button
+                    className={s.cta}
+                    disabled={!L.marketDeployed || !sVal || overLend || (lendTab === "Supply" && paused) || tx2.busy}
+                    onClick={async () => {
+                      if (!L.isConnected) {
+                        try { await connectAsync({ connector: injected(), chainId: net.chain.id }); } catch { return; }
+                      }
+                      tx2.run(lendTab, supplyAmt);
+                      setSupplyAmt("");
+                    }}
+                  >
+                    {!L.marketDeployed
+                      ? `Deploy ${pairLabel} contract first`
+                      : tx2.busy
+                        ? "Waiting for wallet…"
+                        : !sVal
+                          ? "Enter amount"
+                          : overLend
+                            ? "Exceeds max"
+                            : lendTab === "Supply"
+                              ? `Supply ${debtSym}`
+                              : `Withdraw ${debtSym}`}
+                  </button>
+                </>
+              );
+            })()}
             <p className={s.note}>
               Wallet · {wallet.coll.toFixed(4)} {collSym} · {wallet.debt.toFixed(2)} {debtSym} · {net.chain.name}
             </p>

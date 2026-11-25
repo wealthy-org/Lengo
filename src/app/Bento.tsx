@@ -51,10 +51,10 @@ function Matrix() {
 }
 function Block() {
   const t = useTick(2000);
-  return <b className={s.big}>{(18204117 + t).toLocaleString("en-US")}</b>;
+  return <b className={s.big}>{(122705887 + t).toLocaleString("en-US")}</b>;
 }
 
-const quotes = [["USDG→USDC", "solana", "dry"], ["BTC→USDC", "base", "dry"], ["ZEC→USDC", "arbitrum", "n/a"], ["SOL→USDG", "hood", "dry"], ["USDG→USDC", "ethereum", "dry"]];
+const quotes = [["USDG→USDC", "solana", "dry"], ["BTC→USDC", "base", "dry"], ["ZEC→USDC", "solana", "dry"], ["SOL→WETH", "hood", "dry"], ["USDG→USDC", "base", "dry"]];
 
 export default function Bento() {
   const t = useTick(1400);
@@ -63,11 +63,11 @@ export default function Bento() {
       <div className={s.top}><span>LENGO / LENDING TERMINAL</span><span className={s.live}><i />MAINNET BETA · 4663</span></div>
       <div className={s.grid}>
         <section className={`${s.cell} ${s.a}`}>
-          <h4>Incoming intents</h4>
+          <h4>Verified loan loop</h4>
           <Pixels />
           <ul className={s.list}>
-            {["deposit 0.1000 tBTC", "borrow 4,000 tUSDC", "quote BTC→USDC", "topup 0.0200 tBTC"].map((x, i) => (
-              <li key={x} className={i === t % 4 ? s.hot : ""}><span>INTENT</span>{x}</li>
+            {["supply 2.00 USDG", "deposit 0.0010 WETH", "borrow 0.50 USDG", "repay & withdraw WETH"].map((x, i) => (
+              <li key={x} className={i === t % 4 ? s.hot : ""}><span>TX</span>{x}</li>
             ))}
           </ul>
         </section>
@@ -78,7 +78,7 @@ export default function Bento() {
               <li key={p + c} className={i === t % 5 ? s.hot : ""}><span>{m.toUpperCase()}</span>{p}<em>{c}</em></li>
             ))}
           </ul>
-          <p className={s.foot}>Route preview · no funds moved</p>
+          <p className={s.foot}>Route preview · v1 payout rollout</p>
         </section>
         <section className={`${s.cell} ${s.c}`}>
           <h4>Health factor distribution</h4>
@@ -87,7 +87,7 @@ export default function Bento() {
         </section>
         <section className={`${s.cell} ${s.d}`}>
           <h4>Risk guard</h4>
-          {[["Max LTV 60%", "ENFORCED"], ["Oracle ≤ 300s", "FRESH"], ["Pool liquidity", "OK"], ["Close factor 50%", "ARMED"]].map(([k, v]) => (
+          {[["Max LTV 60%", "ENFORCED"], ["Chainlink ≤ 7200s", "FRESH"], ["Beta TVL caps", "ACTIVE"], ["Close factor 50%", "ARMED"]].map(([k, v]) => (
             <div key={k} className={s.check}><span>{k}</span><em>{v}</em></div>
           ))}
           <div className={s.count}><span>Checks</span><b>4</b></div>
@@ -102,8 +102,8 @@ export default function Bento() {
           <span className={s.k}>Block</span>
           <Block />
           <div className={s.kv}>
-            <span>Chain</span><b>46630</b>
-            <span>Market</span><b>tBTC/tUSDC</b>
+            <span>Chain</span><b>4663</b>
+            <span>Market</span><b>WETH/USDG</b>
             <span>Debt index</span><b>1.000{(t % 90).toString().padStart(2, "0")}</b>
             <span>APR</span><b>8.00%</b>
           </div>

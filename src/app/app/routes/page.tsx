@@ -1,12 +1,12 @@
 "use client";
 import { Pair } from "../../TokenIcon";
 import { useEffect, useRef, useState } from "react";
-import { type Address } from "viem";
-import { useAccount, useSendTransaction, useSwitchChain, useWriteContract } from "wagmi";
+import { formatUnits, type Address } from "viem";
+import { useAccount, useReadContracts, useSendTransaction, useSwitchChain, useWriteContract } from "wagmi";
 import s from "../trade.module.css";
 import r from "./routes.module.css";
 import { tokenAbi } from "@/lib/abi";
-import { rhMainnet, txUrl } from "@/lib/chain";
+import { DEPLOYMENTS, rhMainnet, txUrl } from "@/lib/chain";
 import { ensureWalletChain } from "@/lib/walletChain";
 import { useToast } from "../../Toaster";
 
@@ -141,6 +141,25 @@ export default function Routes() {
   const available = k.dests.filter((d) => !!find(k.to, d));
   const expired = q?.deadline ? new Date(q.deadline).getTime() < now : false;
 
+  const isHoodOrigin = k.fromChain === "Robinhood (hood)";
+  const originErc20 = (
+    origin?.contractAddress ||
+    origin?.assetId.match(/0x[a-fA-F0-9]{40}/)?.[0] ||
+    (isHoodOrigin && k.from === "USDG" ? DEPLOYMENTS.mainnet.debtAsset : undefined)
+  ) as Address | undefined;
+
+  const hoodBalQuery = useReadContracts({
+    allowFailure: true,
+    query: { enabled: !!address && isHoodOrigin && !!originErc20 },
+    contracts: originErc20 && address
+      ? [{ address: originErc20, abi: tokenAbi, functionName: "balanceOf", args: [address], chainId: rhMainnet.id }]
+      : [],
+  });
+  const hoodDec = origin?.decimals ?? (k.from === "USDG" ? 6 : 18);
+  const rawHoodBal = hoodBalQuery.data?.[0]?.result;
+  const hoodBal = typeof rawHoodBal === "bigint" ? Number(formatUnits(rawHoodBal, hoodDec)) : 0;
+  const overHoodBal = execMode && isHoodOrigin && isConnected && (parseFloat(amt) || 0) > hoodBal + 1e-6;
+
   async function getQuote() {
     if (!origin || !destTok) return;
     const id = ++reqId.current;
@@ -217,7 +236,7 @@ export default function Routes() {
   }
 
   const fmtOut = (v?: string) => (v && q?.destination ? (Number(v) / 10 ** q.destination.decimals).toLocaleString("en-US", { maximumFractionDigits: 6 }) : "—");
-  const canSendDirect = execMode && state === "ok" && !!q?.depositAddress && !expired && k.fromChain === "Robinhood (hood)" && isConnected;
+  const canSendDirect = execMode && state === "ok" && !!q?.depositAddress && !expired && isHoodOrigin && isConnected && !overHoodBal;
 
   return (
     <>
@@ -343,8 +362,43 @@ export default function Routes() {
             <span className={s.k}>{execMode ? "Live Mainnet execution · real funds" : "Route preview · no funds moved"}</span>
             <h3>{execMode ? "Execute cross-chain route" : "Get quote"}</h3>
             <div className={s.field}>
-              <div className={s.fTop}><span>You send</span><span>{execMode ? "Exact input" : "Hypothetical"}</span></div>
-              <div className={s.fRow}><input inputMode="decimal" value={amt} aria-label="Amount in" onChange={(e) => { setAmt(e.target.value.replace(/[^0-9.]/g, "")); setState("idle"); setQ(null); reqId.current++; }} /><span className={s.tok}>{k.from}</span></div>
+              <div className={s.fTop}>
+                <span>You send</span>
+                <span>
+                  {isHoodOrigin && isConnected
+                    ? `Balance ${hoodBal.toFixed(hoodDec === 6 ? 2 : 4)} ${k.from}`
+                    : execMode
+                      ? "Exact input"
+                      : "Hypothetical"}
+                </span>
+              </div>
+              <div className={s.fRow}>
+                <input
+                  inputMode="decimal"
+                  value={amt}
+                  aria-label="Amount in"
+                  onChange={(e) => {
+                    setAmt(e.target.value.replace(/[^0-9.]/g, ""));
+                    setState("idle");
+                    setQ(null);
+                    reqId.current++;
+                  }}
+                />
+                {isHoodOrigin && isConnected && hoodBal > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAmt(String(+hoodBal.toFixed(hoodDec)));
+                      setState("idle");
+                      setQ(null);
+                      reqId.current++;
+                    }}
+                  >
+                    Max
+                  </button>
+                )}
+                <span className={s.tok}>{k.from}</span>
+              </div>
             </div>
             <div className={r.swap}>↓</div>
             <div className={s.field}>
@@ -358,6 +412,7 @@ export default function Routes() {
             <label className={s.field}><div className={s.fTop}><span>Recipient · {dest}</span><span>{execMode ? "required (live)" : "optional in preview"}</span></div><input className={r.addr} placeholder={execMode ? `Your ${dest} address` : `Optional (${dest} preview)`} value={recipient} onChange={(e) => setRecipient(e.target.value)} /></label>
             <label className={s.field}><div className={s.fTop}><span>Refund · {k.fromChain}</span><span>{execMode ? "required (live)" : "optional in preview"}</span></div><input className={r.addr} placeholder={execMode ? `Your ${k.fromChain} address` : `Optional (${k.fromChain} preview)`} value={refundTo} onChange={(e) => setRefundTo(e.target.value)} /></label>
             <div className={s.sim}><div><span>Slippage limit</span><b>0.5%</b></div><div><span>Mode</span><b>{execMode ? "dry:false (LIVE)" : "dry:true"}</b></div></div>
+            {overHoodBal && <p className={`${s.note} ${s.warn}`}>Input exceeds your Robinhood Chain balance ({hoodBal.toFixed(2)} {k.from}) — you can still request a deposit address or lower the amount.</p>}
             {state === "unavailable" && <p className={`${s.note} ${s.warn}`}>{q?.reason ?? "Unavailable"}.</p>}
             {toks && !available.length && <p className={`${s.note} ${s.warn}`}>No destination for {k.to} found in current discovery.</p>}
             <button className={s.cta} disabled={state === "loading" || !parseFloat(amt) || !origin || !destTok} onClick={getQuote}>
