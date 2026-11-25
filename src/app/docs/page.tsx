@@ -112,32 +112,48 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
               <code>ChainlinkOracle</code> is completely keeperless — it reads Chainlink&apos;s official <code>ETH / USD</code> proxy directly via <code>latestRoundData()</code> with round-completeness and heartbeat staleness checks, with zero manual price override functions.
             </p>
             <h3 style={{ marginTop: 24, fontSize: 13, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--lime)" }}>
-              First Loan Live Proofs — Mainnet 4663
+              First Loan Live Proofs — Mainnet 4663 (Completed)
             </h3>
             <div className={d.table}>
               <div>
-                <span>Milestone</span>
-                <b>Update 1: First Collateral Deposit Confirmed</b>
-              </div>
-              <div>
-                <span>First WETH Deposit</span>
+                <span>Supply USDG (Lender)</span>
                 <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0x3fe623a1df58f27027d14fe409074092b3bc9197cbeafc558c4c7980ee987244" target="_blank" rel="noreferrer">
-                    0x3fe623a1…7244 ↗
+                  <a href="https://robinhoodchain.blockscout.com/tx/0x04887e2dd03391090f3f90eb170bba562955d76122e24bdafb2fbf73f715f0d7" target="_blank" rel="noreferrer">
+                    0x04887e2d…f0d7 ↗
                   </a>
                 </b>
               </div>
               <div>
-                <span>Collateral Amount</span>
-                <b>0.001 WETH (~$1.67 USD onchain)</b>
+                <span>Deposit WETH (Borrower)</span>
+                <b>
+                  <a href="https://robinhoodchain.blockscout.com/tx/0x4ff7f8d8c6c72ede29a11b76ffddca948c662f57d4eb220a8e34654fde9d6b98" target="_blank" rel="noreferrer">
+                    0x4ff7f8d8…6b98 ↗
+                  </a>
+                </b>
               </div>
               <div>
-                <span>Pool Seeding (USDG)</span>
-                <b>Pending allocation decision</b>
+                <span>Borrow USDG (Borrower)</span>
+                <b>
+                  <a href="https://robinhoodchain.blockscout.com/tx/0x57356f96ef1e9bebc9345de9530628c919faf2f9348c082f83b62cb240435f4d" target="_blank" rel="noreferrer">
+                    0x57356f96…5f4d ↗
+                  </a>
+                </b>
               </div>
               <div>
-                <span>Full Loan Lifecycle</span>
-                <b>Deposit WETH → Borrow USDG → Repay → Withdraw (Ready via independent wallet)</b>
+                <span>Repay USDG (Borrower)</span>
+                <b>
+                  <a href="https://robinhoodchain.blockscout.com/tx/0xabdb082cf3c0fd5fd1875f616b0b4fa3b71bd7f3ac811157edffd4ad32725bcb" target="_blank" rel="noreferrer">
+                    0xabdb082c…5bcb ↗
+                  </a>
+                </b>
+              </div>
+              <div>
+                <span>Withdraw WETH (Borrower)</span>
+                <b>
+                  <a href="https://robinhoodchain.blockscout.com/tx/0x1123391fe9d0a87e5c2146b2cb577573b022bc48dbc31f1f37ff625e0416a2f7" target="_blank" rel="noreferrer">
+                    0x1123391f…a2f7 ↗
+                  </a>
+                </b>
               </div>
             </div>
             <h3 style={{ marginTop: 24, fontSize: 13, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--tx2)" }}>
