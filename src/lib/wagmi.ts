@@ -1,4 +1,4 @@
-import { createConfig, http } from "wagmi";
+import { createConfig, fallback, http } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { DEFAULT_NETWORK, rhMainnet, rhTestnet } from "./chain";
 
@@ -9,8 +9,8 @@ export const wagmiConfig = createConfig({
   chains,
   connectors: [injected()],
   transports: {
-    [rhTestnet.id]: http(rhTestnet.rpcUrls.default.http[0]),
-    [rhMainnet.id]: http(rhMainnet.rpcUrls.default.http[0]),
+    [rhTestnet.id]: fallback(rhTestnet.rpcUrls.default.http.map((u) => http(u))),
+    [rhMainnet.id]: fallback(rhMainnet.rpcUrls.default.http.map((u) => http(u))),
   },
   ssr: true,
 });

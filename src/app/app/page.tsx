@@ -173,7 +173,7 @@ export default function Markets() {
             .filter((m) => m.pair.toLowerCase().includes(q.toLowerCase()) || m.category.toLowerCase().includes(q.toLowerCase()))
             .map((m) => {
               const active = m.id === spec.id;
-              const isFirstLoanLive = m.id === "weth-usdg";
+              const isFirstLoanLive = m.id === "WETH";
               return (
                 <button
                   key={m.id}
@@ -204,7 +204,7 @@ export default function Markets() {
               <p>{spec.category} isolated market · fixed {(APR * 100).toFixed(1)}% APR · {net.chain.name}</p>
             </div>
             <div className={s.badges}>
-              {spec.id === "weth-usdg" ? (
+              {spec.id === "WETH" ? (
                 <span className={s.active}>Mainnet Beta · Active</span>
               ) : (
                 <span>Oracle Live · Seeding Pool</span>
@@ -251,10 +251,10 @@ export default function Markets() {
           <div className={s.strip}>
             <span className={stale ? s.bad : ""}>Oracle · {net.oracleLabel} · {stale ? `stale ${priceAge}s` : `fresh ${priceAge}s`}</span>
             <span className={s.ok}>HF {hfTxt(hf)}</span>
-            <span className={spec.id === "weth-usdg" ? s.ok : s.amberT}>
+            <span className={spec.id === "WETH" ? s.ok : s.amberT}>
               {paused
                 ? "Market paused (exits & repayments open)"
-                : spec.id === "weth-usdg"
+                : spec.id === "WETH"
                   ? `Live · First Loan Market · ${net.chain.name}`
                   : `Oracle Active · Pool Seeding in progress`}
             </span>

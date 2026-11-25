@@ -25,8 +25,8 @@ export const rhMainnet = defineChain({
   rpcUrls: {
     default: {
       http: [
-        process.env.NEXT_PUBLIC_RH_MAINNET_RPC || "https://4663.rpc.thirdweb.com",
         "https://rpc.mainnet.chain.robinhood.com",
+        "https://4663.rpc.thirdweb.com",
       ],
     },
   },
