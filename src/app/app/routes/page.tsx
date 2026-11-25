@@ -242,7 +242,7 @@ export default function Routes() {
           ))}
           <div className={r.journey}>
             <span className={s.k}>Cross-chain lending flow</span>
-            <em>Live on RH + 1Click</em>
+            <em>Preview · v1 Payout Rollout</em>
             {["Deposit WETH on RH", "Borrow USDG on RH", "Execute 1Click route", "Receive USDC on target chain"].map((t, i) => <div key={t}><i>{i + 1}</i>{t}</div>)}
           </div>
         </aside>

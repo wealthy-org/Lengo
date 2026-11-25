@@ -73,6 +73,8 @@ export function useLengo(spec?: MarketSpec) {
       { ...m, functionName: "maxOracleAge" },
       { address: (oracleAddr ?? "0x0000000000000000000000000000000000000000") as Address, abi: priceOracleAbi, functionName: "getPrice", args: [debtAddr], chainId: net.chain.id },
       { ...m, functionName: "paused" },
+      { ...m, functionName: "totalCollateral" },
+      { ...m, functionName: "collateralCap" },
     ],
   });
 
@@ -106,6 +108,11 @@ export function useLengo(spec?: MarketSpec) {
 
   const pm = pq.data?.[0]?.result as readonly bigint[] | undefined;
   const du = pq.data?.[2]?.result as readonly bigint[] | undefined;
+  const rawTotColl = pq.data?.[4]?.result as bigint | undefined;
+  const rawCap = pq.data?.[5]?.result as bigint | undefined;
+  const totalColl = typeof rawTotColl === "bigint" ? n(rawTotColl, collDec) : 0;
+  const colCap = typeof rawCap === "bigint" && rawCap !== maxUint256 ? n(rawCap, collDec) : Infinity;
+
   const pool = marketDeployed && pm ? {
     supplied: n(pm[0], debtDec),
     borrowed: n(pm[1], debtDec),
@@ -115,6 +122,8 @@ export function useLengo(spec?: MarketSpec) {
     debtPriceAt: Number(du?.[1] ?? 0n),
     maxAge: Number((pq.data?.[1]?.result as bigint | undefined) ?? BigInt(spec?.maxOracleAge ?? 300)),
     paused: Boolean(pq.data?.[3]?.result ?? false),
+    totalCollateral: totalColl,
+    collateralCap: colCap,
   } : clPrice ? {
     supplied: 0,
     borrowed: 0,
@@ -124,6 +133,8 @@ export function useLengo(spec?: MarketSpec) {
     debtPriceAt: Math.floor(Date.now() / 1000),
     maxAge: spec?.maxOracleAge ?? 90000,
     paused: false,
+    totalCollateral: 0,
+    collateralCap: Infinity,
   } : null;
 
   const refetch = () => {

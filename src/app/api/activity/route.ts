@@ -45,7 +45,8 @@ export async function GET(req: Request) {
       indexedTo: cur[0]?.last_block ?? null,
       updatedAt: cur[0]?.updated_at ?? null,
     });
-  } catch {
+  } catch (e) {
+    console.error("Activity API error:", e);
     return new NextResponse(null, { status: 204 });
   }
 }

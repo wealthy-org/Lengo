@@ -11,22 +11,22 @@ import Motion from "./Motion";
 import TopNav from "./TopNav";
 import CopyCA from "./CopyCA";
 
-const tick = [["WETH/USDG","APR","8.00%"],["Max LTV","","60%"],["Liq. threshold","","75%"],["USDG → USDC","1Click","Live Execute"],["Oracle","Chainlink","ETH/USD"],["Chain","Robinhood","4663"],["Chart","Pyth Pro","Live 48h"],["Liq. bonus","","5%"]];
+const tick = [["WETH/USDG","APR","8.00%"],["Max LTV","","60%"],["Liq. threshold","","75%"],["USDG → USDC","1Click","Routing Preview"],["Oracle","Chainlink","ETH/USD"],["Chain","Robinhood","4663"],["Chart","Pyth Pro","Live 48h"],["Liq. bonus","","5%"]];
 const params = [["Max borrow LTV","60%"],["Liquidation threshold","75%"],["Eligible when","HF < 1"],["Liquidator bonus","5%"],["Close factor","50% per call"],["Borrow APR","8% fixed"],["TVL caps (beta)","25 WETH · 50k USDG"],["Oracle","Chainlink ETH/USD"]];
 const disclosure = [
   ["Lending contracts", "Live on RH Mainnet (4663) + Testnet (46630)", "External security audit"],
   ["Collateral asset", "WETH (18 dec) on RH Mainnet", "Native BTC, ZEC, SOL"],
   ["Borrow asset", "USDG (6 dec) Global Dollar", "Additional markets"],
   ["Price oracle", "Chainlink ETH/USD (keeperless)", "Multi-oracle fallback"],
-  ["Multichain payout", "NEAR Intents 1Click (Preview + Live Execute)", "1-tx borrow + route"],
+  ["Multichain payout", "NEAR Intents 1Click (Routing Preview · v1 Rollout)", "1-tx borrow + route"],
   ["Native BTC / ZEC deposit", "In research (testnet demo uses tBTC)", "Lock, proof, redemption"],
   ["Safety rails", "Capped TVL + non-custodial pause", "Timelock multisig"],
 ];
 const phases = [
   ["Phase 1", "LIVE", "Lending engine", ["Isolated WETH/USDG market", "RAY debt index + virtual shares", "Live on RH Mainnet (4663)"], 100],
   ["Phase 2", "LIVE", "Keeperless risk", ["Chainlink ETH/USD oracle", "50% close factor liquidation", "Capped TVL + non-custodial pause"], 100],
-  ["Phase 3", "LIVE", "Multichain routing", ["NEAR Intents 1Click live execute", "USDG → USDC Solana/Base/Arb", "SOL & Base → WETH inflow"], 100],
-  ["Phase 4", "NEXT", "Market expansion", ["cbBTC / USDG CCIP market", "External security audit", "Higher TVL caps"], 35],
+  ["Phase 3", "PREVIEW", "Multichain routing", ["NEAR Intents 1Click routing preview", "USDG → USDC Solana/Base/Arb preview", "Mainnet execution in v1 rollout"], 80],
+  ["Phase 4", "SEEDING", "Market expansion", ["Stock & BTC tokens deployed on Mainnet", "Pool liquidity seeding in progress", "Public lending supply"], 50],
   ["Phase 5", "RESEARCH", "Native BTC & ZEC", ["Custody + signer model", "Proof and redemption", "Liquidation feasibility"], 10],
 ] as const;
 const contracts = [

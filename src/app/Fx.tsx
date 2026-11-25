@@ -81,7 +81,7 @@ export function Pipeline() {
     <div className={`${s.term} corner`}>
       <div className={s.termHead}>
         <span>LENGO / PIPELINE TERMINAL</span>
-        <span className={s.live}><i />LIVE · SIMULATED</span>
+        <span className={s.live}><i />MAINNET BETA · 4663</span>
       </div>
       <div className={s.termBody}>
         <div className={s.stages}>

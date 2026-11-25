@@ -60,7 +60,7 @@ export default function Bento() {
   const t = useTick(1400);
   return (
     <div className={`${s.wrap} bevel`}>
-      <div className={s.top}><span>LENGO / LENDING TERMINAL</span><span className={s.live}><i />LIVE · SIMULATED</span></div>
+      <div className={s.top}><span>LENGO / LENDING TERMINAL</span><span className={s.live}><i />MAINNET BETA · 4663</span></div>
       <div className={s.grid}>
         <section className={`${s.cell} ${s.a}`}>
           <h4>Incoming intents</h4>

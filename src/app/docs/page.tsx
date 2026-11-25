@@ -111,6 +111,35 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
               Built with Solidity 0.8.24, Foundry, and pinned OpenZeppelin 5.1.0. Verified on Sourcify &amp; Blockscout.{" "}
               <code>ChainlinkOracle</code> is completely keeperless — it reads Chainlink&apos;s official <code>ETH / USD</code> proxy directly via <code>latestRoundData()</code> with round-completeness and heartbeat staleness checks, with zero manual price override functions.
             </p>
+            <h3 style={{ marginTop: 24, fontSize: 13, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--lime)" }}>
+              First Loan Live Proofs — Mainnet 4663
+            </h3>
+            <div className={d.table}>
+              <div>
+                <span>Milestone</span>
+                <b>Update 1: First Collateral Deposit Confirmed</b>
+              </div>
+              <div>
+                <span>First WETH Deposit</span>
+                <b>
+                  <a href="https://explorer.mainnet.chain.robinhood.com/tx/0x3fe623a1df58f27027d14fe409074092b3bc9197cbeafc558c4c7980ee987244" target="_blank" rel="noreferrer">
+                    0x3fe623a1…7244 ↗
+                  </a>
+                </b>
+              </div>
+              <div>
+                <span>Collateral Amount</span>
+                <b>0.001 WETH (~$1.67 USD onchain)</b>
+              </div>
+              <div>
+                <span>Pool Seeding (USDG)</span>
+                <b>Pending allocation decision</b>
+              </div>
+              <div>
+                <span>Full Loan Lifecycle</span>
+                <b>Deposit WETH → Borrow USDG → Repay → Withdraw (Ready via independent wallet)</b>
+              </div>
+            </div>
             <h3 style={{ marginTop: 24, fontSize: 13, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--tx2)" }}>
               Testnet sandbox — Robinhood Chain Testnet (46630)
             </h3>

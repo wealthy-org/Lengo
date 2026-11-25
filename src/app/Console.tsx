@@ -47,7 +47,7 @@ export function EventStream() {
   }, []);
   return (
     <div className={`${s.panel} bevel`}>
-      <div className={s.head}><span>EVENT STREAM</span><span className={s.on}>● SIMULATED</span></div>
+      <div className={s.head}><span>EVENT STREAM</span><span className={s.on}>● MAINNET BETA</span></div>
       {evs.map((e, i) => (
         <div key={e.id} className={`${s.ev} ${i === 0 ? s.evNew : ""}`}>
           <span className={s.blk}>{e.b}</span>

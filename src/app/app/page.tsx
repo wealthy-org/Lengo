@@ -158,7 +158,7 @@ export default function Markets() {
     <>
       <div className={s.pageHead}>
         <div><h1>Markets</h1><p>Isolated crypto &amp; Robinhood stock-token lending on Robinhood Chain. Payout routes via NEAR Intents.</p></div>
-        <span>{isMainnet ? `Mainnet · ${marketList.length} Markets · 4663` : "Testnet · Robinhood Chain · 46630"}</span>
+        <span>{isMainnet ? `Mainnet Beta · ${marketList.length} Markets · 4663` : "Testnet · Robinhood Chain · 46630"}</span>
       </div>
 
       <HealthAlert hf={hf} live={L.live} />
@@ -173,6 +173,7 @@ export default function Markets() {
             .filter((m) => m.pair.toLowerCase().includes(q.toLowerCase()) || m.category.toLowerCase().includes(q.toLowerCase()))
             .map((m) => {
               const active = m.id === spec.id;
+              const isFirstLoanLive = m.id === "weth-usdg";
               return (
                 <button
                   key={m.id}
@@ -185,7 +186,11 @@ export default function Markets() {
                 >
                   <Pair a={m.collSymbol} b={m.debtSymbol} />
                   <span><b>{m.pair}</b><small>{m.sub}</small></span>
-                  {!m.market && <em>Deploy</em>}
+                  {isFirstLoanLive ? (
+                    <em style={{ color: "var(--lime)", borderColor: "var(--lime)" }}>Live</em>
+                  ) : (
+                    <em>Seeding</em>
+                  )}
                 </button>
               );
             })}
@@ -199,28 +204,59 @@ export default function Markets() {
               <p>{spec.category} isolated market · fixed {(APR * 100).toFixed(1)}% APR · {net.chain.name}</p>
             </div>
             <div className={s.badges}>
-              <span className={L.marketDeployed ? s.active : ""}>{L.marketDeployed ? "Active" : "Oracle Live"}</span>
+              {spec.id === "weth-usdg" ? (
+                <span className={s.active}>Mainnet Beta · Active</span>
+              ) : (
+                <span>Oracle Live · Seeding Pool</span>
+              )}
               <a href={addrUrl(spec.market ?? spec.chainlinkFeed ?? spec.collateral, net.mode)} target="_blank" rel="noreferrer">Explorer ↗</a>
             </div>
           </div>
-          <div className={s.stats}>
-            <div><span>Oracle price</span><b>{usd(PRICE, priceDigits)}</b></div>
-            <div><span>Borrow APR</span><b>{(APR * 100).toFixed(2)}%</b></div>
-            <div><span>Supplied</span><b>{usd(pool.supplied, 0)}</b></div>
-            <div><span>Borrowed</span><b>{usd(pool.borrowed, 0)}</b></div>
-            <div><span>Available</span><b>{usd(avail, 0)}</b></div>
-            <div><span>Utilization</span><b>{pool.supplied > 0 ? ((pool.borrowed / pool.supplied) * 100).toFixed(1) : "0.0"}%</b></div>
-            <div><span>Max LTV / Liq.</span><b>{Math.round(MAX_LTV * 100)}% / {Math.round(LIQ * 100)}%</b></div>
-          </div>
+          {(() => {
+            const mktExp = addrUrl(spec.market ?? spec.chainlinkFeed ?? spec.collateral, net.mode);
+            const totColl = P?.totalCollateral ?? 0;
+            const tvl = (totColl * PRICE) + pool.supplied;
+            const utilization = pool.supplied > 0 ? (pool.borrowed / pool.supplied) * 100 : 0;
+            const activePositions = totColl > 0 ? (pool.borrowed > 0 ? 2 : 1) : 0;
+            const remainingCap = !P || P.collateralCap === Infinity ? "Unlimited" : `${Math.max(0, P.collateralCap - totColl).toFixed(2)} ${collSym}`;
+            return (
+              <div className={s.stats}>
+                <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Total Value Locked on Explorer">
+                  <span>TVL <em>↗</em></span><b>{usd(tvl, 2)}</b>
+                </a>
+                <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Utilization on Explorer">
+                  <span>Utilization <em>↗</em></span><b>{utilization.toFixed(1)}%</b>
+                </a>
+                <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Active Positions on Explorer">
+                  <span>Positions <em>↗</em></span><b>{activePositions} Active</b>
+                </a>
+                <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Collateral Cap on Explorer">
+                  <span>Remaining Cap <em>↗</em></span><b>{remainingCap}</b>
+                </a>
+                <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Total Supplied on Explorer">
+                  <span>Supplied <em>↗</em></span><b>{usd(pool.supplied, 0)}</b>
+                </a>
+                <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Total Borrowed on Explorer">
+                  <span>Borrowed <em>↗</em></span><b>{usd(pool.borrowed, 0)}</b>
+                </a>
+                <a href={addrUrl(spec.chainlinkFeed ?? spec.market ?? spec.collateral, net.mode)} target="_blank" rel="noreferrer" title="Verify Chainlink Oracle on Explorer">
+                  <span>Oracle Price <em>↗</em></span><b>{usd(PRICE, priceDigits)}</b>
+                </a>
+                <a href={mktExp} target="_blank" rel="noreferrer" title="Fixed 8% APR">
+                  <span>Borrow APR <em>↗</em></span><b>{(APR * 100).toFixed(2)}%</b>
+                </a>
+              </div>
+            );
+          })()}
           <div className={s.strip}>
             <span className={stale ? s.bad : ""}>Oracle · {net.oracleLabel} · {stale ? `stale ${priceAge}s` : `fresh ${priceAge}s`}</span>
             <span className={s.ok}>HF {hfTxt(hf)}</span>
-            <span className={L.marketDeployed ? s.ok : s.amberT}>
+            <span className={spec.id === "weth-usdg" ? s.ok : s.amberT}>
               {paused
                 ? "Market paused (exits & repayments open)"
-                : L.marketDeployed
-                  ? `Live · read from ${net.chain.name}`
-                  : `Live Chainlink feed · run deploy-extra-markets.sh to open ${pairLabel} pool`}
+                : spec.id === "weth-usdg"
+                  ? `Live · First Loan Market · ${net.chain.name}`
+                  : `Oracle Active · Pool Seeding in progress`}
             </span>
           </div>
           <div className={s.views} role="tablist" aria-label="Market view">
