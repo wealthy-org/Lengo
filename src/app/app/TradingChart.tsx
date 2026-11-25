@@ -84,14 +84,6 @@ function LineChartIcon() {
   );
 }
 
-function FitViewIcon() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-      <path d="M2 6V2.5H5.5M14 6V2.5H10.5M2 10V13.5H5.5M14 10V13.5H10.5" />
-    </svg>
-  );
-}
-
 function computeEma(candles: OHLCVCandle[], period = 9): { time: UTCTimestamp; value: number }[] {
   if (candles.length === 0) return [];
   const k = 2 / (period + 1);
@@ -439,17 +431,6 @@ export default function TradingChart({
     }
   }, [liqPrice, chartType, precision]);
 
-  const resetZoom = () => {
-    const chart = chartRef.current;
-    if (!chart || candles.length === 0) return;
-    const total = candles.length;
-    const visibleBars = Math.min(total, 72);
-    chart.timeScale().setVisibleLogicalRange({
-      from: Math.max(0, total - visibleBars),
-      to: total + 4,
-    });
-  };
-
   const activeCandle = (hoveredTime !== null ? candleByTime.get(hoveredTime) : undefined) ?? candles[candles.length - 1];
   const activeEma = activeCandle ? emaByTime.get(activeCandle.time) : undefined;
   const activeChange =
@@ -533,13 +514,6 @@ export default function TradingChart({
             >
               <LineChartIcon />
               <span>Area</span>
-            </button>
-          </div>
-
-          {/* Reset Zoom */}
-          <div className={s.btnGroup}>
-            <button onClick={resetZoom} title="Reset zoom to latest candles" aria-label="Reset zoom">
-              <FitViewIcon />
             </button>
           </div>
         </div>
