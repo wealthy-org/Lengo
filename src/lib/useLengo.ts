@@ -75,6 +75,7 @@ export function useLengo(spec?: MarketSpec) {
       { ...m, functionName: "paused" },
       { ...m, functionName: "totalCollateral" },
       { ...m, functionName: "collateralCap" },
+      { ...m, functionName: "supplyCap" },
     ],
   });
 
@@ -110,8 +111,10 @@ export function useLengo(spec?: MarketSpec) {
   const du = pq.data?.[2]?.result as readonly bigint[] | undefined;
   const rawTotColl = pq.data?.[4]?.result as bigint | undefined;
   const rawCap = pq.data?.[5]?.result as bigint | undefined;
+  const rawSupCap = pq.data?.[6]?.result as bigint | undefined;
   const totalColl = typeof rawTotColl === "bigint" ? n(rawTotColl, collDec) : 0;
   const colCap = typeof rawCap === "bigint" && rawCap !== maxUint256 ? n(rawCap, collDec) : Infinity;
+  const supCap = typeof rawSupCap === "bigint" && rawSupCap !== maxUint256 ? n(rawSupCap, debtDec) : Infinity;
 
   const pool = marketDeployed && pm ? {
     supplied: n(pm[0], debtDec),
@@ -124,6 +127,7 @@ export function useLengo(spec?: MarketSpec) {
     paused: Boolean(pq.data?.[3]?.result ?? false),
     totalCollateral: totalColl,
     collateralCap: colCap,
+    supplyCap: supCap,
   } : clPrice ? {
     supplied: 0,
     borrowed: 0,
@@ -135,6 +139,7 @@ export function useLengo(spec?: MarketSpec) {
     paused: false,
     totalCollateral: 0,
     collateralCap: Infinity,
+    supplyCap: Infinity,
   } : null;
 
   const refetch = () => {
@@ -143,6 +148,9 @@ export function useLengo(spec?: MarketSpec) {
     pq.refetch();
     return q.refetch();
   };
+
+  const poolLoading = pq.isLoading || (net.mode === "mainnet" && !!clFeed && feedQuery.isLoading && !pm);
+  const userLoading = !!address && (q.isLoading || balQuery.isLoading);
 
   return {
     net,
@@ -154,16 +162,18 @@ export function useLengo(spec?: MarketSpec) {
     address,
     data,
     pool,
-    loading: q.isLoading,
+    loading: userLoading,
+    poolLoading,
+    userLoading,
     error: q.error,
     refetch,
   };
 }
 
-/** Runs auto-chain-switch → approve → write → receipt for the selected MarketSpec. */
+/** Runs auto-chain-switch → approve (only if allowance is insufficient) → write → receipt for the selected MarketSpec. */
 export function useLengoTx(onDone: () => void, spec?: MarketSpec) {
   const net = useNetwork();
-  const { chainId, connector } = useAccount();
+  const { address, chainId, connector } = useAccount();
   const { switchChainAsync } = useSwitchChain();
   const { writeContractAsync } = useWriteContract();
   const client = usePublicClient({ chainId: net.chain.id });
@@ -193,20 +203,39 @@ export function useLengoTx(onDone: () => void, spec?: MarketSpec) {
     const dec = isColl ? collDec : debtDec;
     const sym = isColl ? collSym : debtSym;
     const token = isColl ? collAddr : debtAddr;
-    const needsApprove = act === "Deposit" || act === "Repay" || act === "Supply";
+    const isApproveAct = act === "Deposit" || act === "Repay" || act === "Supply";
     let units = parseUnits(amount, dec);
     let approveUnits = units;
     if (act === "Repay" && opts.all) {
       approveUnits = parseUnits(((opts.debt ?? 0) * 1.001).toFixed(dec), dec);
       units = maxUint256;
     }
+
+    setBusy(true);
+    let needsApprove = isApproveAct;
+    if (isApproveAct && address) {
+      try {
+        const curAllowance = (await client.readContract({
+          address: token,
+          abi: tokenAbi,
+          functionName: "allowance",
+          args: [address, marketAddr],
+        })) as bigint;
+        if (curAllowance >= approveUnits) {
+          needsApprove = false;
+        }
+      } catch {
+        needsApprove = true;
+      }
+    }
+
     const list: TxStep[] = [
       ...(needsApprove ? [{ label: `Approve ${formatUnits(approveUnits, dec)} ${sym} to ${collSym}/${debtSym} Market`, state: "wait" as const }] : []),
       { label: "Confirm in wallet", state: "wait" },
       { label: "Pending onchain", state: "wait" },
       { label: "Confirmed", state: "wait" },
     ];
-    setSteps(list); setBusy(true);
+    setSteps(list);
     const upd = (i: number, p: Partial<TxStep>) => setSteps((s) => s && s.map((x, k) => (k === i ? { ...x, ...p } : x)));
     let i = 0;
     try {
@@ -237,7 +266,7 @@ export function useLengoTx(onDone: () => void, spec?: MarketSpec) {
         : { kind: "err", title: /rejected|denied/i.test(msg) ? "Rejected in wallet" : `${act} failed`, detail: /rejected|denied/i.test(msg) ? undefined : msg.split("\n")[0].slice(0, 140) });
       setSteps((s) => s && s.map((x) => (x.state === "sign" || x.state === "pending" ? { ...x, state: timeout ? "pending" : "failed", label: timeout ? x.label + " · unknown, check explorer" : /rejected|denied/i.test(msg) ? "Rejected in wallet" : x.label } : x)));
     } finally { setBusy(false); }
-  }, [busy, client, marketAddr, collAddr, debtAddr, collDec, debtDec, collSym, debtSym, net, chainId, connector, switchChainAsync, writeContractAsync, onDone, toast]);
+  }, [busy, client, address, marketAddr, collAddr, debtAddr, collDec, debtDec, collSym, debtSym, net, chainId, connector, switchChainAsync, writeContractAsync, onDone, toast]);
 
   return { steps, busy, run, close: () => setSteps(null) };
 }

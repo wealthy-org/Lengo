@@ -65,9 +65,10 @@ export default function Docs() {
             <h2>Getting started on Mainnet</h2>
             <ol>
               <li>Connect an EVM wallet — Lengo automatically configures and switches to <b>Robinhood Chain Mainnet (chain ID 4663)</b>.</li>
-              <li>Need WETH or ETH on Robinhood Chain? Use <a href="/app/routes">Routes</a> (e.g. <code>SOL → WETH</code> or <code>USDC Base → WETH</code>) via NEAR Intents 1Click.</li>
-              <li>On <a href="/app">Markets</a>, supply <b>USDG</b> to earn borrower interest, or deposit <b>WETH</b> collateral and borrow <b>USDG</b> up to 60% LTV.</li>
-              <li>Route borrowed <b>USDG</b> out to <b>USDC</b> on Solana, Base, Arbitrum, or Ethereum in <a href="/app/routes">Routes</a> (<b>Execute</b> mode), and verify every event in <a href="/app/activity">Activity</a>.</li>
+              <li>Bringing collateral from another network? Open <a href="/app/routes?preset=collateral&mode=live">Routes → Cross-chain collateral</a> to route <code>SOL</code>, <code>USDC</code>, <code>USDT</code>, <code>ETH</code>, or <code>BTC</code> into <code>WETH</code> / <code>USDe</code> on Robinhood Chain and lock directly into <code>LengoMarket</code>.</li>
+              <li>On <a href="/app">Markets</a>, supply <b>USDG</b> to earn borrower interest, or deposit collateral across 7 isolated Crypto &amp; RWA Stock markets (<code>WETH</code>, <code>cbBTC</code>, <code>WBTC</code>, <code>USDe</code>, <code>NVDA</code>, <code>TSLA</code>, <code>AAPL</code>) and borrow <b>USDG</b>.</li>
+              <li>Monitor real-time Health Factor, Liquidation Price, LT proximity alerts, and price-shock stress tests on <a href="/app/positions">Positions</a>.</li>
+              <li>Route borrowed <b>USDG</b> into <b>USDC, USDT, or DAI</b> across 14+ chains — or repay <b>USDG</b> debt from any chain — in <a href="/app/routes">Routes</a> (<b>Live</b> mode), and verify every event in <a href="/app/activity">Activity</a>.</li>
             </ol>
           </section>
 
@@ -85,13 +86,26 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
           </section>
 
           <section id="params">
-            <h2>Mainnet parameters (WETH / USDG)</h2>
+            <h2>Mainnet parameters</h2>
             <p>Immutable risk parameters deployed on Robinhood Chain Mainnet (4663), paired with conservative beta TVL caps.</p>
             <div className={d.table}>
               {params.map(([k, v]) => (
                 <div key={k}>
                   <span>{k}</span>
                   <b>{v}</b>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ marginTop: 22, fontSize: 13, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--lime)" }}>
+              Per-Market LTV, Liquidation Threshold &amp; APR (All 7 Live Mainnet Markets)
+            </h3>
+            <div className={d.table}>
+              {MAINNET_MARKETS.map((m) => (
+                <div key={m.id}>
+                  <span>{m.pair} ({m.category})</span>
+                  <b>
+                    Max LTV {Math.round(m.maxLtv * 100)}% · LT {Math.round(m.liqThreshold * 100)}% · {(m.apr * 100).toFixed(1)}% APR · Heartbeat {m.maxOracleAge.toLocaleString("en-US")}s
+                  </b>
                 </div>
               ))}
             </div>
@@ -199,19 +213,20 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
               The <a href="/app/routes">Routes</a> page integrates NEAR Intents 1Click in two modes: <b>Preview</b> (read-only market quotes with no deposit address) and <b>Live</b> (issues a dedicated deposit address, enforces strict ERC-20 origin asset verification on Robinhood Chain Mainnet, submits <code>txHash</code> to solvers, and polls live settlement status).
             </p>
             <ul>
-              <li><b>Borrow payout</b>: convert borrowed <code>USDG</code> on Robinhood Chain directly into <code>USDC</code> on Solana, Base, Arbitrum, or Ethereum.</li>
-              <li><b>Collateral inflow</b>: bridge <code>SOL</code> from Solana or <code>USDC</code> from Base directly into <code>WETH</code> on Robinhood Chain Mainnet.</li>
-              <li><b>Asset routing</b>: cross-chain <code>BTC</code> / <code>ZEC</code> swap quotes via NEAR Intents (distinct from native collateral locking).</li>
+              <li><b>Borrow payout (multi-chain &amp; multi-stable)</b>: convert borrowed <code>USDG</code> on Robinhood Chain directly into <code>USDC</code>, <code>USDT</code>, or <code>DAI</code> across Solana, Base, Arbitrum, Ethereum, Optimism, Polygon, BNB Chain, Avalanche, NEAR, TON, TRON, Sui, Aptos, and Stellar.</li>
+              <li><b>Cross-chain collateral</b>: route <code>SOL</code>, <code>USDC</code>, <code>USDT</code>, <code>ETH</code>, or <code>BTC</code> from external chains into <code>WETH</code> / <code>USDe</code> on Robinhood Chain and lock directly into <code>LengoMarket</code>.</li>
+              <li><b>Cross-chain repay</b>: settle outstanding <code>USDG</code> debt from any supported stablecoin/chain via 1Click and immediately unlock collateral.</li>
+              <li><b>Position Health &amp; RWA Stocks</b>: monitor real-time Health Factor, Liquidation Price, and borrow headroom across Crypto &amp; Robinhood Stock markets (<code>NVDA</code>, <code>TSLA</code>, <code>AAPL</code>) on <a href="/app/positions">Positions</a>.</li>
             </ul>
           </section>
 
           <section id="limits">
             <h2>Safety &amp; current scope</h2>
             <ul>
-              <li><b>Capped Mainnet Beta</b>: Contracts are verified and covered by unit, fuzz, edge-case, and 128,000-call invariant suites, but have not yet undergone an external third-party audit. TVL is capped at 25 WETH / 50,000 USDG during beta.</li>
-              <li><b>Non-custodial exit guarantee</b>: Even if the guardian pauses new deposits/borrows or if the oracle goes stale, <code>repay</code>, debt-free <code>withdrawCollateral</code>, and <code>withdrawSupply</code> remain permanently open.</li>
-              <li><b>Native BTC / ZEC collateral</b>: Currently in research (Mainnet uses <code>WETH</code> collateral today, with <code>cbBTC</code> CCIP market next).</li>
-              <li><b>Charts</b>: Historical market candles in the UI are powered by Pyth Pro, while all onchain LTV and liquidation checks strictly read Chainlink on Robinhood Chain.</li>
+              <li><b>Capped Mainnet Beta</b>: Contracts are verified on Sourcify/Blockscout, covered by unit, fuzz, edge-case, and 128,000-call invariant suites, and currently undergoing an independent fork-based security review. TVL is bounded by per-market beta caps (e.g. 25 WETH / 50,000 USDG).</li>
+              <li><b>Non-custodial exit guarantee</b>: Even if the guardian pauses new deposits/borrows or if an oracle feed goes stale, <code>repay</code>, debt-free <code>withdrawCollateral</code>, and <code>withdrawSupply</code> remain permanently open.</li>
+              <li><b>Native BTC / ZEC collateral</b>: Mainnet supports 7 isolated ERC-20 Crypto &amp; RWA Stock markets today; native non-EVM BTC &amp; ZEC origin-chain locking is in research.</li>
+              <li><b>Charts</b>: Multi-timeframe (<code>15m / 1h / 4h / 1d</code>) historical candles in the UI are powered by Pyth Pro, while all onchain LTV and liquidation checks strictly read Chainlink on Robinhood Chain.</li>
             </ul>
           </section>
 
@@ -220,9 +235,9 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
             <div className={d.table}>
               {[
                 ["Phase 1 · LIVE", "Isolated lending engine + Testnet sandbox (46630)"],
-                ["Phase 2 · LIVE", "Robinhood Chain Mainnet Beta (4663) WETH / USDG + keeperless ChainlinkOracle"],
-                ["Phase 3 · LIVE", "NEAR Intents 1Click cross-chain Live Payout (USDG RH → USDC Solana/Base)"],
-                ["Phase 4 · SEEDING", "Stock & BTC isolated markets deployed on Mainnet (pool seeding in progress)"],
+                ["Phase 2 · LIVE", "Robinhood Chain Mainnet (4663) + keeperless ChainlinkOracle + Position Health"],
+                ["Phase 3 · LIVE", "NEAR Intents 1Click Cross-Chain Collateral, 14+ Chain USDC/USDT/DAI Payout & Any-Chain Repay"],
+                ["Phase 4 · LIVE", "7 isolated Crypto & RWA Stock markets (WETH, cbBTC, WBTC, USDe, NVDA, TSLA, AAPL) live on Mainnet"],
                 ["Phase 5 · RESEARCH", "Native BTC & ZEC collateral locking, proof & redemption"],
               ].map(([k, v]) => (
                 <div key={k}>

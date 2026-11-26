@@ -32,3 +32,57 @@ input{font:inherit;color:inherit}
 .bevel::before{top:-4px;left:-4px;border-width:1px 0 0 1px}
 .bevel::after{bottom:-4px;right:-4px;border-width:0 1px 1px 0}
 .hatch{height:8px;flex:1;background:repeating-linear-gradient(90deg,var(--line2) 0 1px,transparent 1px 4px);opacity:.8}
+
+/* Page & feature panel transitions */
+@keyframes pageEnter{
+  from{opacity:0;transform:translateY(10px) scale(.996)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes laserSweep{
+  0%{transform:scaleX(0);opacity:.95}
+  70%{transform:scaleX(1);opacity:.75}
+  100%{transform:scaleX(1);opacity:0}
+}
+@keyframes paneSwap{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.page-enter{
+  position:relative;
+  animation:pageEnter .32s cubic-bezier(.22,1,.36,1) both;
+}
+.page-laser{
+  position:fixed;
+  top:64px;
+  left:0;
+  right:0;
+  height:2px;
+  background:linear-gradient(90deg,transparent,var(--lime),var(--mint));
+  transform-origin:left center;
+  animation:laserSweep .45s cubic-bezier(.22,1,.36,1) forwards;
+  pointer-events:none;
+  z-index:30;
+}
+.pane-swap{
+  animation:paneSwap .24s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* Shimmer skeletons */
+@keyframes skelShimmer{
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
+.skel{
+  display:inline-block;
+  vertical-align:middle;
+  border-radius:2px;
+  background:linear-gradient(90deg,#18231e 0%,#263830 48%,#18231e 100%);
+  background-size:220% 100%;
+  animation:skelShimmer 1.35s ease-in-out infinite;
+}
+.skel-xs{width:54px;height:12px}
+.skel-sm{width:76px;height:14px}
+.skel-md{width:96px;height:18px}
+.skel-lg{width:126px;height:22px}
+.skel-row{display:block;width:100%;height:18px}
+.skel-chart{display:block;width:100%;height:340px;border:1px solid var(--line)}

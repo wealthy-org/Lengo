@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { ONECLICK, getTokens, toUnits } from "@/lib/oneclick";
 import { db } from "@/lib/db";
 
-const EVM_CHAINS = new Set(["eth", "base", "arb", "hood", "op", "pol", "bsc", "avax"]);
+const EVM_CHAINS = new Set(["eth", "base", "arb", "hood", "op", "pol", "bsc", "avax", "gnosis", "monad", "xlayer", "scroll", "hypercore"]);
 
 // Safe format-valid preview fixtures used ONLY when dry:true (never used when execute:true)
 const PREVIEW_FIXTURES: Record<string, string> = {
@@ -11,6 +11,12 @@ const PREVIEW_FIXTURES: Record<string, string> = {
   sol: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU",
   btc: "bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq",
   zec: "t1HxutHFt2Sejz7fs92wFVAbsFM7NDjsBG6",
+  tron: "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
+  ton: "UQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJKZ",
+  near: "system.near",
+  sui: "0x0000000000000000000000000000000000000000000000000000000000000002",
+  aptos: "0x0000000000000000000000000000000000000000000000000000000000000001",
+  stellar: "GBRPYHIL2CI3FNQ4BXLFMNDLFJUNPU2HY3ZMFSHONUCEOASW7QC7OX2H",
 };
 
 function matchesChainFormat(addr: string, chain: string): boolean {
@@ -19,6 +25,11 @@ function matchesChainFormat(addr: string, chain: string): boolean {
   if (chain === "sol") return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr);
   if (chain === "btc") return /^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,62}$/.test(addr);
   if (chain === "zec") return /^t[13][a-km-zA-HJ-NP-Z1-9]{33}$/.test(addr);
+  if (chain === "tron") return /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(addr);
+  if (chain === "ton") return /^(EQ|UQ|0:)[A-Za-z0-9_-]{46,66}$/.test(addr);
+  if (chain === "near") return /^(([a-z\d]+[-_])*[a-z\d]+\.)+[a-z\d]{2,}$/.test(addr) || /^[0-9a-fA-F]{64}$/.test(addr);
+  if (chain === "sui" || chain === "aptos") return /^0x[0-9a-fA-F]{40,64}$/.test(addr);
+  if (chain === "stellar") return /^G[A-Z2-7]{55}$/.test(addr);
   return addr.length >= 16;
 }
 
@@ -30,13 +41,27 @@ function previewFallbackFor(chain: string): string | undefined {
 }
 
 /** Stores a sanitized quote record when Neon is configured. Addresses are hashed; failures never break the quote. */
-async function logQuote(x: { o: string; d: string; amount: bigint; out?: string; status: string; reason?: string; recipient: string; correlationId?: string; quotedAt?: string; expiresAt?: string }) {
+async function logQuote(x: {
+  o: string;
+  d: string;
+  amount: bigint;
+  out?: string;
+  status: string;
+  reason?: string;
+  recipient: string;
+  refundTo?: string;
+  depositAddress?: string;
+  correlationId?: string;
+  quotedAt?: string;
+  expiresAt?: string;
+}) {
   const sql = db();
   if (!sql) return;
   try {
-    const h = createHash("sha256").update(x.recipient).digest("hex").slice(0, 16);
-    await sql`insert into quote (provider, correlation_id, origin_asset, dest_asset, amount_in, amount_out, status, reason, recipient_hash, quoted_at, expires_at)
-      values ('1click', ${x.correlationId ?? null}, ${x.o}, ${x.d}, ${x.amount.toString()}, ${x.out ?? null}, ${x.status}, ${x.reason ?? null}, ${h}, ${x.quotedAt ?? null}, ${x.expiresAt ?? null})`;
+    const h = createHash("sha256").update(x.recipient.toLowerCase()).digest("hex").slice(0, 16);
+    const sh = x.refundTo ? createHash("sha256").update(x.refundTo.toLowerCase()).digest("hex").slice(0, 16) : null;
+    await sql`insert into quote (provider, correlation_id, origin_asset, dest_asset, amount_in, amount_out, status, reason, recipient_hash, sender_hash, deposit_address, quoted_at, expires_at)
+      values ('1click', ${x.correlationId ?? null}, ${x.o}, ${x.d}, ${x.amount.toString()}, ${x.out ?? null}, ${x.status}, ${x.reason ?? null}, ${h}, ${sh}, ${x.depositAddress ?? null}, ${x.quotedAt ?? null}, ${x.expiresAt ?? null})`;
   } catch { /* logging is best-effort */ }
 }
 
@@ -107,7 +132,7 @@ export async function POST(req: Request) {
     const r = await fetch(`${ONECLICK}/quote`, { method: "POST", headers, body: JSON.stringify(payload), cache: "no-store" });
     const j = await r.json();
     if (!r.ok) {
-      await logQuote({ o: o.assetId, d: d.assetId, amount: units, status: "rejected", reason: j?.message, recipient, correlationId: j?.correlationId });
+      await logQuote({ o: o.assetId, d: d.assetId, amount: units, status: "rejected", reason: j?.message, recipient, refundTo, correlationId: j?.correlationId });
       return NextResponse.json({ status: "rejected", reason: j?.message ?? `Provider ${r.status}` }, { status: 422 });
     }
     const q = j.quote ?? {};
@@ -118,9 +143,11 @@ export async function POST(req: Request) {
       out: q.amountOut,
       status: execute ? "live_quote" : "ok",
       recipient,
+      refundTo,
+      depositAddress: execute ? (q.depositAddress as string | undefined) : undefined,
       correlationId: j.correlationId,
       quotedAt: j.timestamp,
-      expiresAt: q.deadline ?? deadline,
+      expiresAt: j.quoteRequest?.deadline ?? deadline,
     });
     return NextResponse.json({
       status: "ok",

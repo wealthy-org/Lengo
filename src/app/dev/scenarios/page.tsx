@@ -64,16 +64,60 @@ export default function Scenarios() {
     setPrice({ p: Number(formatUnits(pr[0], 8)), at: Number(pr[1]) });
     setAcct({ idle: Number(formatUnits(idle, 6)), supplied: Number(formatUnits(supplied, 6)), debt: Number(formatUnits(debt, 6)), marketBal: Number(formatUnits(mbal, 6)), shares });
 
-    const borrowed = await client.getContractEvents({ address: deployment.market!, abi: marketAbi, eventName: "Borrowed", fromBlock: deployment.startBlock, toBlock: "latest" });
-    const accounts = [...new Set(borrowed.map((l) => (l.args as { account: Address }).account))];
+    // Combine indexed historical events from /api/activity with the latest 999 blocks on RPC (avoids 1,000-block getLogs cap)
+    const candidateSet = new Set<Address>();
+    if (address) candidateSet.add(address);
+    const liqMap = new Map<string, { hash: string; borrower: string; repaid: number; seized: number; block: bigint }>();
+
+    try {
+      const res = await fetch("/api/activity?chainId=46630");
+      if (res.status === 200) {
+        const j = (await res.json()) as {
+          rows: { tx_hash: string; block_number: string; event: string; account?: string; amount_a: string | null; amount_b: string | null }[];
+        };
+        for (const r of j.rows ?? []) {
+          if (r.account && /^0x[0-9a-fA-F]{40}$/.test(r.account)) candidateSet.add(r.account as Address);
+          if (r.event === "Liquidated") {
+            liqMap.set(r.tx_hash, {
+              hash: r.tx_hash,
+              borrower: r.account ?? "0x…",
+              repaid: Number(formatUnits(BigInt(r.amount_a ?? "0"), 6)),
+              seized: Number(formatUnits(BigInt(r.amount_b ?? "0"), 8)),
+              block: BigInt(r.block_number),
+            });
+          }
+        }
+      }
+    } catch {
+      /* fall back to recent RPC window */
+    }
+
+    try {
+      const head = await client.getBlockNumber();
+      const from = head > 999n && head - 999n > deployment.startBlock ? head - 999n : deployment.startBlock;
+      const [borrowed, ev] = await Promise.all([
+        client.getContractEvents({ address: deployment.market!, abi: marketAbi, eventName: "Borrowed", fromBlock: from, toBlock: head }),
+        client.getContractEvents({ address: deployment.market!, abi: marketAbi, eventName: "Liquidated", fromBlock: from, toBlock: head }),
+      ]);
+      for (const l of borrowed) candidateSet.add((l.args as { account: Address }).account);
+      for (const l of ev) {
+        const a = l.args as { borrower: string; repaid: bigint; seized: bigint };
+        liqMap.set(l.transactionHash, {
+          hash: l.transactionHash,
+          borrower: a.borrower,
+          repaid: Number(formatUnits(a.repaid, 6)),
+          seized: Number(formatUnits(a.seized, 8)),
+          block: l.blockNumber,
+        });
+      }
+    } catch {
+      /* keep DB-indexed candidates if RPC log scan throttles */
+    }
+
+    const accounts = [...candidateSet];
     const ps = await Promise.all(accounts.map(readPos));
     setPositions(ps.filter((p) => p.debt > 0).sort((a, b) => a.hf - b.hf));
-
-    const ev = await client.getContractEvents({ address: deployment.market!, abi: marketAbi, eventName: "Liquidated", fromBlock: deployment.startBlock, toBlock: "latest" });
-    setLiqs(ev.map((l) => {
-      const a = l.args as { borrower: string; repaid: bigint; seized: bigint };
-      return { hash: l.transactionHash, borrower: a.borrower, repaid: Number(formatUnits(a.repaid, 6)), seized: Number(formatUnits(a.seized, 8)), block: l.blockNumber };
-    }).reverse());
+    setLiqs([...liqMap.values()].sort((a, b) => Number(b.block - a.block)));
   }, [client, readPos]);
 
   useEffect(() => { load(); const id = setInterval(() => { setNow(Math.floor(Date.now() / 1000)); }, 1000); const r = setInterval(load, 15_000); return () => { clearInterval(id); clearInterval(r); }; }, [load]);

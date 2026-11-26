@@ -30,6 +30,8 @@ export default function Activity() {
     type: r.type,
     amt: r.amt,
     tx: r.tx,
+    txHref: r.txHref ?? (r.tx ? txUrl(r.tx, A.net.mode) : undefined),
+    txLabel: r.txLabel ?? (r.tx ? `${r.tx.slice(0, 6)}…${r.tx.slice(-4)} ↗` : undefined),
     block: r.block ? r.block.toLocaleString("en-US") : "1Click",
     time: r.timeLabel ?? `log ${r.logIndex}`,
     st: r.status,
@@ -53,19 +55,30 @@ export default function Activity() {
       </div>
       <div className={`${a.frame} bevel`}>
         <div className={s.stats} style={{ gridTemplateColumns: "repeat(5,1fr)" }}>
-          <div><span>Records</span><b>{rows.length}</b></div>
-          <div><span>Confirmed onchain</span><b className={s.ok}>{rows.filter((r) => r.st === "Confirmed").length}</b></div>
-          <div><span>1Click routes</span><b className={s.warn}>{rows.filter((r) => group[r.type] === "Routes").length}</b></div>
+          <div><span>Records</span><b>{A.loading ? <span className="skel skel-xs" /> : rows.length}</b></div>
+          <div><span>Confirmed onchain</span><b className={s.ok}>{A.loading ? <span className="skel skel-xs" /> : rows.filter((r) => r.st === "Confirmed").length}</b></div>
+          <div><span>1Click routes</span><b className={s.warn}>{A.loading ? <span className="skel skel-xs" /> : rows.filter((r) => group[r.type] === "Routes").length}</b></div>
           <div><span>Chain</span><b>RH {A.net.chain.id}</b></div>
-          <div><span>Indexed block</span><b>{latestBlk}</b></div>
+          <div><span>Indexed block</span><b>{A.loading ? <span className="skel skel-sm" /> : latestBlk}</b></div>
         </div>
         <div className={a.bar}>
           <div className={a.tabs}>{filters.map((x) => <button key={x} className={f === x ? a.on : ""} onClick={() => setF(x)}>{x}</button>)}</div>
           <span>Identity · txHash + logIndex + chainId</span>
         </div>
-        <div className={a.table}>
+        <div key={f} className={`${a.table} pane-swap`}>
           <div className={a.head}><span>Type</span><span>Amount / Route</span><span>Tx</span><span>Block</span><span>Ref</span><span>Status</span></div>
-          {list.length === 0 ? (
+          {A.loading ? (
+            Array.from({ length: 6 }).map((_, idx) => (
+              <div key={idx} className={a.row}>
+                <span><span className="skel skel-sm" /></span>
+                <span><span className="skel skel-lg" /></span>
+                <span><span className="skel skel-sm" /></span>
+                <span><span className="skel skel-sm" /></span>
+                <span><span className="skel skel-xs" /></span>
+                <span><span className="skel skel-sm" /></span>
+              </div>
+            ))
+          ) : list.length === 0 ? (
             <div className={a.row} style={{ gridTemplateColumns: "1fr", color: "var(--tx3)" }}>
               <span>
                 {f === "Lending"
@@ -78,7 +91,7 @@ export default function Activity() {
               <div key={r.key} className={a.row}>
                 <span className={a.type}><i data-t={group[r.type]} />{r.type}</span>
                 <span>{r.amt}</span>
-                <span>{r.tx ? <a href={txUrl(r.tx, A.net.mode)} target="_blank" rel="noreferrer">{`${r.tx.slice(0, 6)}…${r.tx.slice(-4)}`} ↗</a> : <span className={a.dim}>offchain quote</span>}</span>
+                <span>{r.txHref && r.txLabel ? <a href={r.txHref} target="_blank" rel="noreferrer">{r.txLabel}</a> : <span className={a.dim}>preview quote</span>}</span>
                 <span className={a.dim}>{r.block}</span>
                 <span className={a.dim}>{r.time}</span>
                 <span><em className={r.st === "Confirmed" ? a.ok : r.st === "Live Intent" ? a.pend : a.prev}>{r.st}</em></span>

@@ -22,9 +22,11 @@ create table if not exists activity (
   counterparty  text,
   amount_a      numeric(78,0),
   amount_b      numeric(78,0),
+  market        text,
   created_at    timestamptz not null default now(),
   primary key (chain_id, tx_hash, log_index)
 );
+alter table activity add column if not exists market text;
 create index if not exists activity_account_idx on activity (chain_id, account, block_number desc);
 
 create table if not exists indexer_cursor (
@@ -34,7 +36,7 @@ create table if not exists indexer_cursor (
   updated_at    timestamptz not null default now()
 );
 
--- Quote previews (dry:true). Addresses are hashed, never stored raw.
+-- Quote & live 1Click route executions. Addresses are hashed, never stored raw.
 create table if not exists quote (
   id              bigserial primary key,
   provider        text not null,
@@ -46,10 +48,18 @@ create table if not exists quote (
   status          text not null,
   reason          text,
   recipient_hash  text,
+  sender_hash     text,
+  deposit_address text,
+  tx_hash         text,
+  dest_tx_hash    text,
   quoted_at       timestamptz,
   expires_at      timestamptz,
   created_at      timestamptz not null default now()
 );
+alter table quote add column if not exists sender_hash text;
+alter table quote add column if not exists deposit_address text;
+alter table quote add column if not exists tx_hash text;
+alter table quote add column if not exists dest_tx_hash text;
 
 -- Health alerts: idempotent per account+zone, rate-limited by last_notified_at.
 create table if not exists alert (

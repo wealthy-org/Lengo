@@ -336,7 +336,7 @@ export default async function OpenGraphImage() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", width: "50%", gap: "4px" }}>
                   <span style={{ fontSize: "10px", color: "#859a8e", letterSpacing: "0.12em" }}>MARKETS</span>
-                  <span style={{ fontSize: "15px", color: "#f4f7ef" }}>WETH + 6 Seeding</span>
+                  <span style={{ fontSize: "15px", color: "#f4f7ef" }}>7 Isolated Live</span>
                 </div>
               </div>
             </div>

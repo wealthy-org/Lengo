@@ -1,6 +1,8 @@
 "use client";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Pair } from "../TokenIcon";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useConnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import s from "./trade.module.css";
@@ -22,8 +24,14 @@ const fmtAge = (sec: number) => {
   if (sec < 3600) return `${Math.floor(sec / 60)}m ${sec % 60}s`;
   return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m`;
 };
+const floorDec = (v: number, dec = 6) => {
+  if (!Number.isFinite(v) || v <= 0) return 0;
+  const f = 10 ** Math.min(dec, 6);
+  return Math.floor((v + 1e-12) * f) / f;
+};
 
-export default function Markets() {
+function MarketsInner() {
+  const searchParams = useSearchParams();
   const net = useNetwork();
   const isMainnet = net.mode === "mainnet";
   const marketList: MarketSpec[] = isMainnet ? MAINNET_MARKETS : [TESTNET_MARKET];
@@ -37,7 +45,33 @@ export default function Markets() {
 
   const L = useLengo(spec);
   const { connectAsync } = useConnect();
-  const tx2 = useLengoTx(() => L.refetch(), spec);
+  const [posCount, setPosCount] = useState<number | null>(null);
+  const [statsTick, setStatsTick] = useState(0);
+  const tx2 = useLengoTx(() => {
+    L.refetch();
+    setStatsTick((x) => x + 1);
+  }, spec);
+
+  // Fetch onchain-verified active positions count from server Multicall3 check
+  useEffect(() => {
+    const mkt = spec.market ?? net.market;
+    if (!mkt) {
+      setPosCount(0);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/markets/stats?chainId=${net.chain.id}&market=${mkt}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (!cancelled && j && typeof j.activePositions === "number") {
+          setPosCount(j.activePositions);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [net.chain.id, net.market, spec.market, statsTick]);
 
   const collSym = spec.collSymbol;
   const debtSym = spec.debtSymbol;
@@ -75,6 +109,8 @@ export default function Markets() {
 
   const D = L.data;
   const P = L.pool;
+  const poolPending = L.poolLoading && !P;
+  const userPending = L.userLoading && !D;
   const coll = D ? D.coll : 0;
   const debt = D ? D.debt : 0;
   const wallet = D ? { coll: D.collBal, debt: D.debtBal } : { coll: 0, debt: 0 };
@@ -116,6 +152,26 @@ export default function Markets() {
   const [amt, setAmt] = useState("");
   const [q, setQ] = useState("");
 
+  // Sync deep-link query params (?market=NVDA&act=Deposit&mode=Lend)
+  const didSyncQuery = useRef(false);
+  useEffect(() => {
+    if (didSyncQuery.current) return;
+    didSyncQuery.current = true;
+    const mktParam = searchParams.get("market");
+    const actParam = searchParams.get("act");
+    const modeParam = searchParams.get("mode");
+    if (mktParam && marketList.some((m) => m.id.toLowerCase() === mktParam.toLowerCase())) {
+      const found = marketList.find((m) => m.id.toLowerCase() === mktParam.toLowerCase());
+      if (found) setSelectedId(found.id);
+    }
+    if (modeParam === "Lend") {
+      setMode("Lend");
+    } else if (actParam === "Deposit" || actParam === "Borrow" || actParam === "Repay" || actParam === "Withdraw") {
+      setMode("Borrow");
+      setAct(actParam);
+    }
+  }, [searchParams, marketList]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && tx2.steps && !tx2.busy) tx2.close();
@@ -130,8 +186,10 @@ export default function Markets() {
   const a = parseFloat(amt) || 0;
   const C = coll * PRICE;
   const cap = Math.max(0, C * MAX_LTV - debt);
+  const remCollCap = P && P.collateralCap !== Infinity ? Math.max(0, P.collateralCap - (P.totalCollateral ?? 0)) : Infinity;
+  const remSupCap = P && P.supplyCap !== Infinity ? Math.max(0, P.supplyCap - pool.supplied) : Infinity;
   const maxFor: Record<Act, number> = {
-    Deposit: wallet.coll,
+    Deposit: Math.min(wallet.coll, remCollCap),
     Borrow: Math.min(cap, avail),
     Repay: Math.min(debt, wallet.debt),
     Withdraw: debt === 0 ? coll : Math.max(0, coll - debt / (PRICE * MAX_LTV)),
@@ -190,7 +248,7 @@ export default function Markets() {
             .filter((m) => m.pair.toLowerCase().includes(q.toLowerCase()) || m.category.toLowerCase().includes(q.toLowerCase()))
             .map((m) => {
               const active = m.id === spec.id;
-              const isFirstLoanLive = m.id === "WETH";
+              const isDeployedMkt = Boolean(m.market);
               return (
                 <button
                   key={m.id}
@@ -203,17 +261,17 @@ export default function Markets() {
                 >
                   <Pair a={m.collSymbol} b={m.debtSymbol} />
                   <span><b>{m.pair}</b><small>{m.sub}</small></span>
-                  {isFirstLoanLive ? (
-                    <em style={{ color: "var(--lime)", borderColor: "var(--lime)" }}>Live</em>
+                  {isDeployedMkt ? (
+                    <em style={{ color: "var(--lime)", borderColor: "rgba(201,242,122,.4)" }}>Live</em>
                   ) : (
-                    <em>Seeding</em>
+                    <em>Soon</em>
                   )}
                 </button>
               );
             })}
         </aside>
 
-        <section className={s.center}>
+        <section key={spec.id} className={`${s.center} pane-swap`}>
           <div className={s.mHead}>
             <Pair a={collSym} b={debtSym} size={42} />
             <div>
@@ -221,11 +279,7 @@ export default function Markets() {
               <p>{spec.category} isolated market · fixed {(APR * 100).toFixed(1)}% APR · {net.chain.name}</p>
             </div>
             <div className={s.badges}>
-              {spec.id === "WETH" ? (
-                <span className={s.active}>Mainnet Beta · Active</span>
-              ) : (
-                <span>Oracle Live · Seeding Pool</span>
-              )}
+              <span className={s.active}>{isMainnet ? "Mainnet · Live" : "Testnet · Live"}</span>
               <a href={addrUrl(spec.market ?? spec.chainlinkFeed ?? spec.collateral, net.mode)} target="_blank" rel="noreferrer">Explorer ↗</a>
             </div>
           </div>
@@ -234,37 +288,38 @@ export default function Markets() {
             const totColl = P?.totalCollateral ?? 0;
             const tvl = (totColl * PRICE) + pool.supplied;
             const utilization = pool.supplied > 0 ? (pool.borrowed / pool.supplied) * 100 : 0;
-            const activePositions = totColl > 0 ? (pool.borrowed > 0 ? 2 : 1) : 0;
+            const activePositions = typeof posCount === "number" ? posCount : totColl > 0 ? 1 : 0;
             const remVal = P && P.collateralCap !== Infinity ? Math.max(0, P.collateralCap - totColl) : Infinity;
             const remainingCap =
               remVal === Infinity
                 ? "Unlimited"
                 : `${remVal.toLocaleString("en-US", {
-                    minimumFractionDigits: totColl > 0 && totColl < 1 ? 3 : 2,
-                    maximumFractionDigits: totColl > 0 && totColl < 1 ? 4 : 2,
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: totColl > 0 && totColl < 1 ? 3 : 2,
                   })} ${collSym}`;
+            const sk = <span className="skel skel-sm" />;
             return (
               <div className={s.stats}>
                 <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Total Value Locked on Explorer">
-                  <span>TVL <em>↗</em></span><b>{usd(tvl, 2)}</b>
+                  <span>TVL <em>↗</em></span><b>{poolPending ? sk : usd(tvl, 2)}</b>
                 </a>
                 <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Utilization on Explorer">
-                  <span>Utilization <em>↗</em></span><b>{utilization.toFixed(1)}%</b>
+                  <span>Utilization <em>↗</em></span><b>{poolPending ? sk : `${utilization.toFixed(1)}%`}</b>
                 </a>
                 <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Active Positions on Explorer">
-                  <span>Positions <em>↗</em></span><b>{activePositions} Active</b>
+                  <span>Positions <em>↗</em></span><b>{poolPending && posCount === null ? sk : `${activePositions} Active`}</b>
                 </a>
                 <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Remaining Collateral Cap on Explorer">
-                  <span>Cap Left <em>↗</em></span><b>{remainingCap}</b>
+                  <span>Cap Left <em>↗</em></span><b>{poolPending ? sk : remainingCap}</b>
                 </a>
                 <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Total Supplied on Explorer">
-                  <span>Supplied <em>↗</em></span><b>{usdAuto(pool.supplied)}</b>
+                  <span>Supplied <em>↗</em></span><b>{poolPending ? sk : usdAuto(pool.supplied)}</b>
                 </a>
                 <a href={mktExp} target="_blank" rel="noreferrer" title="Verify Total Borrowed on Explorer">
-                  <span>Borrowed <em>↗</em></span><b>{usdAuto(pool.borrowed)}</b>
+                  <span>Borrowed <em>↗</em></span><b>{poolPending ? sk : usdAuto(pool.borrowed)}</b>
                 </a>
                 <a href={addrUrl(spec.chainlinkFeed ?? spec.market ?? spec.collateral, net.mode)} target="_blank" rel="noreferrer" title="Verify Chainlink Oracle on Explorer">
-                  <span>Oracle Price <em>↗</em></span><b>{usd(PRICE, priceDigits)}</b>
+                  <span>Oracle Price <em>↗</em></span><b>{poolPending && !hist ? sk : usd(PRICE, priceDigits)}</b>
                 </a>
                 <a href={mktExp} target="_blank" rel="noreferrer" title="Fixed Borrow APR">
                   <span>Borrow APR <em>↗</em></span><b>{(APR * 100).toFixed(2)}%</b>
@@ -273,45 +328,75 @@ export default function Markets() {
             );
           })()}
           <div className={s.strip}>
-            <span className={stale ? s.bad : ""}>Oracle · {net.oracleLabel} · {stale ? `stale ${fmtAge(priceAge)}` : `fresh ${fmtAge(priceAge)}`}</span>
-            <span className={s.ok}>HF {hfTxt(hf)}</span>
-            <span className={spec.id === "WETH" ? s.ok : s.amberT}>
+            <span className={stale ? s.bad : ""}>
+              Oracle · {net.oracleLabel} · {poolPending ? <span className="skel skel-xs" /> : stale ? `stale ${fmtAge(priceAge)}` : `fresh ${fmtAge(priceAge)}`}
+            </span>
+            <span className={s.ok}>{userPending ? <span className="skel skel-xs" /> : `HF ${hfTxt(hf)}`}</span>
+            <span className={paused ? s.warn : s.ok}>
               {paused
                 ? "Market paused (exits & repayments open)"
-                : spec.id === "WETH"
-                  ? `Live · First Loan Market · ${net.chain.name}`
-                  : `Oracle Active · Pool Seeding in progress`}
+                : `Live · Isolated Market · ${net.chain.name}`}
             </span>
           </div>
           <div className={s.views} role="tablist" aria-label="Market view">
             {["Chart", "Position", "Risk"].map((v) => <button key={v} role="tab" aria-selected={view === v} className={view === v ? s.vOn : ""} onClick={() => setView(v)}>{v}</button>)}
           </div>
 
-          <div className={s.viewBody}>
+          <div key={view} className={`${s.viewBody} pane-swap`}>
             {view === "Chart" && (
-              <TradingChart
-                symbol={spec.id}
-                collSym={collSym}
-                pairLabel={pairLabel}
-                currentPrice={PRICE}
-                priceDigits={priceDigits}
-                liqPrice={liqP}
-                hist={hist}
-                loading={histLoading}
-                timeframe={tf}
-                onTimeframeChange={setTf}
-                isMainnet={isMainnet}
-              />
+              histLoading && !hist ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span className="skel skel-lg" />
+                    <span className="skel skel-md" />
+                  </div>
+                  <div className="skel skel-chart" />
+                </div>
+              ) : (
+                <TradingChart
+                  symbol={spec.id}
+                  collSym={collSym}
+                  pairLabel={pairLabel}
+                  currentPrice={PRICE}
+                  priceDigits={priceDigits}
+                  liqPrice={liqP}
+                  hist={hist}
+                  loading={histLoading}
+                  timeframe={tf}
+                  onTimeframeChange={setTf}
+                  isMainnet={isMainnet}
+                />
+              )
             )}
             {view === "Position" && (
-              <div className={s.kv}>
-                <div><span>Collateral</span><b>{coll.toFixed(4)} {collSym}</b><small>{usd(C)}</small></div>
-                <div><span>Debt incl. interest</span><b>{usd(debt)}</b><small>{(APR * 100).toFixed(1)}% APR · {debtSym}</small></div>
-                <div><span>Borrow capacity</span><b>{usd(cap)}</b><small>at {Math.round(MAX_LTV * 100)}% LTV</small></div>
-                <div><span>Health factor</span><b className={tone(hf)}>{hfTxt(hf)}</b><small>liq. below 1.00</small></div>
-                <div><span>Current LTV</span><b>{(ltv * 100).toFixed(2)}%</b><small>max {Math.round(MAX_LTV * 100)}%</small></div>
-                <div><span>Est. liq. price</span><b>{liqP ? usd(liqP, priceDigits) : "No debt"}</b><small>{collSym} / USD</small></div>
-              </div>
+              <>
+                <div className={s.kv}>
+                  <div><span>Collateral</span><b>{userPending ? <span className="skel skel-md" /> : `${coll.toFixed(4)} ${collSym}`}</b><small>{userPending || poolPending ? <span className="skel skel-xs" /> : usd(C)}</small></div>
+                  <div><span>Debt incl. interest</span><b>{userPending ? <span className="skel skel-md" /> : usd(debt)}</b><small>{(APR * 100).toFixed(1)}% APR · {debtSym}</small></div>
+                  <div><span>Borrow capacity</span><b>{userPending || poolPending ? <span className="skel skel-md" /> : usd(cap)}</b><small>at {Math.round(MAX_LTV * 100)}% LTV</small></div>
+                  <div><span>Health factor</span><b className={tone(hf)}>{userPending ? <span className="skel skel-md" /> : hfTxt(hf)}</b><small>liq. below 1.00</small></div>
+                  <div><span>Current LTV</span><b>{userPending ? <span className="skel skel-md" /> : `${(ltv * 100).toFixed(2)}%`}</b><small>max {Math.round(MAX_LTV * 100)}%</small></div>
+                  <div><span>Est. liq. price</span><b>{userPending ? <span className="skel skel-md" /> : liqP ? usd(liqP, priceDigits) : "No debt"}</b><small>{collSym} / USD</small></div>
+                </div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
+                  <Link href="/app/positions" className="btn">
+                    Position Health &amp; RWA Overview →
+                  </Link>
+                  <Link href="/app/routes?preset=collateral&mode=live" className="btn">
+                    Cross-Chain Collateral →
+                  </Link>
+                  {wallet.debt > 0 && (
+                    <Link href={`/app/routes?preset=payout&mode=live&amt=${floorDec(wallet.debt, 2)}`} className="btn btn-primary">
+                      Route {floorDec(wallet.debt, 2)} USDG Payout →
+                    </Link>
+                  )}
+                  {debt > 0 && (
+                    <Link href={`/app/routes?preset=repay&mode=live&amt=${(debt * 1.02 + 0.25).toFixed(2)}`} className="btn">
+                      Repay from Any Chain →
+                    </Link>
+                  )}
+                </div>
+              </>
             )}
             {view === "Risk" && (() => {
               const simActive = mode === "Borrow" && a > 0;
@@ -396,16 +481,35 @@ Liq. price    = D / (qty × ${LIQ.toFixed(2)}) = ${liqP ? usd(liqP, priceDigits)
             </div>
           )}
 
-          <div className={s.aBody}>
+          <div key={`${spec.id}:${mode}:${act}:${lendTab}`} className={`${s.aBody} pane-swap`}>
             <span className={s.k}>{mode === "Borrow" ? `${spec.category} collateralized borrowing` : `Lend ${debtSym} to ${pairLabel}`}</span>
             <h3>{mode === "Borrow" ? act : lendTab === "Supply" ? "Supply" : "Withdraw supply"}</h3>
             {mode === "Borrow" ? (
               <>
                 <div className={s.field}>
-                  <div className={s.fTop}><span>Amount</span><span>Max {maxFor[act].toLocaleString("en-US", { maximumFractionDigits: isCollAct ? 6 : 2 })}</span></div>
+                  <div className={s.fTop}>
+                    <span>Amount</span>
+                    <span>
+                      {userPending || poolPending ? (
+                        <span className="skel skel-xs" />
+                      ) : (
+                        `Max ${maxFor[act].toLocaleString("en-US", { maximumFractionDigits: isCollAct ? 6 : 2 })}`
+                      )}
+                    </span>
+                  </div>
                   <div className={s.fRow}>
                     <input inputMode="decimal" placeholder="0.0" value={amt} aria-label="Amount" onChange={(e) => setAmt(e.target.value.replace(/[^0-9.]/g, ""))} />
-                    <button onClick={() => setAmt(String(+maxFor[act].toFixed(6)))}>Max</button>
+                    <button
+                      onClick={() => {
+                        if (act === "Repay" && wallet.debt >= debt && debt > 0) {
+                          setAmt(debt.toFixed(spec.debtDecimals));
+                        } else {
+                          setAmt(String(floorDec(maxFor[act], isCollAct ? 6 : spec.debtDecimals)));
+                        }
+                      }}
+                    >
+                      Max
+                    </button>
                     <span className={s.tok}>{unit}</span>
                   </div>
                 </div>
@@ -434,7 +538,7 @@ Liq. price    = D / (qty × ${LIQ.toFixed(2)}) = ${liqP ? usd(liqP, priceDigits)
                 </button>
               </>
             ) : (() => {
-              const maxLend = lendTab === "Supply" ? wallet.debt : Math.min(D ? D.claim : 0, avail);
+              const maxLend = lendTab === "Supply" ? Math.min(wallet.debt, remSupCap) : Math.min(D ? D.claim : 0, avail);
               const sVal = parseFloat(supplyAmt) || 0;
               const overLend = sVal > maxLend + 1e-9;
               return (
@@ -444,8 +548,8 @@ Liq. price    = D / (qty × ${LIQ.toFixed(2)}) = ${liqP ? usd(liqP, priceDigits)
                       <span>{lendTab === "Supply" ? "You supply" : "You withdraw"}</span>
                       <span>
                         {lendTab === "Supply"
-                          ? `Max ${wallet.debt.toFixed(2)}`
-                          : `Max ${maxLend.toFixed(2)} (Claim ${(D ? D.claim : 0).toFixed(2)})`}
+                          ? `Max ${maxLend.toFixed(2)}`
+                          : `Max ${floorDec(maxLend, spec.debtDecimals).toFixed(2)} (Claim ${(D ? D.claim : 0).toFixed(2)})`}
                       </span>
                     </div>
                     <div className={s.fRow}>
@@ -456,7 +560,7 @@ Liq. price    = D / (qty × ${LIQ.toFixed(2)}) = ${liqP ? usd(liqP, priceDigits)
                         value={supplyAmt}
                         onChange={(e) => setSupplyAmt(e.target.value.replace(/[^0-9.]/g, ""))}
                       />
-                      <button onClick={() => setSupplyAmt(String(+maxLend.toFixed(6)))}>Max</button>
+                      <button onClick={() => setSupplyAmt(String(floorDec(maxLend, spec.debtDecimals)))}>Max</button>
                       <span className={s.tok}>{debtSym}</span>
                     </div>
                   </div>
@@ -494,7 +598,11 @@ Liq. price    = D / (qty × ${LIQ.toFixed(2)}) = ${liqP ? usd(liqP, priceDigits)
               );
             })()}
             <p className={s.note}>
-              Wallet · {wallet.coll.toFixed(4)} {collSym} · {wallet.debt.toFixed(2)} {debtSym} · {net.chain.name}
+              {userPending ? (
+                <span className="skel skel-lg" />
+              ) : (
+                `Wallet · ${wallet.coll.toFixed(4)} ${collSym} · ${wallet.debt.toFixed(2)} ${debtSym} · ${net.chain.name}`
+              )}
             </p>
           </div>
         </aside>
@@ -513,10 +621,27 @@ Liq. price    = D / (qty × ${LIQ.toFixed(2)}) = ${liqP ? usd(liqP, priceDigits)
                 </div>
               ))}
             </div>
-            <div className={s.mBtns}><button className="btn btn-primary" autoFocus disabled={tx2.busy} onClick={tx2.close}>{tx2.busy ? "Working…" : "Close"}</button></div>
+            <div className={s.mBtns}>
+              <button className="btn btn-primary" autoFocus disabled={tx2.busy} onClick={tx2.close}>
+                {tx2.busy ? "Working…" : "Close"}
+              </button>
+              {mode === "Borrow" && act === "Borrow" && !tx2.busy && tx2.steps.some((st) => st.label === "Confirmed" && st.state === "done") && (
+                <Link href={`/app/routes?preset=payout&mode=live&amt=${floorDec(wallet.debt, 2) || 1}`} className="btn" onClick={tx2.close}>
+                  Route {debtSym} Payout →
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       )}
     </>
+  );
+}
+
+export default function Markets() {
+  return (
+    <Suspense fallback={<div style={{ padding: 32, fontFamily: "var(--mono)", fontSize: 12, color: "var(--tx3)" }}>Loading lending terminal…</div>}>
+      <MarketsInner />
+    </Suspense>
   );
 }

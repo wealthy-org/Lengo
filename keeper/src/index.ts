@@ -225,10 +225,10 @@ export async function runIndexer(env: Env) {
       const f = map[l.eventName];
       if (!f) continue;
       const r = f(l.args);
-      await sql`insert into activity (chain_id, tx_hash, log_index, block_number, block_hash, event, account, counterparty, amount_a, amount_b)
+      await sql`insert into activity (chain_id, tx_hash, log_index, block_number, block_hash, event, account, counterparty, amount_a, amount_b, market)
         values (${chainId}, ${l.transactionHash}, ${l.logIndex}, ${l.blockNumber!.toString()}, ${l.blockHash}, ${r.event}, ${r.account.toLowerCase()},
-                ${r.counterparty?.toLowerCase() ?? null}, ${r.a?.toString() ?? null}, ${r.b?.toString() ?? null})
-        on conflict (chain_id, tx_hash, log_index) do nothing`;
+                ${r.counterparty?.toLowerCase() ?? null}, ${r.a?.toString() ?? null}, ${r.b?.toString() ?? null}, ${l.address.toLowerCase()})
+        on conflict (chain_id, tx_hash, log_index) do update set market = excluded.market`;
       inserted++;
     }
     lastEnd = e;

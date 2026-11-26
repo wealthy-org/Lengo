@@ -66,7 +66,7 @@ export default function Bento() {
           <h4>Verified loan loop</h4>
           <Pixels />
           <ul className={s.list}>
-            {["supply 2.00 USDG", "deposit 0.0010 WETH", "borrow 0.50 USDG", "repay & withdraw WETH"].map((x, i) => (
+            {["supply 2.00 USDG", "deposit 0.0010 WETH", "borrow 0.05 USDG", "payout 1.00 USDG → SOL"].map((x, i) => (
               <li key={x} className={i === t % 4 ? s.hot : ""}><span>TX</span>{x}</li>
             ))}
           </ul>

@@ -15,18 +15,18 @@ const tick = [["WETH/USDG","APR","8.00%"],["Max LTV","","60%"],["Liq. threshold"
 const params = [["Max borrow LTV","60%"],["Liquidation threshold","75%"],["Eligible when","HF < 1"],["Liquidator bonus","5%"],["Close factor","50% per call"],["Borrow APR","8% fixed"],["TVL caps (beta)","25 WETH · 50k USDG"],["Oracle","Chainlink ETH/USD"]];
 const disclosure: [string, string, "live" | "preview" | "muted", string][] = [
   ["Lending engine", "Isolated WETH / USDG market · Sourcify verified", "live", "External third-party security review"],
-  ["Collateral markets", "WETH active · 6 BTC & equity pools seeding", "live", "Open cbBTC, WBTC, NVDA, TSLA & AAPL pools"],
+  ["Collateral markets", "7 isolated Crypto & RWA Stock markets live onchain", "live", "Expand USDG liquidity depth across BTC & Equity pools"],
   ["Supply & borrow", "Public USDG lending · 8.0% fixed borrow APR", "live", "Dynamic utilization interest curve"],
   ["Price oracle", "Chainlink ETH/USD feed · fully keeperless", "live", "Secondary oracle fallback guard"],
-  ["Cross-chain payout", "NEAR Intents 1Click · Live USDG → USDC payout", "live", "1-tx Borrow + Auto-Route wrapper"],
+  ["Cross-chain flows", "1Click Collateral, 14+ chain Payout & Any-Chain Repay", "live", "Single-signature atomic intent wrapper"],
   ["Native BTC & ZEC", "In research — not accepted on Mainnet yet", "muted", "Origin-chain lock, proof & redemption"],
   ["Safety rails", "25 WETH beta cap · non-custodial exit always open", "live", "Timelock guardian multisig"],
 ];
 const phases = [
   ["Phase 1", "LIVE", "Lending engine", ["Isolated WETH/USDG market", "RAY debt index + virtual shares", "Live on RH Mainnet (4663)"], 100],
-  ["Phase 2", "LIVE", "Keeperless risk", ["Chainlink ETH/USD oracle", "50% close factor liquidation", "Capped TVL + non-custodial pause"], 100],
-  ["Phase 3", "LIVE", "Multichain routing", ["NEAR Intents 1Click live payout", "USDG (RH) → USDC (Solana/Base) settled", "Preview & Live execution modes"], 100],
-  ["Phase 4", "SEEDING", "Market expansion", ["Stock & BTC tokens deployed on Mainnet", "Pool liquidity seeding in progress", "Public lending supply"], 50],
+  ["Phase 2", "LIVE", "Position health & risk", ["Chainlink ETH/USD + RWA feeds", "Real-time HF & LT proximity alerts", "Capped TVL + non-custodial pause"], 100],
+  ["Phase 3", "LIVE", "Multichain intents", ["Cross-chain collateral inflow", "14+ chain USDC / USDT / DAI payout", "Repay USDG debt from any chain"], 100],
+  ["Phase 4", "LIVE", "RWA & BTC markets", ["cbBTC, WBTC & USDe isolated pools", "NVDA, TSLA & AAPL stock markets", "Permissionless USDG lending"], 100],
   ["Phase 5", "RESEARCH", "Native BTC & ZEC", ["Custody + signer model", "Proof and redemption", "Liquidation feasibility"], 10],
 ] as const;
 const contracts = [
@@ -108,10 +108,10 @@ export default function Landing() {
             <small>debt · interest · HF · liquidation</small>
           </div>
           <div className={`${s.side} bevel`}>
-            <span className={s.k}>Side B · payout destination</span>
+            <span className={s.k}>Side B · payout &amp; repay</span>
             <h3>Where you need liquidity</h3>
-            <p>NEAR Intents 1Click routes borrowed USDG directly into USDC on Solana, Base, Arbitrum, or Ethereum — live settlement verified on Mainnet.</p>
-            <div className={s.chips}><i>USDC · Solana</i><i>USDC · Base</i><i>USDC · Arbitrum</i><i>USDG · Robinhood</i></div>
+            <p>Route borrowed USDG into USDC, USDT, or DAI across 14+ chains, or repay USDG debt from any network via NEAR Intents 1Click — verified on Mainnet.</p>
+            <div className={s.chips}><i>USDC · Solana</i><i>USDT · Arbitrum</i><i>USDC · Base</i><i>USDT · TON/TRON</i></div>
           </div>
         </div>
       </section>
@@ -209,7 +209,7 @@ Liq. price     = D / (qty × liqThreshold)`}</pre>
       </section>
 
       <footer className={`${s.foot} bevel`}>
-        <Link href="/app">Markets</Link><Link href="/app/routes">Routes</Link><Link href="/app/activity">Activity</Link><Link href="/docs">Docs</Link><a href="https://robinhoodchain.blockscout.com/address/0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900" target="_blank" rel="noreferrer">Contract · 0x8f1C…5900</a><a href="https://x.com/lengoapp" target="_blank" rel="noreferrer">X · @lengoapp</a>
+        <Link href="/app">Markets</Link><Link href="/app/positions">Positions</Link><Link href="/app/routes">Routes</Link><Link href="/app/activity">Activity</Link><Link href="/docs">Docs</Link><a href="https://robinhoodchain.blockscout.com/address/0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900" target="_blank" rel="noreferrer">Contract · 0x8f1C…5900</a><a href="https://x.com/lengoapp" target="_blank" rel="noreferrer">X · @lengoapp</a>
         <span>Robinhood Chain · Mainnet Beta</span><span className={s.status}>Mainnet Beta · 4663 <i /></span>
       </footer>
     </div>

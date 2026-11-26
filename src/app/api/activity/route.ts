@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { db } from "@/lib/db";
 import { DEFAULT_NETWORK, DEPLOYMENTS } from "@/lib/chain";
 
@@ -14,28 +15,38 @@ export async function GET(req: Request) {
   if (!sql) return new NextResponse(null, { status: 204 });
   try {
     let rows = account
-      ? await sql`select tx_hash, log_index, block_number, event, amount_a, amount_b from activity
+      ? await sql`select tx_hash, log_index, block_number, event, account, counterparty, amount_a, amount_b, market from activity
           where chain_id = ${chainId} and (account = ${account} or counterparty = ${account})
           order by block_number desc, log_index desc limit 200`
-      : await sql`select tx_hash, log_index, block_number, event, amount_a, amount_b from activity
+      : await sql`select tx_hash, log_index, block_number, event, account, counterparty, amount_a, amount_b, market from activity
           where chain_id = ${chainId}
           order by block_number desc, log_index desc limit 50`;
 
     // If connected wallet has 0 personal events yet, also return market-wide rows so Activity isn't empty once pool has txns
     let scope: "account" | "market" = account ? "account" : "market";
     if (account && rows.length === 0) {
-      rows = await sql`select tx_hash, log_index, block_number, event, amount_a, amount_b from activity
+      rows = await sql`select tx_hash, log_index, block_number, event, account, counterparty, amount_a, amount_b, market from activity
         where chain_id = ${chainId}
         order by block_number desc, log_index desc limit 50`;
       scope = "market";
     }
 
-    const quotes =
-      chainId === 4663
-        ? await sql`select id, origin_asset, dest_asset, amount_in, amount_out, status, created_at from quote
-            where status in ('ok', 'live_quote')
-            order by id desc limit 15`
-        : [];
+    let quotes: Record<string, unknown>[] = [];
+    if (chainId === 4663) {
+      if (account && scope === "account") {
+        const acctHash = createHash("sha256").update(account).digest("hex").slice(0, 16);
+        quotes = await sql`select id, origin_asset, dest_asset, amount_in, amount_out, status, deposit_address, tx_hash, dest_tx_hash, created_at from quote
+          where status in ('ok', 'live_quote', 'submitted', 'settled')
+            and (sender_hash = ${acctHash} or recipient_hash = ${acctHash} or status = 'settled')
+          order by id desc limit 15`;
+      } else {
+        // In market-wide view, prioritize real executed/settled routes and recent market quotes
+        quotes = await sql`select id, origin_asset, dest_asset, amount_in, amount_out, status, deposit_address, tx_hash, dest_tx_hash, created_at from quote
+          where status in ('settled', 'submitted', 'live_quote', 'ok')
+          order by (case when status = 'settled' then 0 when status = 'submitted' then 1 when status = 'live_quote' then 2 else 3 end), id desc
+          limit 15`;
+      }
+    }
 
     const cur = await sql`select last_block, updated_at from indexer_cursor where chain_id = ${chainId}`;
     return NextResponse.json({

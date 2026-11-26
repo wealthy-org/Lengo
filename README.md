@@ -43,8 +43,8 @@ Start block `122296154` · Manifests: [`contracts/deployments/4663.json`](contra
 | Flow | Details | Explorer Proof |
 |---|---|---|
 | **Supply `USDG`** | `2.00 USDG` seeded into `WETH/USDG` pool (block `122,693,997`) | [`0x04887e2d…f0d7`](https://robinhoodchain.blockscout.com/tx/0x04887e2dd03391090f3f90eb170bba562955d76122e24bdafb2fbf73f715f0d7) |
-| **Deposit `WETH` → Borrow `USDG`** | Collateral deposit + `0.50 USDG` borrow (block `122,705,021`) | [`0x57356f96…5f4d`](https://robinhoodchain.blockscout.com/tx/0x57356f96ef1e9bebc9345de9530628c919faf2f9348c082f83b62cb240435f4d) |
-| **Repay All → Withdraw `WETH`** | Zero-dust full repay + collateral exit (block `122,705,887`) | [`0x1123391f…a2f7`](https://robinhoodchain.blockscout.com/tx/0x1123391fe9d0a87e5c2146b2cb577573b022bc48dbc31f1f37ff625e0416a2f7) |
+| **Deposit `WETH` → Borrow `USDG`** | `0.0001 WETH` deposit + `USDG` borrow (block `122,705,021`) | [`0x57356f96…5f4d`](https://robinhoodchain.blockscout.com/tx/0x57356f96ef1e9bebc9345de9530628c919faf2f9348c082f83b62cb240435f4d) |
+| **Repay All → Withdraw `WETH`** | Zero-dust full repay + `0.0001 WETH` exit (block `122,705,887`) | [`0x1123391f…a2f7`](https://robinhoodchain.blockscout.com/tx/0x1123391fe9d0a87e5c2146b2cb577573b022bc48dbc31f1f37ff625e0416a2f7) |
 | **1Click `USDG` Deposit (RH)** | `1.00 USDG` ERC-20 transfer to 1Click (block `123,473,713`) | [`0xc6684d36…9644`](https://robinhoodchain.blockscout.com/tx/0xc6684d3643a3d0378129c7b2ed80de1f44851e8ae71d4dcbb520b52016d09644) |
 | **NEAR Intents Settlement** | `SUCCESS` (`0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283`) | [`View on NEAR Intents`](https://explorer.near-intents.org/transactions/0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283) |
 | **Solana `USDC` Payout** | `0.806257 USDC` delivered on Solana Mainnet | [`PWUk1xC3…7RUwV`](https://solscan.io/tx/PWUk1xC3DdzyGvPZu9rVviDkj1EpNapzftXxjWPWwpfdFf6PyRMAWkmZqWbp8oCgk4jhuJFDgqz8pRzZV77RUwV) |
@@ -52,29 +52,36 @@ Start block `122296154` · Manifests: [`contracts/deployments/4663.json`](contra
 ## How it works
 
 ```
- Collateral (tBTC)          Lending engine                     Payout route
-┌────────────────┐   ┌───────────────────────────┐   ┌───────────────────────────┐
-│ deposit        │──▶│ LengoMarket (RH testnet)  │──▶│ NEAR Intents 1Click       │
-│ withdraw       │   │ debt shares + RAY index   │   │ USDG (RH) → USDC Solana/  │
-└────────────────┘   │ lender shares, liquidation│   │ Base … quote, dry run     │
-                     └─────────────▲─────────────┘   └───────────────────────────┘
-                                   │ price (8 dec, timestamp)
-                     ┌─────────────┴─────────────┐
-                     │ DemoOracle ◀── keeper     │  Cloudflare Worker, every 4 min
-                     └───────────────────────────┘
+ Cross-chain Inflow             Robinhood Chain Mainnet (4663)           14+ Chain Payout & Repay
+┌─────────────────────┐      ┌──────────────────────────────────┐      ┌──────────────────────────┐
+│ SOL / USDC / BTC    │─────▶│ 7 Isolated LengoMarket Pools     │─────▶│ NEAR Intents 1Click      │
+│ via 1Click → WETH   │      │ WETH · cbBTC · WBTC · USDe       │      │ USDG → USDC / USDT / DAI │
+└─────────────────────┘      │ NVDA · TSLA · AAPL / USDG debt   │◀─────│ Repay USDG from any chain│
+                             └────────────────▲─────────────────┘      └──────────────────────────┘
+                                              │ latestRoundData() (keeperless)
+                             ┌────────────────┴─────────────────┐
+                             │ ChainlinkOracle Adapter          │
+                             │ Official Chainlink Feeds + Peg   │
+                             └──────────────────────────────────┘
 ```
 
-- **One isolated market per collateral.** Collateral is never lent out as lender cash; invariant tests enforce this.
-- **Debt shares with a borrow index (RAY).** Interest accrues per second at a fixed 8% APR. Repay All clears debt to exactly zero, with no dust left behind.
-- **Lender shares with a virtual offset**, which blunt first-depositor inflation and donation attacks.
-- **Stale-oracle guard.** Borrowing and withdrawals that leave debt are paused when a price is older than 300 s. Repay and debt-free exit always work.
-- **Liquidation** opens at HF < 1, repays up to 50% of the debt per call and pays the liquidator a 5% bonus. Bad debt is written off when collateral runs out.
+- **One isolated market per collateral.** Collateral is never lent out as lender cash; invariant tests enforce this across all 7 Crypto & RWA Stock markets.
+- **Debt shares with a borrow index (RAY).** Interest accrues per second into a global RAY index. Repay All (`type(uint256).max`) clears debt to exact zero with no dust.
+- **Lender shares with a virtual offset**, blunting first-depositor inflation and donation attacks.
+- **Keeperless Chainlink guard.** Borrowing and withdrawals that leave debt require a fresh Chainlink round within the market's heartbeat window. Repay and debt-free exit remain permanently open.
+- **Liquidation** opens at HF < 1.00, repays up to 50% of debt per call, and pays the liquidator a 5% collateral bonus.
 
-### Market parameters (testnet demo)
+### Mainnet market parameters (`4663`)
 
-| Max LTV | Liquidation threshold | Liquidatable | Bonus | Close factor | Borrow APR | Oracle freshness |
+| Market | Category | Max LTV | Liq. Threshold | Borrow APR | Liquidator Bonus | Close Factor |
 |---|---|---|---|---|---|---|
-| 60% | 75% | HF < 1 | 5% | 50% | 8% fixed | 300 s |
+| `WETH / USDG` | Crypto | 60% | 75% | 8.0% | 5% | 50% |
+| `cbBTC / USDG` | Crypto | 65% | 78% | 7.5% | 5% | 50% |
+| `WBTC / USDG` | Crypto | 65% | 78% | 7.5% | 5% | 50% |
+| `USDe / USDG` | Stable | 80% | 88% | 6.5% | 5% | 50% |
+| `NVDA / USDG` | RH Stock | 50% | 65% | 9.0% | 5% | 50% |
+| `TSLA / USDG` | RH Stock | 50% | 65% | 9.0% | 5% | 50% |
+| `AAPL / USDG` | RH Stock | 55% | 70% | 8.5% | 5% | 50% |
 
 ## Deployed contracts: Robinhood Chain testnet (46630)
 
@@ -95,12 +102,13 @@ The full deployment manifest and a 16-transaction proof index (M1 lifecycle, M2 
 
 | Page | What it does |
 |---|---|
-| `/` | Landing |
-| `/app` | Markets: deposit, borrow, repay, withdraw, lend; live health factor, LTV and liquidation price; HF alerts |
-| `/app/routes` | NEAR Intents 1Click cross-chain routing (`Preview` & `Live` settlement modes) |
-| `/app/activity` | Onchain event history, each tx linked to the explorer |
-| `/faucet` | Mint demo tBTC / tUSDC (capped, 24 h cooldown, no value) |
-| `/docs` | Formulas, parameters, limits |
+| `/` | Landing terminal, live proof stream, interactive risk calculator |
+| `/app` | Markets: 7 isolated Crypto & RWA Stock pools (`WETH`, `cbBTC`, `WBTC`, `USDe`, `NVDA`, `TSLA`, `AAPL`), TradingView multi-timeframe charts (`15m/1h/4h/1d`) |
+| `/app/positions` | Position Health: real-time Health Factor, Liquidation Price, remaining borrow room, LT proximity alerts, and price-shock stress simulator across all markets |
+| `/app/routes` | NEAR Intents 1Click router: Cross-Chain Collateral inflow, 14+ chain `USDC`/`USDT`/`DAI` Payouts, and Any-Chain Debt Repayment (`Preview` & `Live` modes) |
+| `/app/activity` | Onchain contract events & verified 1Click settlements linked directly to Blockscout / NEAR Intents |
+| `/faucet` | Mint demo `tBTC` / `tUSDC` on Robinhood Chain Testnet (`46630`) |
+| `/docs` | Protocol math formulas, per-market risk parameters, verified contracts, and safety disclosures |
 
 Each transaction shows a step modal (confirm in wallet → pending → confirmed) and a toast that links to the tx on the explorer.
 
@@ -108,11 +116,13 @@ Each transaction shows a step modal (confirm in wallet → pending → confirmed
 
 | Route | Purpose |
 |---|---|
-| `GET /api/routes/tokens` | 1Click token discovery (cached) |
-| `POST /api/routes/quote` | Server proxy to 1Click `/v0/quote` (`Preview` or `Live` mode); quotes are logged with recipient hashed |
-| `POST /api/routes/submit` | Submits origin-chain deposit `txHash` to 1Click `/v0/deposit/submit` |
+| `GET /api/markets/stats` | Multicall3 onchain verification of active positions, borrowers, and at-risk accounts |
+| `GET /api/prices/history` | Multi-timeframe (`15m`, `1h`, `4h`, `1d`) OHLCV candles from Pyth Pro / Coinbase |
+| `GET /api/routes/tokens` | 1Click token discovery with ERC-20 contract addresses (cached) |
+| `POST /api/routes/quote` | Server proxy to 1Click `/v0/quote` (`Preview` or `Live` mode); quotes logged with hashed addresses |
+| `POST /api/routes/submit` | Submits origin-chain deposit `txHash` to 1Click `/v0/deposit/submit` & persists proof hash |
 | `GET /api/routes/status` | Polls live solver & destination settlement status from 1Click `/v0/status` |
-| `GET /api/activity[?account=0x…]` | Market-wide or per-account events from the Neon read model |
+| `GET /api/activity[?account=0x…]` | Market-wide or per-account events & settled 1Click routes from the Neon read model |
 | `POST /api/index/sync` | Indexer trigger (needs `INDEXER_SECRET`) |
 | `POST /api/oracle/refresh` | Optional on-demand stale-price refresh (rate-limited) |
 

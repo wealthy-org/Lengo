@@ -12,6 +12,7 @@ import s from "./app/app.module.css";
 
 const baseNav = [
   { href: "/app", label: "Markets" },
+  { href: "/app/positions", label: "Positions" },
   { href: "/app/routes", label: "Routes" },
   { href: "/app/activity", label: "Activity" },
   { href: "/faucet", label: "Faucet", testnetOnly: true },
