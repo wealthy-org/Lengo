@@ -48,6 +48,12 @@ Start block `122296154` · Manifests: [`contracts/deployments/4663.json`](contra
 | **1Click `USDG` Deposit (RH)** | `1.00 USDG` ERC-20 transfer to 1Click (block `123,473,713`) | [`0xc6684d36…9644`](https://robinhoodchain.blockscout.com/tx/0xc6684d3643a3d0378129c7b2ed80de1f44851e8ae71d4dcbb520b52016d09644) |
 | **NEAR Intents Settlement** | `SUCCESS` (`0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283`) | [`View on NEAR Intents`](https://explorer.near-intents.org/transactions/0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283) |
 | **Solana `USDC` Payout** | `0.806257 USDC` delivered on Solana Mainnet | [`PWUk1xC3…7RUwV`](https://solscan.io/tx/PWUk1xC3DdzyGvPZu9rVviDkj1EpNapzftXxjWPWwpfdFf6PyRMAWkmZqWbp8oCgk4jhuJFDgqz8pRzZV77RUwV) |
+| **Base `USDC` Payout** | `0.30 USDG` (RH block `123,532,715`) → `0.296513 USDC` on Base | [`0xa484…a7f0`](https://robinhoodchain.blockscout.com/tx/0xa484f312f7419d09f0d64fd85bcaff29394ed072d53603c510f2d523cf77a7f0) · [`Base ↗`](https://basescan.org/tx/0x7e4f2eb4a67b2e083993793c4154ce34a23781d6f03e1b866b5e3e78b4c2cd0d) |
+| **Seed RWA · `NVDA/USDG`** | `USDG` liquidity supplied to `NVDA` market (block `123,528,008`) | [`0xef3a519a…8cfe`](https://robinhoodchain.blockscout.com/tx/0xef3a519afa18f8c11b68ff13348a11bbbffe3dd2255f83cdaa96d6befed58cfe) |
+| **Seed RWA · `TSLA/USDG`** | `USDG` liquidity supplied to `TSLA` market (block `123,528,282`) | [`0x3ba93b61…352b`](https://robinhoodchain.blockscout.com/tx/0x3ba93b6139f3be8c253c9b3a678bfaa2f084dbbb617bfa01980aeec24f24352b) |
+| **Seed RWA · `AAPL/USDG`** | `USDG` liquidity supplied to `AAPL` market (block `123,528,546`) | [`0xefce4d41…5ec7`](https://robinhoodchain.blockscout.com/tx/0xefce4d41320bf3d7175043d6dbfbe0720c7f18390bd3b36db2b08922bed05ec7) |
+| **Cross-Chain Repay (`USDG`)** | Zero-dust full repay via `/app/routes` Step 2 (block `123,537,392`) | [`0x88a0e4bf…44c8`](https://robinhoodchain.blockscout.com/tx/0x88a0e4bfdfa2b444d205b3f8b125afab714346d86a864451e5a36aa8e55844c8) · [`Approve ↗`](https://robinhoodchain.blockscout.com/tx/0x7ba90b1015824c8088bdcd7e8b5608302aefa4438953b781d4b9c081f61a8be3) |
+| **Post-Repay Collateral Exit** | `0.0010 WETH` unlocked & withdrawn via `/app/routes` Step 3 (block `123,542,369`) | [`0x563d35bd…b41f`](https://robinhoodchain.blockscout.com/tx/0x563d35bd6f8dbb8e56c1029e04dda04f164b2ba1bdd893e216d22195b6aab41f) |
 
 ## How it works
 

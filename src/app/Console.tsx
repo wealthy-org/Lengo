@@ -33,6 +33,12 @@ export function MarketList() {
 const EXPLORER_TX = "https://robinhoodchain.blockscout.com/tx/";
 
 const verifiedProofs = [
+  { k: "WITHDRAW", b: "123,542,369", h: "0x563d…b41f", full: "0x563d35bd6f8dbb8e56c1029e04dda04f164b2ba1bdd893e216d22195b6aab41f", amt: "0.0010 WETH EXIT", tag: "TX ↗" },
+  { k: "REPAY",    b: "123,537,392", h: "0x88a0…44c8", full: "0x88a0e4bfdfa2b444d205b3f8b125afab714346d86a864451e5a36aa8e55844c8", amt: "0.005 USDG FULL", tag: "TX ↗" },
+  { k: "PAYOUT",   b: "123,532,715", h: "0xa484…a7f0", full: "0xa484f312f7419d09f0d64fd85bcaff29394ed072d53603c510f2d523cf77a7f0", amt: "0.30 USDG → BASE", tag: "1CLICK ↗" },
+  { k: "RWA·AAPL", b: "123,528,546", h: "0xefce…5ec7", full: "0xefce4d41320bf3d7175043d6dbfbe0720c7f18390bd3b36db2b08922bed05ec7", amt: "0.01 USDG → AAPL", tag: "TX ↗" },
+  { k: "RWA·TSLA", b: "123,528,282", h: "0x3ba9…352b", full: "0x3ba93b6139f3be8c253c9b3a678bfaa2f084dbbb617bfa01980aeec24f24352b", amt: "0.01 USDG → TSLA", tag: "TX ↗" },
+  { k: "RWA·NVDA", b: "123,528,008", h: "0xef3a…8cfe", full: "0xef3a519afa18f8c11b68ff13348a11bbbffe3dd2255f83cdaa96d6befed58cfe", amt: "0.01 USDG → NVDA", tag: "TX ↗" },
   { k: "PAYOUT",   b: "123,473,713", h: "0xc668…9644", full: "0xc6684d3643a3d0378129c7b2ed80de1f44851e8ae71d4dcbb520b52016d09644", amt: "1.00 USDG → SOL", tag: "1CLICK ↗" },
   { k: "SUPPLY",   b: "123,423,315", h: "0xc183…115d", full: "0xc183664bdcbcf7ea5eb6b638407e79f3285e210f34f9f5927c5ccf69571c115d", amt: "2.00 USDG", tag: "TX ↗" },
   { k: "WITHDRAW", b: "122,705,887", h: "0x1123…a2f7", full: "0x1123391fe9d0a87e5c2146b2cb577573b022bc48dbc31f1f37ff625e0416a2f7", amt: "0.0001 WETH", tag: "TX ↗" },

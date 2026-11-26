@@ -193,6 +193,70 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
                   </a>
                 </b>
               </div>
+              <div>
+                <span>1Click USDG Deposit (RH → Base)</span>
+                <b>
+                  <a href="https://robinhoodchain.blockscout.com/tx/0xa484f312f7419d09f0d64fd85bcaff29394ed072d53603c510f2d523cf77a7f0" target="_blank" rel="noreferrer">
+                    0xa484f312…a7f0 ↗
+                  </a>
+                </b>
+              </div>
+              <div>
+                <span>1Click USDC Payout (Base)</span>
+                <b>
+                  <a href="https://basescan.org/tx/0x7e4f2eb4a67b2e083993793c4154ce34a23781d6f03e1b866b5e3e78b4c2cd0d" target="_blank" rel="noreferrer">
+                    0x7e4f2eb4…cd0d ↗
+                  </a>
+                </b>
+              </div>
+              <div>
+                <span>NEAR Intents Base Settlement</span>
+                <b>
+                  <a href="https://explorer.near-intents.org/transactions/0x0cC24E339540688717D23c86fE2783e3DD7C2E3d" target="_blank" rel="noreferrer">
+                    0x0cC24E33…2E3d · SUCCESS ↗
+                  </a>
+                </b>
+              </div>
+              <div>
+                <span>Seed RWA Pool · NVDA/USDG</span>
+                <b>
+                  <a href="https://robinhoodchain.blockscout.com/tx/0xef3a519afa18f8c11b68ff13348a11bbbffe3dd2255f83cdaa96d6befed58cfe" target="_blank" rel="noreferrer">
+                    0xef3a519a…8cfe ↗
+                  </a>
+                </b>
+              </div>
+              <div>
+                <span>Seed RWA Pool · TSLA/USDG</span>
+                <b>
+                  <a href="https://robinhoodchain.blockscout.com/tx/0x3ba93b6139f3be8c253c9b3a678bfaa2f084dbbb617bfa01980aeec24f24352b" target="_blank" rel="noreferrer">
+                    0x3ba93b61…352b ↗
+                  </a>
+                </b>
+              </div>
+              <div>
+                <span>Seed RWA Pool · AAPL/USDG</span>
+                <b>
+                  <a href="https://robinhoodchain.blockscout.com/tx/0xefce4d41320bf3d7175043d6dbfbe0720c7f18390bd3b36db2b08922bed05ec7" target="_blank" rel="noreferrer">
+                    0xefce4d41…5ec7 ↗
+                  </a>
+                </b>
+              </div>
+              <div>
+                <span>Cross-Chain Repay All · USDG</span>
+                <b>
+                  <a href="https://robinhoodchain.blockscout.com/tx/0x88a0e4bfdfa2b444d205b3f8b125afab714346d86a864451e5a36aa8e55844c8" target="_blank" rel="noreferrer">
+                    0x88a0e4bf…44c8 ↗
+                  </a>
+                </b>
+              </div>
+              <div>
+                <span>Post-Repay Collateral Exit · WETH</span>
+                <b>
+                  <a href="https://robinhoodchain.blockscout.com/tx/0x563d35bd6f8dbb8e56c1029e04dda04f164b2ba1bdd893e216d22195b6aab41f" target="_blank" rel="noreferrer">
+                    0x563d35bd…b41f ↗
+                  </a>
+                </b>
+              </div>
             </div>
             <h3 style={{ marginTop: 24, fontSize: 13, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--tx2)" }}>
               Testnet sandbox — Robinhood Chain Testnet (46630)

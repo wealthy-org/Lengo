@@ -50,6 +50,27 @@
 | 1 | Robinhood Chain (`4663`) | Block `123,473,713` · `USDG.transfer(1,000,000)` (`0 ETH` value) | [`0xc6684d36…9644`](https://robinhoodchain.blockscout.com/tx/0xc6684d3643a3d0378129c7b2ed80de1f44851e8ae71d4dcbb520b52016d09644) |
 | 2 | NEAR Intents 1Click | Correlation `670286ba-01c0-4122-82bd-e4b0949a5cb8` · `SUCCESS` | [`0x0D650Ee3…6283`](https://explorer.near-intents.org/transactions/0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283) |
 | 3 | Solana Mainnet | `0.806257 USDC` delivered to `HZXty2…BKiY` | [`PWUk1xC3…7RUwV`](https://solscan.io/tx/PWUk1xC3DdzyGvPZu9rVviDkj1EpNapzftXxjWPWwpfdFf6PyRMAWkmZqWbp8oCgk4jhuJFDgqz8pRzZV77RUwV) |
+| 4 | Robinhood Chain (`4663`) | Block `123,532,715` · `0.30 USDG` transfer (`RH → Base`) | [`0xa484f312…a7f0`](https://robinhoodchain.blockscout.com/tx/0xa484f312f7419d09f0d64fd85bcaff29394ed072d53603c510f2d523cf77a7f0) |
+| 5 | NEAR Intents 1Click | Correlation `da9d3f29-ff04-41ed-8225-66e584e2e515` · `SUCCESS` | [`0x0cC24E33…2E3d`](https://explorer.near-intents.org/transactions/0x0cC24E339540688717D23c86fE2783e3DD7C2E3d) |
+| 6 | Base Mainnet | `0.296513 USDC` delivered on Base (`0xb91E…B5AE`) | [`0x7e4f2eb4…cd0d`](https://basescan.org/tx/0x7e4f2eb4a67b2e083993793c4154ce34a23781d6f03e1b866b5e3e78b4c2cd0d) |
+
+### Phase D — Update 5: RWA Equity Markets Seeded & Opened (`NVDA`, `TSLA`, `AAPL` / `USDG`)
+- **Lender (`0xb91E596EF3E1855df77bC34b2d094eF8704bB5AE`):**
+
+| Market | Contract | Action | Block | Supply Tx Hash (Blockscout) | Approve Tx Hash |
+|---|---|---|---|---|---|
+| **NVDA / USDG** | `0x7D81A78F6a52264E0064764b2b1250385E5e193A` | `supply(0.01 USDG)` | `123,528,008` | [`0xef3a519a…8cfe`](https://robinhoodchain.blockscout.com/tx/0xef3a519afa18f8c11b68ff13348a11bbbffe3dd2255f83cdaa96d6befed58cfe) | [`0x24536122…2262`](https://robinhoodchain.blockscout.com/tx/0x245361221f98aa51774a1fe3f375510ebfd18283b8971c302ab41ea2d93b2262) |
+| **TSLA / USDG** | `0xa4CaCae0e5221d6B5a2B1630f7F6f36e6b9eF99a` | `supply(0.01 USDG)` | `123,528,282` | [`0x3ba93b61…352b`](https://robinhoodchain.blockscout.com/tx/0x3ba93b6139f3be8c253c9b3a678bfaa2f084dbbb617bfa01980aeec24f24352b) | [`0x252a…`](https://robinhoodchain.blockscout.com/address/0xa4CaCae0e5221d6B5a2B1630f7F6f36e6b9eF99a) |
+| **AAPL / USDG** | `0xDF97819e82A634ff82689c282067b74D574467A3` | `supply(0.01 USDG)` | `123,528,546` | [`0xefce4d41…5ec7`](https://robinhoodchain.blockscout.com/tx/0xefce4d41320bf3d7175043d6dbfbe0720c7f18390bd3b36db2b08922bed05ec7) | [`0x75d8767c…8fa3`](https://robinhoodchain.blockscout.com/tx/0x75d8767c5968f05b5893d96cd5ab5ae78f1938f11a0cadc2332eb6525cc58fa3) |
+
+### Phase E — Update 4: Cross-Chain Repay & Collateral Unlock (`WETH / USDG` on Chain `4663`)
+- **Borrower (`0xb91E596EF3E1855df77bC34b2d094eF8704bB5AE`):**
+
+| Step | Action | Block | Transaction Hash |
+|---|---|---|---|
+| 1 | Approve `USDG` for Cross-Chain Repay (`0.005008 USDG`) | `123,537,352` | [`0x7ba90b10…8be3`](https://robinhoodchain.blockscout.com/tx/0x7ba90b1015824c8088bdcd7e8b5608302aefa4438953b781d4b9c081f61a8be3) |
+| 2 | **Full Debt Repay (`LengoMarket.repay(max)` — `0.005003 USDG`, `5,001` shares → `0` Debt)** | `123,537,392` | [`0x88a0e4bf…44c8`](https://robinhoodchain.blockscout.com/tx/0x88a0e4bfdfa2b444d205b3f8b125afab714346d86a864451e5a36aa8e55844c8) |
+| 3 | **Post-Repay Collateral Exit (`LengoMarket.withdrawCollateral(0.0010 WETH)`)** | `123,542,369` | [`0x563d35bd…b41f`](https://robinhoodchain.blockscout.com/tx/0x563d35bd6f8dbb8e56c1029e04dda04f164b2ba1bdd893e216d22195b6aab41f) |
 
 ---
 
