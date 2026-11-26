@@ -690,118 +690,11 @@ function RoutesInner() {
                 ? `Deposit ${q.depositAddress.slice(0, 8)}…${q.depositAddress.slice(-6)}`
                 : execMode
                   ? "Live Mode · enter recipient & click Get Live Deposit Address"
-                  : "Preview Mode · click any chain or token below"}
+                  : "Preview Mode · auto-quoting live market rate"}
             </span>
           </div>
 
           <div className={s.viewBody}>
-            {/* Interactive Visual Chain & Token Selector Matrix */}
-            <div className={r.pickBar}>
-              {preset.originChains.length > 1 && (
-                <div className={r.pickRow}>
-                  <span className={r.pickLbl}>Origin Chain</span>
-                  <div className={r.pills}>
-                    {preset.originChains.map((c) => {
-                      const hasAny = !toks || preset.originAssets.some((sym) => !!findTok(sym, c));
-                      return (
-                        <button
-                          key={c}
-                          type="button"
-                          disabled={!hasAny}
-                          className={`${r.pill} ${fromChain === c ? r.pillOn : ""}`}
-                          onClick={() => {
-                            setFromChain(c);
-                            resetQuoteOnly();
-                          }}
-                        >
-                          <i className={r.pillDot} />
-                          {CHAIN_META[c]?.short ?? c}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {preset.originAssets.length > 1 && (
-                <div className={r.pickRow}>
-                  <span className={r.pickLbl}>Origin Asset</span>
-                  <div className={r.pills}>
-                    {preset.originAssets.map((sym) => {
-                      const ok = !toks || !!findTok(sym, fromChain);
-                      return (
-                        <button
-                          key={sym}
-                          type="button"
-                          disabled={!ok}
-                          className={`${r.pill} ${fromAsset === sym ? r.pillOn : ""}`}
-                          onClick={() => {
-                            setFromAsset(sym);
-                            resetQuoteOnly();
-                          }}
-                        >
-                          <TokenIcon sym={sym} size={15} />
-                          {sym}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {preset.destChains.length > 1 && (
-                <div className={r.pickRow}>
-                  <span className={r.pickLbl}>Target Chain</span>
-                  <div className={r.pills}>
-                    {preset.destChains.map((d) => {
-                      const hasAny = !toks || preset.destAssets.some((sym) => !!findTok(sym, d));
-                      return (
-                        <button
-                          key={d}
-                          type="button"
-                          disabled={!hasAny}
-                          className={`${r.pill} ${toChain === d ? r.pillOn : ""}`}
-                          onClick={() => {
-                            setToChain(d);
-                            resetQuoteOnly();
-                          }}
-                        >
-                          <i className={r.pillDot} />
-                          {CHAIN_META[d]?.short ?? d}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {preset.destAssets.length > 1 && (
-                <div className={r.pickRow}>
-                  <span className={r.pickLbl}>{preset.id === "collateral" ? "RHC Collateral" : "Stablecoin Out"}</span>
-                  <div className={r.pills}>
-                    {preset.destAssets.map((sym) => {
-                      const ok = !toks || !!findTok(sym, toChain);
-                      return (
-                        <button
-                          key={sym}
-                          type="button"
-                          disabled={!ok}
-                          className={`${r.pill} ${toAsset === sym ? r.pillOn : ""}`}
-                          onClick={() => {
-                            setToAsset(sym);
-                            resetQuoteOnly();
-                          }}
-                        >
-                          <TokenIcon sym={sym} size={15} />
-                          {sym}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Visual 3-Node or 4-Node Pipeline (with LengoMarket Final Stage on Collateral & Repay!) */}
             <div className={r.route}>
               <div className={r.node}>
@@ -1103,9 +996,9 @@ function RoutesInner() {
             <h3 style={{ fontSize: 23 }}>{preset.label}</h3>
 
             {/* Origin Field */}
-            <div className={s.field} style={{ padding: "12px 14px" }}>
+            <div className={s.field} style={{ padding: "11px 14px" }}>
               <div className={s.fTop}>
-                <span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
                   You send ·{" "}
                   {preset.originChains.length > 1 ? (
                     <select
@@ -1122,7 +1015,7 @@ function RoutesInner() {
                       ))}
                     </select>
                   ) : (
-                    CHAIN_META[fromChain]?.short ?? fromChain
+                    <b style={{ color: "var(--tx)", fontWeight: 500 }}>{CHAIN_META[fromChain]?.short ?? fromChain}</b>
                   )}
                 </span>
                 <span>
@@ -1148,12 +1041,12 @@ function RoutesInner() {
                   )}
                 </span>
               </div>
-              <div className={s.fRow} style={{ marginTop: 8 }}>
+              <div className={s.fRow} style={{ marginTop: 7 }}>
                 <input
                   inputMode="decimal"
                   value={amt}
                   aria-label="Amount in"
-                  style={{ fontSize: 23 }}
+                  style={{ fontSize: 22 }}
                   onChange={(e) => {
                     setAmt(e.target.value.replace(/[^0-9.]/g, ""));
                     resetQuoteOnly();
@@ -1171,36 +1064,39 @@ function RoutesInner() {
                     Max
                   </button>
                 )}
-                {preset.originAssets.length > 1 ? (
-                  <select
-                    value={fromAsset}
-                    onChange={(e) => {
-                      setFromAsset(e.target.value);
-                      resetQuoteOnly();
-                    }}
-                    aria-label="Origin token"
-                    className={r.sel}
-                    style={{ padding: "7px 9px", fontSize: 12 }}
-                  >
-                    {preset.originAssets.map((sym) => {
-                      const ok = !toks || !!findTok(sym, fromChain);
-                      return (
-                        <option key={sym} value={sym} disabled={!ok}>
-                          {sym}{!ok ? " (n/a)" : ""}
-                        </option>
-                      );
-                    })}
-                  </select>
-                ) : (
-                  <span className={s.tok}>{fromAsset}</span>
-                )}
+                <span className={s.tok} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <TokenIcon sym={fromAsset} size={14} />
+                  {fromAsset}
+                </span>
               </div>
+              {preset.originAssets.length > 1 && (
+                <div className={r.fieldPills}>
+                  {preset.originAssets.map((sym) => {
+                    const ok = !toks || !!findTok(sym, fromChain);
+                    return (
+                      <button
+                        key={sym}
+                        type="button"
+                        disabled={!ok}
+                        className={`${r.pill} ${fromAsset === sym ? r.pillOn : ""}`}
+                        onClick={() => {
+                          setFromAsset(sym);
+                          resetQuoteOnly();
+                        }}
+                      >
+                        <TokenIcon sym={sym} size={13} />
+                        {sym}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className={r.swap}>↓</div>
 
             {/* Destination Field */}
-            <div className={s.field} style={{ padding: "12px 14px" }}>
+            <div className={s.field} style={{ padding: "11px 14px" }}>
               <div className={s.fTop}>
                 <span>You receive ({execMode ? "live" : "quote"})</span>
                 {preset.destChains.length > 1 ? (
@@ -1223,39 +1119,42 @@ function RoutesInner() {
                     })}
                   </select>
                 ) : (
-                  <span>{CHAIN_META[toChain]?.short ?? toChain}</span>
+                  <b style={{ color: "var(--tx)", fontWeight: 500 }}>{CHAIN_META[toChain]?.short ?? toChain}</b>
                 )}
               </div>
-              <div className={s.fRow} style={{ marginTop: 8 }}>
+              <div className={s.fRow} style={{ marginTop: 7 }}>
                 {state === "loading" ? (
                   <div style={{ flex: 1, padding: "4px 0" }}><span className="skel skel-lg" /></div>
                 ) : (
-                  <input value={state === "ok" ? q?.amountOut ?? "—" : "—"} readOnly aria-label="Amount out" style={{ fontSize: 23 }} />
+                  <input value={state === "ok" ? q?.amountOut ?? "—" : "—"} readOnly aria-label="Amount out" style={{ fontSize: 22 }} />
                 )}
-                {preset.destAssets.length > 1 ? (
-                  <select
-                    value={toAsset}
-                    onChange={(e) => {
-                      setToAsset(e.target.value);
-                      resetQuoteOnly();
-                    }}
-                    aria-label="Destination token"
-                    className={r.sel}
-                    style={{ padding: "7px 9px", fontSize: 12 }}
-                  >
-                    {preset.destAssets.map((sym) => {
-                      const ok = !toks || !!findTok(sym, toChain);
-                      return (
-                        <option key={sym} value={sym} disabled={!ok}>
-                          {sym}{!ok ? " (n/a)" : ""}
-                        </option>
-                      );
-                    })}
-                  </select>
-                ) : (
-                  <span className={s.tok}>{toAsset}</span>
-                )}
+                <span className={s.tok} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <TokenIcon sym={toAsset} size={14} />
+                  {toAsset}
+                </span>
               </div>
+              {preset.destAssets.length > 1 && (
+                <div className={r.fieldPills}>
+                  {preset.destAssets.map((sym) => {
+                    const ok = !toks || !!findTok(sym, toChain);
+                    return (
+                      <button
+                        key={sym}
+                        type="button"
+                        disabled={!ok}
+                        className={`${r.pill} ${toAsset === sym ? r.pillOn : ""}`}
+                        onClick={() => {
+                          setToAsset(sym);
+                          resetQuoteOnly();
+                        }}
+                      >
+                        <TokenIcon sym={sym} size={13} />
+                        {sym}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <label className={s.field} style={{ padding: "11px 14px" }}>
