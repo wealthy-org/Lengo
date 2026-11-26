@@ -84,9 +84,15 @@ export default function PositionsPage() {
           <small>withdrawable idle USDG</small>
         </div>
         <div>
-          <span>Wallet USDG</span>
-          <b>{P.loading ? <span className="skel skel-lg" /> : usd(P.walletDebtBal)}</b>
-          <small>{P.isConnected ? "ready to repay or route" : "connect wallet"}</small>
+          <span>$LENGO Fee Tier</span>
+          <b className={P.hasLengoTier ? s.ok : ""}>
+            {P.loading ? <span className="skel skel-md" /> : P.hasLengoTier ? "0% Fee Tier" : `${P.lengoBal.toFixed(0)} LENGO`}
+          </b>
+          <small>
+            <a href="https://robinhoodchain.blockscout.com/token/0xc256e0fb1f93164b8e499746bba593a8e40a7eef" target="_blank" rel="noreferrer">
+              ≥10k LENGO · 0% 1Click fee ↗
+            </a>
+          </small>
         </div>
       </div>
 

@@ -517,7 +517,7 @@ Liq. price    = D / (qty × ${LIQ.toFixed(2)}) = ${liqP ? usd(liqP, priceDigits)
                   <div><span>Health factor</span><b><em className={tone(hf)}>{hfTxt(hf)}</em> → <em className={tone(nhf)}>{hfTxt(nhf)}</em></b></div>
                   <div><span>LTV</span><b>{(ltv * 100).toFixed(1)}% → {next.c ? ((next.d / (next.c * PRICE)) * 100).toFixed(1) : "0.0"}%</b></div>
                   <div><span>Debt</span><b>{usd(debt)} → {usd(Math.max(0, next.d))}</b></div>
-                  <div><span>Settle on</span><b>{isMainnet ? "RH Mainnet" : "RH Testnet"}</b></div>
+                  <div><span>$LENGO Tier (<a href="https://robinhoodchain.blockscout.com/token/0xc256e0fb1f93164b8e499746bba593a8e40a7eef" target="_blank" rel="noreferrer">0xc256…7eef</a>)</span><b className={L.hasLengoTier ? s.ok : ""}>{L.hasLengoTier ? "0% Route Fee Active" : `${L.lengoBal.toFixed(0)} / 10k LENGO`}</b></div>
                 </div>
                 {over && <p className={`${s.note} ${s.bad}`}>Exceeds the allowed maximum.</p>}
                 {blockedByPause && <p className={`${s.note} ${s.bad}`}>Market is paused for new deposits/borrows. Repay and Withdraw remain open.</p>}

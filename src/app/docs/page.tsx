@@ -1,6 +1,6 @@
 import s from "../app/trade.module.css";
 import d from "./docs.module.css";
-import { DEPLOYMENTS, addrUrl } from "@/lib/chain";
+import { DEPLOYMENTS, MAINNET_LENGO_TOKEN, addrUrl } from "@/lib/chain";
 import { MAINNET_MARKETS } from "@/lib/markets";
 
 const toc = [
@@ -34,6 +34,7 @@ export default function Docs() {
     ["ChainlinkOracle (Adapter)", DEPLOYMENTS.mainnet.oracle],
     ["Chainlink ETH / USD Proxy", CHAINLINK_ETH_USD],
     ["USDG Debt Asset (6 dec)", DEPLOYMENTS.mainnet.debtAsset],
+    ["$LENGO Utility Token (18 dec)", MAINNET_LENGO_TOKEN],
   ];
   const testnetAddrs: [string, string | undefined][] = [
     ["LengoMarket (Testnet · 46630)", DEPLOYMENTS.testnet.market],
@@ -123,7 +124,8 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
             </div>
             <p>
               Built with Solidity 0.8.24, Foundry, and pinned OpenZeppelin 5.1.0. Verified on Sourcify &amp; Blockscout.{" "}
-              <code>ChainlinkOracle</code> is completely keeperless — it reads Chainlink&apos;s official <code>ETH / USD</code> proxy directly via <code>latestRoundData()</code> with round-completeness and heartbeat staleness checks, with zero manual price override functions.
+              <code>ChainlinkOracle</code> is keeperless in production — it reads Chainlink&apos;s official price feeds directly via <code>latestRoundData()</code> with round-completeness and heartbeat staleness checks, while <code>Ownable2Step</code> governs feed wiring (<code>setFeed</code> / <code>setFixedPeg</code> for the $1.00 USDG peg).{" "}
+              The <code>$LENGO</code> token (<a href={addrUrl(MAINNET_LENGO_TOKEN, "mainnet")} target="_blank" rel="noreferrer">{MAINNET_LENGO_TOKEN} ↗</a>) is queried live onchain across <code>/app</code>, <code>/app/positions</code>, and <code>/app/routes</code>: wallets holding ≥ 10,000 <code>LENGO</code> automatically unlock the <b>0% 1Click App Routing Fee tier</b>.
             </p>
             <h3 style={{ marginTop: 24, fontSize: 13, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--lime)" }}>
               First Loan Live Proofs — Mainnet 4663 (Completed)

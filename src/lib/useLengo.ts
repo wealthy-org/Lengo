@@ -5,6 +5,7 @@ import { useAccount, useReadContracts, useWriteContract, usePublicClient, useSwi
 import { marketAbi, priceOracleAbi, tokenAbi } from "./abi";
 import type { MarketSpec } from "./markets";
 import { useNetwork } from "./useNetwork";
+import { MAINNET_LENGO_TOKEN, LENGO_FEE_DISCOUNT_THRESHOLD } from "./chain";
 import { ensureWalletChain } from "./walletChain";
 import { useToast } from "@/app/Toaster";
 
@@ -76,11 +77,16 @@ export function useLengo(spec?: MarketSpec) {
       { ...m, functionName: "totalCollateral" },
       { ...m, functionName: "collateralCap" },
       { ...m, functionName: "supplyCap" },
+      { address: MAINNET_LENGO_TOKEN, abi: tokenAbi, functionName: "totalSupply", chainId: 4663 },
+      { address: MAINNET_LENGO_TOKEN, abi: tokenAbi, functionName: "balanceOf", args: [acct], chainId: 4663 },
     ],
   });
 
   const collBal = n(balQuery.data?.[0]?.result, collDec);
   const debtBal = n(balQuery.data?.[1]?.result, debtDec);
+  const lengoSupply = n(pq.data?.[7]?.result, 18);
+  const lengoBal = n(pq.data?.[8]?.result, 18);
+  const hasLengoTier = lengoBal >= LENGO_FEE_DISCOUNT_THRESHOLD;
 
   const clRound = feedQuery.data?.[0]?.result as readonly [bigint, bigint, bigint, bigint, bigint] | undefined;
   const clPrice = clRound && clRound[1] > 0n ? Number(formatUnits(clRound[1], 8)) : null;
@@ -162,6 +168,9 @@ export function useLengo(spec?: MarketSpec) {
     address,
     data,
     pool,
+    lengoBal,
+    lengoSupply,
+    hasLengoTier,
     loading: userLoading,
     poolLoading,
     userLoading,

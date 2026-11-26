@@ -67,6 +67,8 @@ const TESTNET_DEFAULTS = {
 // Official Robinhood Chain Mainnet (4663) deployed contracts (contracts/deployments/4663.json)
 export const MAINNET_WETH = "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73" as Address;
 export const MAINNET_USDG = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168" as Address;
+export const MAINNET_LENGO_TOKEN = "0xc256e0fb1f93164b8e499746bba593a8e40a7eef" as Address;
+export const LENGO_FEE_DISCOUNT_THRESHOLD = 10_000;
 const MAINNET_DEFAULTS = {
   market: "0x8f1CDFEa078D84d0a2f974c658f71CF4B54c5900" as Address,
   oracle: "0xAc892397986B84ff42894739F05fE884D1D4c6da" as Address,

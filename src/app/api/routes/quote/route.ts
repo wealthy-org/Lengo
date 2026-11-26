@@ -1,7 +1,39 @@
 import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
+import { createPublicClient, formatUnits, getAddress, http } from "viem";
 import { ONECLICK, getTokens, toUnits } from "@/lib/oneclick";
 import { db } from "@/lib/db";
+import { MAINNET_LENGO_TOKEN, LENGO_FEE_DISCOUNT_THRESHOLD, rhMainnet } from "@/lib/chain";
+import { tokenAbi } from "@/lib/abi";
+
+const rhClient = createPublicClient({ chain: rhMainnet, transport: http("https://rpc.mainnet.chain.robinhood.com") });
+
+async function readLengoTier(addr?: string) {
+  if (!addr || !/^0x[0-9a-fA-F]{40}$/.test(addr)) {
+    return { token: MAINNET_LENGO_TOKEN, chainId: 4663, holderBalance: 0, threshold: LENGO_FEE_DISCOUNT_THRESHOLD, tier: "STANDARD", appFeeBps: 15, discountBps: 0 };
+  }
+  try {
+    const raw = await rhClient.readContract({
+      address: MAINNET_LENGO_TOKEN,
+      abi: tokenAbi,
+      functionName: "balanceOf",
+      args: [getAddress(addr)],
+    });
+    const bal = Number(formatUnits(raw, 18));
+    const hasTier = bal >= LENGO_FEE_DISCOUNT_THRESHOLD;
+    return {
+      token: MAINNET_LENGO_TOKEN,
+      chainId: 4663,
+      holderBalance: bal,
+      threshold: LENGO_FEE_DISCOUNT_THRESHOLD,
+      tier: hasTier ? "LENGO_HOLDER_ZERO_FEE" : "STANDARD",
+      appFeeBps: hasTier ? 0 : 15,
+      discountBps: hasTier ? 15 : 0,
+    };
+  } catch {
+    return { token: MAINNET_LENGO_TOKEN, chainId: 4663, holderBalance: 0, threshold: LENGO_FEE_DISCOUNT_THRESHOLD, tier: "STANDARD", appFeeBps: 15, discountBps: 0 };
+  }
+}
 
 const EVM_CHAINS = new Set(["eth", "base", "arb", "hood", "op", "pol", "bsc", "avax", "gnosis", "monad", "xlayer", "scroll", "hypercore"]);
 
@@ -71,6 +103,7 @@ type Body = {
   amount: string;
   recipient?: string;
   refundTo?: string;
+  account?: string;
   slippageBps?: number;
   execute?: boolean;
 };
@@ -129,7 +162,11 @@ export async function POST(req: Request) {
   if (process.env.ONECLICK_JWT) headers.authorization = `Bearer ${process.env.ONECLICK_JWT}`;
 
   try {
-    const r = await fetch(`${ONECLICK}/quote`, { method: "POST", headers, body: JSON.stringify(payload), cache: "no-store" });
+    const evmAcct = [b.account, rawRefund, rawRecipient].find((x) => x && /^0x[0-9a-fA-F]{40}$/.test(x));
+    const [r, lengoUtility] = await Promise.all([
+      fetch(`${ONECLICK}/quote`, { method: "POST", headers, body: JSON.stringify(payload), cache: "no-store" }),
+      readLengoTier(evmAcct),
+    ]);
     const j = await r.json();
     if (!r.ok) {
       await logQuote({ o: o.assetId, d: d.assetId, amount: units, status: "rejected", reason: j?.message, recipient, refundTo, correlationId: j?.correlationId });
@@ -165,6 +202,7 @@ export async function POST(req: Request) {
       minAmountOut: q.minAmountOut,
       timeEstimate: q.timeEstimate,
       fees: { refundFee: q.refundFee, withdrawFee: q.withdrawFee, appFees: j.quoteRequest?.appFees ?? [] },
+      lengoUtility,
       deadline: j.quoteRequest?.deadline ?? deadline,
       inactiveAt: q.timeWhenInactive ?? q.deadline,
       quotedAt: j.timestamp,

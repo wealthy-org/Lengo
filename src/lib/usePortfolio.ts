@@ -4,6 +4,7 @@ import { useAccount, useReadContracts } from "wagmi";
 import { marketAbi, tokenAbi } from "./abi";
 import { MAINNET_MARKETS, TESTNET_MARKET, type MarketSpec } from "./markets";
 import { useNetwork } from "./useNetwork";
+import { MAINNET_LENGO_TOKEN, LENGO_FEE_DISCOUNT_THRESHOLD } from "./chain";
 
 const clAggAbi = parseAbi([
   "function latestRoundData() external view returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)",
@@ -49,21 +50,25 @@ export function usePortfolio() {
   const acct = (address ?? zero) as Address;
   const debtToken = markets[0].debtAsset;
 
-  // Per market: 5 public reads -> getMarketState, paused, totalCollateral, collateralCap, supplyCap (+ optional Chainlink feed)
+  // Per market: 5 public reads -> getMarketState, paused, totalCollateral, collateralCap, supplyCap (+ optional Chainlink feed), plus $LENGO token reads
   const poolReads = useReadContracts({
     allowFailure: true,
-    contracts: markets.flatMap((m) => {
-      const addr = (m.market ?? zero) as Address;
-      const feed = (m.chainlinkFeed ?? zero) as Address;
-      return [
-        { address: addr, abi: marketAbi, functionName: "getMarketState" as const, chainId: net.chain.id },
-        { address: addr, abi: marketAbi, functionName: "paused" as const, chainId: net.chain.id },
-        { address: addr, abi: marketAbi, functionName: "totalCollateral" as const, chainId: net.chain.id },
-        { address: addr, abi: marketAbi, functionName: "collateralCap" as const, chainId: net.chain.id },
-        { address: addr, abi: marketAbi, functionName: "supplyCap" as const, chainId: net.chain.id },
-        { address: feed, abi: clAggAbi, functionName: "latestRoundData" as const, chainId: net.chain.id },
-      ];
-    }),
+    contracts: [
+      ...markets.flatMap((m) => {
+        const addr = (m.market ?? zero) as Address;
+        const feed = (m.chainlinkFeed ?? zero) as Address;
+        return [
+          { address: addr, abi: marketAbi, functionName: "getMarketState" as const, chainId: net.chain.id },
+          { address: addr, abi: marketAbi, functionName: "paused" as const, chainId: net.chain.id },
+          { address: addr, abi: marketAbi, functionName: "totalCollateral" as const, chainId: net.chain.id },
+          { address: addr, abi: marketAbi, functionName: "collateralCap" as const, chainId: net.chain.id },
+          { address: addr, abi: marketAbi, functionName: "supplyCap" as const, chainId: net.chain.id },
+          { address: feed, abi: clAggAbi, functionName: "latestRoundData" as const, chainId: net.chain.id },
+        ];
+      }),
+      { address: MAINNET_LENGO_TOKEN, abi: tokenAbi, functionName: "totalSupply" as const, chainId: 4663 },
+      { address: MAINNET_LENGO_TOKEN, abi: tokenAbi, functionName: "balanceOf" as const, args: [acct] as const, chainId: 4663 },
+    ],
   });
 
   // Per market when wallet connected: getPosition, claimOf, collateral balanceOf + 1 shared debt balanceOf at the end
@@ -168,6 +173,10 @@ export function usePortfolio() {
 
   const debtWalletIdx = markets.length * 3;
   const walletDebtBal = address ? num(uData?.[debtWalletIdx]?.result, markets[0].debtDecimals) : 0;
+  const lengoSupplyIdx = markets.length * 6;
+  const lengoSupply = num(pData?.[lengoSupplyIdx]?.result, 18);
+  const lengoBal = num(pData?.[lengoSupplyIdx + 1]?.result, 18);
+  const hasLengoTier = lengoBal >= LENGO_FEE_DISCOUNT_THRESHOLD;
 
   const totals = rows.reduce(
     (acc, r) => {
@@ -190,6 +199,9 @@ export function usePortfolio() {
     rows,
     totals,
     walletDebtBal,
+    lengoBal,
+    lengoSupply,
+    hasLengoTier,
     loading: poolReads.isLoading || (!!address && userReads.isLoading),
     refetch: () => {
       poolReads.refetch();

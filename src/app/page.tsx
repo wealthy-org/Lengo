@@ -19,6 +19,7 @@ const disclosure: [string, string, "live" | "preview" | "muted", string][] = [
   ["Supply & borrow", "Public USDG lending · 8.0% fixed borrow APR", "live", "Dynamic utilization interest curve"],
   ["Price oracle", "Chainlink ETH/USD feed · fully keeperless", "live", "Secondary oracle fallback guard"],
   ["Cross-chain flows", "1Click Collateral, 14+ chain Payout & Any-Chain Repay", "live", "Single-signature atomic intent wrapper"],
+  ["$LENGO utility token", "0xc256…7eef on RH 4663 · 0% 1Click routing fee tier (≥10k LENGO)", "live", "Staked LENGO borrow APR rebate & risk-param governance"],
   ["Native BTC & ZEC", "In research — not accepted on Mainnet yet", "muted", "Origin-chain lock, proof & redemption"],
   ["Safety rails", "25 WETH beta cap · non-custodial exit always open", "live", "Timelock guardian multisig"],
 ];
@@ -30,9 +31,10 @@ const phases = [
   ["Phase 5", "RESEARCH", "Native BTC & ZEC", ["Custody + signer model", "Proof and redemption", "Liquidation feasibility"], 10],
 ] as const;
 const contracts = [
-  ["LengoMarket.sol", "0x8f1C…5900 · WETH/USDG isolated market, RAY index, liquidate", "Core"],
-  ["ChainlinkOracle.sol", "0xAc89…c6da · Keeperless Chainlink ETH/USD adapter", "Oracle"],
-  ["WETH (Mainnet)", "0x0Bd7…AD73 · Wrapped Ether, 18 decimals, collateral", "Asset"],
+  ["LengoMarket.sol", "0x8f1C…5900 + 6 isolated Crypto & RWA Stock markets on RH 4663", "Core"],
+  ["ChainlinkOracle.sol", "0xAc89…c6da · Keeperless Chainlink ETH/BTC/RWA adapter", "Oracle"],
+  ["$LENGO Token (Mainnet)", "0xc256…7eef · Onchain 0% 1Click routing fee tier & governance", "Utility"],
+  ["WETH & RWA Collateral", "WETH, cbBTC, WBTC, USDe, NVDA, TSLA & AAPL isolated collateral", "Asset"],
   ["USDG (Mainnet)", "0x5fc5…d168 · Global Dollar, 6 decimals, borrow & supply", "Asset"],
   ["Indexer / 1Click API", "Neon event read-model + NEAR Intents routing proxy", "Read"],
 ];
@@ -93,13 +95,13 @@ export default function Landing() {
       </section>
 
       <section id="twosides" className={s.section}>
-        <Head n="00" label="Cross-chain architecture" a="Two sides of lending." b="Collateral origin meets liquidity destination." aside="Target design: collateral stays on its origin network, debt and risk accounting live on Robinhood Chain, and stablecoins are routed to your chain via NEAR Intents. Today: WETH/USDG Mainnet Beta is live (4663), 1Click USDG → USDC cross-chain payout is live, and native BTC/ZEC locking is in research." />
+        <Head n="00" label="Cross-chain architecture" a="Two sides of lending." b="Collateral origin meets liquidity destination." aside="All 7 isolated Crypto & RWA Stock markets (WETH, cbBTC, WBTC, USDe, NVDA, TSLA, AAPL) are deployed and live on Robinhood Chain Mainnet (4663), with NEAR Intents 1Click routing cross-chain collateral, 14+ chain stablecoin payouts, and any-chain debt repayment. Holding ≥10,000 $LENGO (0xc256…7eef) unlocks 0% app routing fees." />
         <div className={s.split} data-stagger>
           <div className={`${s.side} bevel`}>
-            <span className={s.k}>Side A · collateral origin</span>
-            <h3>Where your collateral lives</h3>
-            <p>Target: BTC on Bitcoin, ZEC on Zcash, SOL on Solana, HYPE on Hyperliquid — locked, not swapped. Native locking is in research; today Mainnet Beta uses WETH on Robinhood Chain.</p>
-            <div className={s.chips}><i>WETH · Live</i><i>BTC</i><i>ZEC</i><i>SOL</i><i>HYPE</i></div>
+            <span className={s.k}>Side A · collateral &amp; RWA markets</span>
+            <h3>7 isolated markets on Robinhood Chain</h3>
+            <p>Deposit WETH, cbBTC, WBTC, USDe, or tokenized equities (NVDA, TSLA, AAPL) directly on Robinhood Chain — or route collateral from Solana, Base, Arbitrum &amp; Ethereum via NEAR Intents 1Click.</p>
+            <div className={s.chips}><i>WETH · Live</i><i>cbBTC · Live</i><i>NVDA · Live</i><i>TSLA · Live</i><i>AAPL · Live</i></div>
           </div>
           <div className={s.core}>
             <span className={s.beam} />

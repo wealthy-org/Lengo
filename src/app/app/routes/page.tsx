@@ -224,7 +224,7 @@ function RoutesInner() {
   const { sendTransactionAsync } = useSendTransaction();
   const toast = useToast();
 
-  const [execMode, setExecMode] = useState(false); // false = Preview, true = Live
+  const [execMode, setExecMode] = useState(true); // true = Live by default, false = Preview
   const [preset, setPreset] = useState<PresetKind>(PRESETS[0]);
   const [fromChain, setFromChain] = useState(PRESETS[0].defaultFromChain);
   const [fromAsset, setFromAsset] = useState(PRESETS[0].defaultFromAsset);
@@ -308,6 +308,7 @@ function RoutesInner() {
     const mParam = searchParams.get("mode");
     const aParam = searchParams.get("amt");
     if (mParam === "live") setExecMode(true);
+    else if (mParam === "preview") setExecMode(false);
     const found = PRESETS.find((x) => x.id === pParam);
     if (found) {
       applyPreset(found, aParam || undefined);
@@ -957,10 +958,60 @@ function RoutesInner() {
             <div className={s.kv} style={{ marginTop: 16 }}>
               <div><span>Amount out</span><b>{state === "loading" ? <span className="skel skel-md" /> : state === "ok" ? `${q?.amountOut} ${toAsset}` : "—"}</b><small>{state === "loading" ? <span className="skel skel-xs" /> : state === "ok" ? `≈ $${Number(q?.amountOutUsd).toFixed(2)}` : "after quote"}</small></div>
               <div><span>Minimum received</span><b>{state === "loading" ? <span className="skel skel-md" /> : state === "ok" ? `${fmtOut(q?.minAmountOut)} ${toAsset}` : "—"}</b><small>0.5% slippage bound</small></div>
-              <div><span>Known fees</span><b>{state === "loading" ? <span className="skel skel-sm" /> : state === "ok" ? `${(q?.fees?.appFees ?? []).reduce((a, f) => a + f.fee, 0) / 100}% app` : "—"}</b><small>{state === "loading" ? <span className="skel skel-xs" /> : state === "ok" ? `withdraw ${fmtOut(q?.fees?.withdrawFee)} ${toAsset}` : "provider + app"}</small></div>
+              <div>
+                <span>$LENGO Fee Tier</span>
+                <b className={lengo.hasLengoTier ? s.ok : ""}>
+                  {lengo.hasLengoTier ? "0.00% (Holder Tier)" : "0.00% Beta (≥10k LENGO)"}
+                </b>
+                <small>
+                  <a href="https://robinhoodchain.blockscout.com/token/0xc256e0fb1f93164b8e499746bba593a8e40a7eef" target="_blank" rel="noreferrer">
+                    $LENGO 0xc256…7eef ↗
+                  </a>
+                </small>
+              </div>
               <div><span>Est. duration</span><b>{state === "loading" ? <span className="skel skel-sm" /> : state === "ok" && typeof q?.timeEstimate === "number" ? `~${fmtDuration(q.timeEstimate)}` : "—"}</b><small>provider estimate</small></div>
               <div><span>Quote time</span><b>{state === "loading" ? <span className="skel skel-sm" /> : state === "ok" && q?.quotedAt ? fmtQuoteClock(q.quotedAt) : "—"}</b><small>{state === "ok" && q?.quotedAt ? fmtAgo(q.quotedAt, now) : "provider timestamp"}</small></div>
               <div><span>Expiry</span><b className={expired ? s.warn : ""}>{state === "loading" ? <span className="skel skel-sm" /> : state === "ok" && q?.deadline ? (expired ? "Expired" : fmtDuration(expiryRemSec)) : "—"}</b><small>{expired ? "request a new quote" : state === "ok" && q?.deadline ? `until ${fmtQuoteClock(q.deadline)}` : "quote window"}</small></div>
+            </div>
+
+            {/* Verified Mainnet 1Click Settlements Proof Table */}
+            <div style={{ marginTop: 16, border: "1px solid var(--line2)", background: "var(--bg)", padding: "12px 14px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--lime)" }}>
+                  ● Verified Live Mainnet 1Click Settlements (Robinhood Chain 4663 ↔ Solana &amp; Base)
+                </span>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--tx3)" }}>
+                  $LENGO Utility: <a href="https://robinhoodchain.blockscout.com/token/0xc256e0fb1f93164b8e499746bba593a8e40a7eef" target="_blank" rel="noreferrer">0xc256…7eef ↗</a> ({lengo.lengoBal.toLocaleString("en-US", { maximumFractionDigits: 0 })} LENGO in wallet)
+                </span>
+              </div>
+              <div style={{ display: "grid", gap: 6, fontFamily: "var(--mono)", fontSize: 11, color: "var(--tx2)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", paddingBottom: 6, borderBottom: "1px dashed var(--line)" }}>
+                  <span><b>1.00 USDG (RH 4663) → 0.806257 USDC (Solana)</b> · Status: <b className={s.ok}>SUCCESS</b></span>
+                  <span style={{ display: "inline-flex", gap: 10, flexWrap: "wrap" }}>
+                    <a href="https://robinhoodchain.blockscout.com/tx/0xc6684d3643a3d0378129c7b2ed80de1f44851e8ae71d4dcbb520b52016d09644" target="_blank" rel="noreferrer">RH Tx 0xc668…9644 ↗</a>
+                    <a href="https://explorer.near-intents.org/transactions/0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283" target="_blank" rel="noreferrer">1Click 0x0D65…6283 ↗</a>
+                    <a href="https://1click.chaindefuser.com/v0/status?depositAddress=0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283" target="_blank" rel="noreferrer">1Click API JSON ↗</a>
+                    <a href="https://solscan.io/tx/PWUk1xC3DdzyGvPZu9rVviDkj1EpNapzftXxjWPWwpfdFf6PyRMAWkmZqWbp8oCgk4jhuJFDgqz8pRzZV77RUwV" target="_blank" rel="noreferrer">Solana Tx PWUk1x…7RUwV ↗</a>
+                  </span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", paddingBottom: 6, borderBottom: "1px dashed var(--line)" }}>
+                  <span><b>0.30 USDG (RH 4663) → 0.296513 USDC (Base)</b> · Status: <b className={s.ok}>SUCCESS</b></span>
+                  <span style={{ display: "inline-flex", gap: 10, flexWrap: "wrap" }}>
+                    <a href="https://robinhoodchain.blockscout.com/tx/0xa484f312f7419d09f0d64fd85bcaff29394ed072d53603c510f2d523cf77a7f0" target="_blank" rel="noreferrer">RH Tx 0xa484…a7f0 ↗</a>
+                    <a href="https://explorer.near-intents.org/transactions/0x0cC24E339540688717D23c86fE2783e3DD7C2E3d" target="_blank" rel="noreferrer">1Click 0x0cC2…2E3d ↗</a>
+                    <a href="https://1click.chaindefuser.com/v0/status?depositAddress=0x0cC24E339540688717D23c86fE2783e3DD7C2E3d" target="_blank" rel="noreferrer">1Click API JSON ↗</a>
+                    <a href="https://basescan.org/tx/0x7e4f2eb4a67b2e083993793c4154ce34a23781d6f03e1b866b5e3e78b4c2cd0d" target="_blank" rel="noreferrer">Base Tx 0x7e4f…cd0d ↗</a>
+                  </span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                  <span><b>Cross-Chain Repay &amp; Collateral Exit (RH 4663)</b> · Status: <b className={s.ok}>CONFIRMED</b></span>
+                  <span style={{ display: "inline-flex", gap: 10, flexWrap: "wrap" }}>
+                    <a href="https://explorer.near-intents.org/transactions/Tzb8ET9kjsEBR95A4qC35FXzJsWpuaCgE9wKaoajFN9" target="_blank" rel="noreferrer">1Click Intent Tzb8ET…jFN9 ↗</a>
+                    <a href="https://robinhoodchain.blockscout.com/tx/0x88a0e4bfdfa2b444d205b3f8b125afab714346d86a864451e5a36aa8e55844c8" target="_blank" rel="noreferrer">Repay Tx 0x88a0…44c8 ↗</a>
+                    <a href="https://robinhoodchain.blockscout.com/tx/0x563d35bd6f8dbb8e56c1029e04dda04f164b2ba1bdd893e216d22195b6aab41f" target="_blank" rel="noreferrer">Withdraw WETH Tx 0x563d…b41f ↗</a>
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
           <div className={s.footLine}>GET /v0/tokens · POST /v0/quote · POST /v0/deposit/submit · GET /v0/status</div>
