@@ -56,11 +56,11 @@ export function Binary({ rows = 22, cols = 30 }: { rows?: number; cols?: number 
 
 /* Pipeline terminal: intent → route → lend → settle */
 const stages = [
-  { k: "INTENT", t: "Collateral intent received", d: "origin BTC · bitcoin" },
-  { k: "ROUTE", t: "1Click quote · Route preview", d: "near intents · hood" },
-  { k: "LEND", t: "Position recorded", d: "robinhood chain · 46630" },
+  { k: "INTENT", t: "Collateral locked onchain", d: "WETH · robinhood 4663" },
+  { k: "LEND", t: "Position & debt recorded", d: "USDG · robinhood 4663" },
   { k: "HEALTH", t: "HF guard active", d: "liq < 1.00 · ltv 60/75" },
-  { k: "SETTLE", t: "Payout route ready", d: "USDC · solana" },
+  { k: "ROUTE", t: "1Click payout · Live & Preview", d: "near intents · hood" },
+  { k: "SETTLE", t: "Cross-chain payout settled", d: "USDC · solana" },
 ];
 export function Pipeline() {
   const [on, setOn] = useState(0);

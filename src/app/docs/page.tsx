@@ -156,10 +156,26 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
                 </b>
               </div>
               <div>
-                <span>1Click Route Deposit (RH)</span>
+                <span>1Click USDG Deposit (RH → Solana)</span>
                 <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0x9932efbe8bcacc06c39536a5413d3dc755e7834ab4bd45ee6780b3098c02409c" target="_blank" rel="noreferrer">
-                    0x9932efbe…409c ↗
+                  <a href="https://robinhoodchain.blockscout.com/tx/0xc6684d3643a3d0378129c7b2ed80de1f44851e8ae71d4dcbb520b52016d09644" target="_blank" rel="noreferrer">
+                    0xc6684d36…9644 ↗
+                  </a>
+                </b>
+              </div>
+              <div>
+                <span>1Click USDC Payout (Solana)</span>
+                <b>
+                  <a href="https://solscan.io/tx/PWUk1xC3DdzyGvPZu9rVviDkj1EpNapzftXxjWPWwpfdFf6PyRMAWkmZqWbp8oCgk4jhuJFDgqz8pRzZV77RUwV" target="_blank" rel="noreferrer">
+                    PWUk1xC3…7RUwV ↗
+                  </a>
+                </b>
+              </div>
+              <div>
+                <span>NEAR Intents Settlement</span>
+                <b>
+                  <a href="https://explorer.near-intents.org/transactions/0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283" target="_blank" rel="noreferrer">
+                    0x0D650Ee3…6283 · SUCCESS ↗
                   </a>
                 </b>
               </div>
@@ -178,9 +194,9 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
           </section>
 
           <section id="routes">
-            <h2>Cross-chain routes (Preview &amp; Live Execute)</h2>
+            <h2>Cross-chain routes (Preview &amp; Live)</h2>
             <p>
-              The <a href="/app/routes">Routes</a> page integrates NEAR Intents 1Click in two modes: <b>Quote Preview</b> (<code>dry: true</code>, instant market quotes with no deposit address) and <b>Live Execute</b> (<code>dry: false</code>, issues a real deposit address, supports 1-click wallet transfer on Robinhood Chain Mainnet, submits <code>txHash</code> to solvers, and polls live settlement status).
+              The <a href="/app/routes">Routes</a> page integrates NEAR Intents 1Click in two modes: <b>Preview</b> (read-only market quotes with no deposit address) and <b>Live</b> (issues a dedicated deposit address, enforces strict ERC-20 origin asset verification on Robinhood Chain Mainnet, submits <code>txHash</code> to solvers, and polls live settlement status).
             </p>
             <ul>
               <li><b>Borrow payout</b>: convert borrowed <code>USDG</code> on Robinhood Chain directly into <code>USDC</code> on Solana, Base, Arbitrum, or Ethereum.</li>
@@ -205,7 +221,7 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
               {[
                 ["Phase 1 · LIVE", "Isolated lending engine + Testnet sandbox (46630)"],
                 ["Phase 2 · LIVE", "Robinhood Chain Mainnet Beta (4663) WETH / USDG + keeperless ChainlinkOracle"],
-                ["Phase 3 · PREVIEW", "NEAR Intents 1Click cross-chain Quote Preview + v1 Payout Rollout"],
+                ["Phase 3 · LIVE", "NEAR Intents 1Click cross-chain Live Payout (USDG RH → USDC Solana/Base)"],
                 ["Phase 4 · SEEDING", "Stock & BTC isolated markets deployed on Mainnet (pool seeding in progress)"],
                 ["Phase 5 · RESEARCH", "Native BTC & ZEC collateral locking, proof & redemption"],
               ].map(([k, v]) => (

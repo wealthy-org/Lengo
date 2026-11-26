@@ -1,15 +1,16 @@
-# Lengo v0.1 — Release package (M4)
+# Lengo — Mainnet Beta & Release Handoff
 
-Cross-chain lending on Robinhood Chain. Release 0.1: lending lifecycle on **RH testnet (chain 46630)** with demo assets, plus a **NEAR Intents 1Click route preview** (`dry: true`, no funds moved).
+Cross-chain lending on **Robinhood Chain Mainnet (chain 4663)** (`WETH / USDG` + keeperless `ChainlinkOracle`, plus 6 isolated seeding markets) and **RH Testnet (chain 46630)**, integrated with **NEAR Intents 1Click** cross-chain routing (`Preview` & `Live` modes).
 
 | | |
 |---|---|
-| Public app | https://lengo-two.vercel.app |
+| Public app | https://lengoapp.tech |
 | Repository | https://github.com/wealthy-org/Lengo |
-| Oracle keeper (status, read-only) | https://lengo-keeper.deploy-wealthy.workers.dev |
-| Explorer | https://explorer.testnet.chain.robinhood.com |
+| Mainnet Explorer | https://robinhoodchain.blockscout.com |
+| Testnet Explorer | https://explorer.testnet.chain.robinhood.com |
+| Testnet Oracle keeper | https://lengo-keeper.deploy-wealthy.workers.dev |
 
-`lengo.vercel.app` belongs to another project — do not share it.
+`lengo.vercel.app` belongs to another project — always use **https://lengoapp.tech**.
 
 ## 1. Deployment manifest — RH testnet 46630
 
@@ -81,7 +82,7 @@ npm run db:migrate             # Neon schema + deployment row
 
 | Piece | Where | Deploys on |
 |---|---|---|
-| Web app + API (Next.js 15.5.29) | Vercel `lengo-two.vercel.app` | push to `main` |
+| Web app + API (Next.js 15.5.29) | Vercel `https://lengoapp.tech` | push to `main` |
 | Keeper + indexer (`keeper/`) | Cloudflare Worker `lengo-keeper`, crons `*/4` oracle, `*/5` indexer | push to `main` |
 | Read model | Neon Postgres (`db/schema.sql`) | `npm run db:migrate` |
 | Contracts | RH testnet | `forge script script/Deploy.s.sol --rpc-url rh_testnet --broadcast` (refuses non-testnet chains) |

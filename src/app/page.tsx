@@ -11,21 +11,21 @@ import Motion from "./Motion";
 import TopNav from "./TopNav";
 import CopyCA from "./CopyCA";
 
-const tick = [["WETH/USDG","APR","8.00%"],["Max LTV","","60%"],["Liq. threshold","","75%"],["USDG → USDC","1Click","Routing Preview"],["Oracle","Chainlink","ETH/USD"],["Chain","Robinhood","4663"],["Chart","Pyth Pro","Live 48h"],["Liq. bonus","","5%"]];
+const tick = [["WETH/USDG","APR","8.00%"],["Max LTV","","60%"],["Liq. threshold","","75%"],["USDG → USDC","1Click","Live Payout"],["Oracle","Chainlink","ETH/USD"],["Chain","Robinhood","4663"],["Chart","Pyth Pro","Live 48h"],["Liq. bonus","","5%"]];
 const params = [["Max borrow LTV","60%"],["Liquidation threshold","75%"],["Eligible when","HF < 1"],["Liquidator bonus","5%"],["Close factor","50% per call"],["Borrow APR","8% fixed"],["TVL caps (beta)","25 WETH · 50k USDG"],["Oracle","Chainlink ETH/USD"]];
 const disclosure: [string, string, "live" | "preview" | "muted", string][] = [
-  ["Lending engine", "Isolated WETH / USDG market · Sourcify verified", "live", "External third-party security audit"],
+  ["Lending engine", "Isolated WETH / USDG market · Sourcify verified", "live", "External third-party security review"],
   ["Collateral markets", "WETH active · 6 BTC & equity pools seeding", "live", "Open cbBTC, WBTC, NVDA, TSLA & AAPL pools"],
   ["Supply & borrow", "Public USDG lending · 8.0% fixed borrow APR", "live", "Dynamic utilization interest curve"],
   ["Price oracle", "Chainlink ETH/USD feed · fully keeperless", "live", "Secondary oracle fallback guard"],
-  ["Cross-chain payout", "NEAR Intents 1Click route preview", "preview", "Live USDG → USDC payout (Solana & Base)"],
+  ["Cross-chain payout", "NEAR Intents 1Click · Live USDG → USDC payout", "live", "1-tx Borrow + Auto-Route wrapper"],
   ["Native BTC & ZEC", "In research — not accepted on Mainnet yet", "muted", "Origin-chain lock, proof & redemption"],
   ["Safety rails", "25 WETH beta cap · non-custodial exit always open", "live", "Timelock guardian multisig"],
 ];
 const phases = [
   ["Phase 1", "LIVE", "Lending engine", ["Isolated WETH/USDG market", "RAY debt index + virtual shares", "Live on RH Mainnet (4663)"], 100],
   ["Phase 2", "LIVE", "Keeperless risk", ["Chainlink ETH/USD oracle", "50% close factor liquidation", "Capped TVL + non-custodial pause"], 100],
-  ["Phase 3", "PREVIEW", "Multichain routing", ["NEAR Intents 1Click routing preview", "USDG → USDC Solana/Base/Arb preview", "Mainnet execution in v1 rollout"], 80],
+  ["Phase 3", "LIVE", "Multichain routing", ["NEAR Intents 1Click live payout", "USDG (RH) → USDC (Solana/Base) settled", "Preview & Live execution modes"], 100],
   ["Phase 4", "SEEDING", "Market expansion", ["Stock & BTC tokens deployed on Mainnet", "Pool liquidity seeding in progress", "Public lending supply"], 50],
   ["Phase 5", "RESEARCH", "Native BTC & ZEC", ["Custody + signer model", "Proof and redemption", "Liquidation feasibility"], 10],
 ] as const;
@@ -84,7 +84,7 @@ export default function Landing() {
             <div className={s.badgesRow}>
               <span>Mainnet Beta · RH 4663</span>
               <span>Chainlink Oracle · Keeperless</span>
-              <span>1Click Routing · Preview</span>
+              <span>1Click Payout · Live</span>
             </div>
           </div>
           <aside className={s.colR}><EventStream /></aside>
@@ -93,7 +93,7 @@ export default function Landing() {
       </section>
 
       <section id="twosides" className={s.section}>
-        <Head n="00" label="Cross-chain architecture" a="Two sides of lending." b="Collateral origin meets liquidity destination." aside="Target design: collateral stays on its origin network, debt and risk accounting live on Robinhood Chain, and stablecoins are routed to your chain via NEAR Intents. Today: WETH/USDG Mainnet Beta is live (4663), 1Click route preview is active, and native BTC/ZEC locking is in research." />
+        <Head n="00" label="Cross-chain architecture" a="Two sides of lending." b="Collateral origin meets liquidity destination." aside="Target design: collateral stays on its origin network, debt and risk accounting live on Robinhood Chain, and stablecoins are routed to your chain via NEAR Intents. Today: WETH/USDG Mainnet Beta is live (4663), 1Click USDG → USDC cross-chain payout is live, and native BTC/ZEC locking is in research." />
         <div className={s.split} data-stagger>
           <div className={`${s.side} bevel`}>
             <span className={s.k}>Side A · collateral origin</span>
@@ -110,7 +110,7 @@ export default function Landing() {
           <div className={`${s.side} bevel`}>
             <span className={s.k}>Side B · payout destination</span>
             <h3>Where you need liquidity</h3>
-            <p>NEAR Intents 1Click quotes routing borrowed USDG to USDC on your target chain. Debt stays on Robinhood Chain; v1 cross-chain payout rollout is in progress.</p>
+            <p>NEAR Intents 1Click routes borrowed USDG directly into USDC on Solana, Base, Arbitrum, or Ethereum — live settlement verified on Mainnet.</p>
             <div className={s.chips}><i>USDC · Solana</i><i>USDC · Base</i><i>USDC · Arbitrum</i><i>USDG · Robinhood</i></div>
           </div>
         </div>

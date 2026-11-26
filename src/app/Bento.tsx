@@ -51,10 +51,10 @@ function Matrix() {
 }
 function Block() {
   const t = useTick(2000);
-  return <b className={s.big}>{(122705887 + t).toLocaleString("en-US")}</b>;
+  return <b className={s.big}>{(123473713 + t).toLocaleString("en-US")}</b>;
 }
 
-const quotes = [["USDG→USDC", "solana", "dry"], ["BTC→USDC", "base", "dry"], ["ZEC→USDC", "solana", "dry"], ["SOL→WETH", "hood", "dry"], ["USDG→USDC", "base", "dry"]];
+const quotes = [["USDG→USDC", "solana", "live"], ["USDG→USDC", "base", "live"], ["SOL→WETH", "hood", "live"], ["BTC→USDC", "base", "quote"], ["ZEC→USDC", "solana", "quote"]];
 
 export default function Bento() {
   const t = useTick(1400);
@@ -78,7 +78,7 @@ export default function Bento() {
               <li key={p + c} className={i === t % 5 ? s.hot : ""}><span>{m.toUpperCase()}</span>{p}<em>{c}</em></li>
             ))}
           </ul>
-          <p className={s.foot}>Route preview · v1 payout rollout</p>
+          <p className={s.foot}>Preview &amp; Live payout · NEAR Intents 1Click</p>
         </section>
         <section className={`${s.cell} ${s.c}`}>
           <h4>Health factor distribution</h4>

@@ -38,6 +38,18 @@
 | 5 | **Repay USDG (Full Debt)** | `122,705,471` | [`0xabdb082c…5bcb`](https://robinhoodchain.blockscout.com/tx/0xabdb082cf3c0fd5fd1875f616b0b4fa3b71bd7f3ac811157edffd4ad32725bcb) |
 | 6 | **Withdraw Collateral (WETH)** | `122,705,887` | [`0x1123391f…a2f7`](https://robinhoodchain.blockscout.com/tx/0x1123391fe9d0a87e5c2146b2cb577573b022bc48dbc31f1f37ff625e0416a2f7) |
 
+### Phase C — Update 4: Cross-Chain NEAR Intents Payout (`USDG` Robinhood Chain → `USDC` Solana)
+- **Sender (Robinhood Chain `4663`):** `0xb91E596EF3E1855df77bC34b2d094eF8704bB5AE`
+- **1Click Deposit Address:** `0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283`
+- **Recipient (Solana Mainnet):** `HZXty2J7GcbFzfyRqY2x2WBMss7AMhA1K7EjJS8gBKiY`
+- **Settlement Status:** `SUCCESS` (`1.000000 USDG` in → `0.806257 USDC` settled on Solana in ~42s)
+
+| Leg | Chain | Block / Details | Explorer Proof |
+|---|---|---|---|
+| 1 | Robinhood Chain (`4663`) | Block `123,473,713` · `USDG.transfer(1,000,000)` (`0 ETH` value) | [`0xc6684d36…9644`](https://robinhoodchain.blockscout.com/tx/0xc6684d3643a3d0378129c7b2ed80de1f44851e8ae71d4dcbb520b52016d09644) |
+| 2 | NEAR Intents 1Click | Correlation `670286ba-01c0-4122-82bd-e4b0949a5cb8` · `SUCCESS` | [`0x0D650Ee3…6283`](https://explorer.near-intents.org/transactions/0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283) |
+| 3 | Solana Mainnet | `0.806257 USDC` delivered to `HZXty2…BKiY` | [`PWUk1xC3…7RUwV`](https://solscan.io/tx/PWUk1xC3DdzyGvPZu9rVviDkj1EpNapzftXxjWPWwpfdFf6PyRMAWkmZqWbp8oCgk4jhuJFDgqz8pRzZV77RUwV) |
+
 ---
 
 ## 3. Public Dashboard Verification

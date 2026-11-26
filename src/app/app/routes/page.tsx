@@ -11,6 +11,13 @@ import { ensureWalletChain } from "@/lib/walletChain";
 import { useToast } from "../../Toaster";
 
 type Tok = { assetId: string; decimals: number; blockchain: string; symbol: string; price?: number; contractAddress?: string };
+type SwapTxRef = { hash: string; explorerUrl?: string } | string;
+type SwapDetails = {
+  depositedAmountFormatted?: string | null;
+  amountOutFormatted?: string | null;
+  originChainTxHashes?: SwapTxRef[];
+  destinationChainTxHashes?: SwapTxRef[];
+};
 type Quote = {
   status: string;
   reason?: string;
@@ -27,9 +34,74 @@ type Quote = {
   fees?: { refundFee?: string; withdrawFee?: string; appFees?: { fee: number }[] };
   deadline?: string;
   quotedAt?: string;
-  origin?: { symbol: string; chain: string; decimals: number; contractAddress?: string };
-  destination?: { symbol: string; chain: string; decimals: number };
+  origin?: { assetId?: string; symbol: string; chain: string; decimals: number; contractAddress?: string };
+  destination?: { assetId?: string; symbol: string; chain: string; decimals: number; contractAddress?: string };
 };
+
+function fmtDuration(totalSec: number): string {
+  const sec = Math.max(0, Math.round(totalSec));
+  if (sec < 60) return `${sec}s`;
+  if (sec < 3600) {
+    const m = Math.floor(sec / 60);
+    const rem = sec % 60;
+    return rem > 0 ? `${m}m ${rem}s` : `${m}m`;
+  }
+  if (sec < 86400) {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  }
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  return h > 0 ? `${d}d ${h}h` : `${d}d`;
+}
+
+function fmtQuoteClock(iso: string): string {
+  const dt = new Date(iso);
+  if (Number.isNaN(dt.getTime())) return "—";
+  return dt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function fmtAgo(iso: string, nowMs: number): string {
+  const diff = Math.max(0, Math.round((nowMs - new Date(iso).getTime()) / 1000));
+  if (diff < 5) return "just now";
+  return `${fmtDuration(diff)} ago`;
+}
+
+function fmtSwapStatus(st: string | null): string {
+  if (!st) return "";
+  switch (st) {
+    case "PENDING_DEPOSIT":
+      return "Awaiting deposit";
+    case "KNOWN_DEPOSIT_TX":
+      return "Deposit submitted";
+    case "PROCESSING":
+      return "Swapping";
+    case "SUCCESS":
+      return "Settled ✓";
+    case "INCOMPLETE_DEPOSIT":
+      return "Incomplete deposit";
+    case "REFUNDED":
+      return "Refunded";
+    case "FAILED":
+      return "Failed";
+    default:
+      return st;
+  }
+}
+
+function destExplorerTxUrl(chainLabel: string, ref: SwapTxRef): { hash: string; url: string } | null {
+  const hash = typeof ref === "string" ? ref : ref?.hash;
+  if (!hash) return null;
+  const provided = typeof ref === "object" ? ref?.explorerUrl : undefined;
+  if (provided) return { hash, url: provided };
+  if (chainLabel === "Solana") return { hash, url: `https://solscan.io/tx/${hash}` };
+  if (chainLabel === "Base") return { hash, url: `https://basescan.org/tx/${hash}` };
+  if (chainLabel === "Arbitrum") return { hash, url: `https://arbiscan.io/tx/${hash}` };
+  if (chainLabel === "Ethereum") return { hash, url: `https://etherscan.io/tx/${hash}` };
+  if (chainLabel === "Robinhood (hood)") return { hash, url: `https://robinhoodchain.blockscout.com/tx/${hash}` };
+  return { hash, url: `https://explorer.near-intents.org/transactions/${hash}` };
+}
 
 const chainKey: Record<string, string> = { Solana: "sol", Ethereum: "eth", Base: "base", Arbitrum: "arb", "Robinhood (hood)": "hood", Bitcoin: "btc", Zcash: "zec" };
 const isEvmLabel = (label: string) => ["Ethereum", "Base", "Arbitrum", "Robinhood (hood)"].includes(label);
@@ -48,7 +120,7 @@ export default function Routes() {
   const { sendTransactionAsync } = useSendTransaction();
   const toast = useToast();
 
-  const [execMode, setExecMode] = useState(false); // false = Preview (dry:true), true = Live Execute (dry:false)
+  const [execMode, setExecMode] = useState(false); // false = Preview, true = Live
   const [k, setK] = useState(kinds[0]);
   const [amt, setAmt] = useState("100");
   const [dest, setDest] = useState(kinds[0].dests[0]);
@@ -60,6 +132,7 @@ export default function Routes() {
   const [refundTo, setRefundTo] = useState("");
   const [q, setQ] = useState<Quote | null>(null);
   const [swapStatus, setSwapStatus] = useState<string | null>(null);
+  const [swapDetails, setSwapDetails] = useState<SwapDetails | null>(null);
   const [depositTx, setDepositTx] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [copiedDep, setCopiedDep] = useState(false);
@@ -74,20 +147,25 @@ export default function Routes() {
     setState("idle");
     setQ(null);
     setSwapStatus(null);
+    setSwapDetails(null);
     setDepositTx(null);
     setRefundTo(isEvmLabel(x.fromChain) && address ? address : "");
     setRecipient(isEvmLabel(nextDest) && address ? address : "");
   };
 
-  // Sync EVM wallet address ONLY onto EVM origin/destination fields, clearing mismatched 0x addresses on non-EVM chains
+  // Sync EVM wallet address onto EVM origin/destination fields, and update when user switches active wallet
+  const prevAddrRef = useRef<string | undefined>(address);
   useEffect(() => {
+    const addrChanged = prevAddrRef.current !== address;
+    prevAddrRef.current = address;
+
     if (isEvmLabel(k.fromChain)) {
-      if (address && !refundTo) setRefundTo(address);
+      if (address && (!refundTo || addrChanged)) setRefundTo(address);
     } else if (refundTo.startsWith("0x")) {
       setRefundTo("");
     }
     if (isEvmLabel(dest)) {
-      if (address && !recipient) setRecipient(address);
+      if (address && (!recipient || addrChanged)) setRecipient(address);
     } else if (recipient.startsWith("0x")) {
       setRecipient("");
     }
@@ -119,6 +197,7 @@ export default function Routes() {
         const j = await res.json();
         if (!stop && j.status) {
           setSwapStatus(j.status);
+          if (j.swapDetails) setSwapDetails(j.swapDetails);
           if (j.status === "SUCCESS" || j.status === "REFUNDED" || j.status === "FAILED") {
             stop = true;
           }
@@ -165,6 +244,7 @@ export default function Routes() {
     const id = ++reqId.current;
     setState("loading");
     setSwapStatus(null);
+    setSwapDetails(null);
     setDepositTx(null);
     try {
       const res = await fetch("/api/routes/quote", {
@@ -196,31 +276,73 @@ export default function Routes() {
   }
 
   async function sendFromHoodWallet() {
-    if (!q?.depositAddress || !q.amountInUnits || !origin) return;
+    if (!q?.depositAddress || !q.amountInUnits || !q.origin || !origin) return;
     setSending(true);
     try {
+      // 1. Validate selected token strictly matches quoted 1Click origin asset
+      if (
+        q.origin.chain !== "hood" ||
+        q.origin.symbol !== origin.symbol ||
+        q.origin.decimals !== origin.decimals ||
+        (q.origin.assetId && q.origin.assetId !== origin.assetId)
+      ) {
+        throw new Error("Selected asset does not match active 1Click quote — please refresh quote");
+      }
+
       if (chainId !== rhMainnet.id) {
         const ok = await ensureWalletChain(rhMainnet, connector, switchChainAsync);
         if (!ok) throw new Error("Switch wallet to Robinhood Chain Mainnet (4663) to send");
       }
+
       const dep = q.depositAddress as Address;
+      if (!/^0x[a-fA-F0-9]{40}$/.test(dep)) {
+        throw new Error("Invalid EVM deposit address returned by quote");
+      }
+
       const units = BigInt(q.amountInUnits);
-      const erc20Addr = (origin.contractAddress || origin.assetId.match(/0x[a-fA-F0-9]{40}/)?.[0]) as Address | undefined;
-      const hash = erc20Addr
-        ? await writeContractAsync({
-            address: erc20Addr,
-            abi: tokenAbi,
-            functionName: "transfer",
-            args: [dep, units],
-            chainId: rhMainnet.id,
-          })
-        : await sendTransactionAsync({
-            to: dep,
-            value: units,
-            chainId: rhMainnet.id,
-          });
+      if (units <= 0n) throw new Error("Quoted transfer amount must be greater than zero");
+
+      const isNativeEth =
+        q.origin.symbol === "ETH" &&
+        (q.origin.assetId === "nep141:hood.omft.near" || (!q.origin.contractAddress && !origin.contractAddress));
+
+      let hash: `0x${string}`;
+      if (isNativeEth) {
+        hash = await sendTransactionAsync({
+          to: dep,
+          value: units,
+          chainId: rhMainnet.id,
+        });
+      } else {
+        const quotedAddr = (
+          q.origin.contractAddress ||
+          q.origin.assetId?.match(/0x[a-fA-F0-9]{40}/)?.[0] ||
+          origin.contractAddress ||
+          origin.assetId.match(/0x[a-fA-F0-9]{40}/)?.[0]
+        ) as Address | undefined;
+
+        if (!quotedAddr || !/^0x[a-fA-F0-9]{40}$/.test(quotedAddr)) {
+          throw new Error(`Cannot resolve verified ERC-20 contract address for ${q.origin.symbol}`);
+        }
+        if (
+          q.origin.symbol === "USDG" &&
+          DEPLOYMENTS.mainnet.debtAsset &&
+          quotedAddr.toLowerCase() !== DEPLOYMENTS.mainnet.debtAsset.toLowerCase()
+        ) {
+          throw new Error("Quoted USDG contract does not match canonical Robinhood Chain USDG");
+        }
+
+        hash = await writeContractAsync({
+          address: quotedAddr,
+          abi: tokenAbi,
+          functionName: "transfer",
+          args: [dep, units],
+          chainId: rhMainnet.id,
+        });
+      }
+
       setDepositTx(hash);
-      toast.push({ kind: "ok", title: `Sent ${amt} ${k.from} to 1Click`, detail: "Notifying solver network…", hash });
+      toast.push({ kind: "ok", title: `Sent ${amt} ${q.origin.symbol} to 1Click`, detail: "Submitting txHash to solver network…", hash });
       await fetch("/api/routes/submit", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -237,6 +359,10 @@ export default function Routes() {
 
   const fmtOut = (v?: string) => (v && q?.destination ? (Number(v) / 10 ** q.destination.decimals).toLocaleString("en-US", { maximumFractionDigits: 6 }) : "—");
   const canSendDirect = execMode && state === "ok" && !!q?.depositAddress && !expired && isHoodOrigin && isConnected && !overHoodBal;
+  const destTxs = (swapDetails?.destinationChainTxHashes ?? [])
+    .map((ref) => destExplorerTxUrl(dest, ref))
+    .filter((x): x is { hash: string; url: string } => !!x);
+  const expiryRemSec = q?.deadline ? Math.max(0, Math.round((new Date(q.deadline).getTime() - now) / 1000)) : 0;
 
   return (
     <>
@@ -244,10 +370,10 @@ export default function Routes() {
         <div>
           <h1>Routes</h1>
           <p>
-            NEAR Intents 1Click cross-chain routing — toggle between <b>Quote Preview</b> (<code>dry:true</code>) and <b>Live Execute</b> (<code>dry:false</code>).
+            NEAR Intents 1Click cross-chain routing — switch between <b>Preview</b> (read-only quote) and <b>Live</b> (executable settlement).
           </p>
         </div>
-        <span>{execMode ? "Live Mainnet Execution · real deposit address" : "Preview Mode · no funds moved"}</span>
+        <span>{execMode ? "Live Mode · dedicated deposit address" : "Preview Mode · no funds moved"}</span>
       </div>
 
       <div className={`${s.frame} bevel`}>
@@ -262,7 +388,7 @@ export default function Routes() {
           ))}
           <div className={r.journey}>
             <span className={s.k}>Cross-chain lending flow</span>
-            <em>Preview · v1 Payout Rollout</em>
+            <em>Preview &amp; Live Payout</em>
             {["Deposit WETH on RH", "Borrow USDG on RH", "Execute 1Click route", "Receive USDC on target chain"].map((t, i) => <div key={t}><i>{i + 1}</i>{t}</div>)}
           </div>
         </aside>
@@ -272,8 +398,8 @@ export default function Routes() {
             <Pair a={k.from} b={k.to} size={42} />
             <div><h2>{k.from} → {k.to}</h2><p>{k.fromChain} → {dest}</p></div>
             <div className={s.badges}>
-              <span className={execMode ? s.active : ""}>{execMode ? "Live Execute" : "Preview"}</span>
-              <span>{execMode ? "dry:false" : "dry:true"}</span>
+              <span className={execMode ? s.active : ""}>{execMode ? "Live" : "Preview"}</span>
+              <span>{execMode ? "Executable" : "Read-only"}</span>
             </div>
           </div>
           <div className={s.stats} style={{ gridTemplateColumns: "repeat(5,1fr)" }}>
@@ -283,16 +409,16 @@ export default function Routes() {
             <div><span>Slippage</span><b>0.50%</b></div>
             <div>
               <span>Status</span>
-              <b className={state === "unavailable" || expired ? s.warn : state === "ok" ? s.ok : ""}>
-                {swapStatus ? swapStatus : state === "idle" ? "Not requested" : state === "loading" ? "Requesting" : state === "ok" ? (expired ? "Expired" : "Quote valid") : "Unavailable"}
+              <b className={state === "unavailable" || expired || swapStatus === "FAILED" ? s.warn : state === "ok" ? s.ok : ""}>
+                {swapStatus ? fmtSwapStatus(swapStatus) : state === "idle" ? "Not requested" : state === "loading" ? "Requesting" : state === "ok" ? (expired ? "Expired" : "Quote valid") : "Unavailable"}
               </b>
             </div>
           </div>
           <div className={s.strip}>
-            <span>{toks ? `Discovery · ${toks.length} tokens · ${new Date(fetchedAt).toLocaleTimeString()}` : discErr ? "Discovery unavailable" : "Loading discovery…"}</span>
+            <span>{toks ? `Discovery · ${toks.length} tokens · ${fmtQuoteClock(fetchedAt)}` : discErr ? "Discovery unavailable" : "Loading discovery…"}</span>
             <span>{origin ? origin.assetId.slice(0, 34) + "…" : "origin not in catalog"}</span>
             <span className={execMode && q?.depositAddress ? s.ok : s.amberT}>
-              {execMode && q?.depositAddress ? `Deposit ${q.depositAddress.slice(0, 8)}…${q.depositAddress.slice(-6)}` : "No deposit address (preview)"}
+              {execMode && q?.depositAddress ? `Deposit ${q.depositAddress.slice(0, 8)}…${q.depositAddress.slice(-6)}` : "Preview mode (no deposit address)"}
             </span>
           </div>
 
@@ -300,7 +426,7 @@ export default function Routes() {
             <div className={r.route}>
               <div className={r.node}><span>From</span><b>{amt || "0"} {k.from}</b><small>{k.fromChain}</small></div>
               <div className={r.wire}><i /><em>NEAR Intents · 1Click</em></div>
-              <div className={r.node}><span>Solver network</span><b>{execMode ? (swapStatus ?? "Live Intent") : "Quote"}</b><small>{execMode ? "real settlement" : "dry:true · preview"}</small></div>
+              <div className={r.node}><span>Solver network</span><b>{execMode ? (swapStatus ? fmtSwapStatus(swapStatus) : "Live Intent") : "Preview"}</b><small>{execMode ? "live settlement" : "preview · no funds moved"}</small></div>
               <div className={r.wire}><i /><em>settle</em></div>
               <div className={`${r.node} ${r.dst}`}><span>To</span><b>{state === "ok" ? q?.amountOut : "—"} {k.to}</b><small>{dest}</small></div>
             </div>
@@ -308,13 +434,15 @@ export default function Routes() {
 
             {execMode && state === "ok" && q?.depositAddress && (
               <div className={`${s.sim} bevel`} style={{ marginTop: 18, padding: 14, border: "1px solid var(--lime)" }}>
-                <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                  <div>
-                    <span style={{ display: "block", fontSize: 10, color: "var(--tx3)" }}>1CLICK DEPOSIT ADDRESS ({k.fromChain.toUpperCase()})</span>
-                    <code style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--lime)", wordBreak: "break-all" }}>{q.depositAddress}</code>
+                <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+                    <span style={{ fontSize: 10, letterSpacing: "0.08em", color: "var(--tx3)" }}>
+                      1CLICK DEPOSIT ADDRESS · ROBINHOOD · SEND ONLY {q.origin?.symbol ?? k.from}
+                    </span>
+                    <code style={{ fontFamily: "var(--mono)", fontSize: 13, color: "var(--lime)", wordBreak: "break-all" }}>{q.depositAddress}</code>
                     {q.depositMemo && <small style={{ display: "block", color: "var(--amber)" }}>Memo required: {q.depositMemo}</small>}
                   </div>
-                  <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button
                       type="button"
                       className="btn"
@@ -326,6 +454,14 @@ export default function Routes() {
                     >
                       {copiedDep ? "Copied ✓" : "Copy address"}
                     </button>
+                    <a
+                      className="btn"
+                      href={`https://explorer.near-intents.org/transactions/${q.depositAddress}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Intents Explorer ↗
+                    </a>
                     {canSendDirect && !depositTx && (
                       <button type="button" className="btn btn-primary" disabled={sending} onClick={sendFromHoodWallet}>
                         {sending ? "Sending…" : `Send ${amt} ${k.from} from Wallet →`}
@@ -333,9 +469,27 @@ export default function Routes() {
                     )}
                   </div>
                 </div>
-                {depositTx && (
-                  <div style={{ gridColumn: "1 / -1", fontSize: 11, fontFamily: "var(--mono)", color: "var(--tx2)" }}>
-                    Deposit tx submitted: <a href={txUrl(depositTx, "mainnet")} target="_blank" rel="noreferrer">{depositTx.slice(0, 10)}…{depositTx.slice(-6)} ↗</a> · Solver status: <b style={{ color: "var(--lime)" }}>{swapStatus}</b>
+                {(depositTx || destTxs.length > 0) && (
+                  <div style={{ gridColumn: "1 / -1", display: "flex", flexWrap: "wrap", gap: 14, fontSize: 11, fontFamily: "var(--mono)", color: "var(--tx2)", marginTop: 6 }}>
+                    {depositTx && (
+                      <span>
+                        Origin {q.origin?.symbol ?? k.from} tx:{" "}
+                        <a href={txUrl(depositTx, "mainnet")} target="_blank" rel="noreferrer">
+                          {depositTx.slice(0, 10)}…{depositTx.slice(-6)} ↗
+                        </a>
+                      </span>
+                    )}
+                    <span>
+                      Solver status: <b style={{ color: "var(--lime)" }}>{fmtSwapStatus(swapStatus)}</b>
+                    </span>
+                    {destTxs.map((tx) => (
+                      <span key={tx.hash}>
+                        {dest} payout tx:{" "}
+                        <a href={tx.url} target="_blank" rel="noreferrer">
+                          {tx.hash.slice(0, 8)}…{tx.hash.slice(-6)} ↗
+                        </a>
+                      </span>
+                    ))}
                   </div>
                 )}
               </div>
@@ -345,22 +499,22 @@ export default function Routes() {
               <div><span>Amount out</span><b>{state === "ok" ? `${q?.amountOut} ${k.to}` : "—"}</b><small>{state === "ok" ? `≈ $${Number(q?.amountOutUsd).toFixed(2)}` : "after quote"}</small></div>
               <div><span>Minimum received</span><b>{state === "ok" ? `${fmtOut(q?.minAmountOut)} ${k.to}` : "—"}</b><small>0.5% slippage bound</small></div>
               <div><span>Known fees</span><b>{state === "ok" ? `${(q?.fees?.appFees ?? []).reduce((a, f) => a + f.fee, 0) / 100}% app` : "—"}</b><small>{state === "ok" ? `withdraw ${fmtOut(q?.fees?.withdrawFee)} ${k.to}` : "provider + app"}</small></div>
-              <div><span>Est. duration</span><b>{state === "ok" ? `${q?.timeEstimate}s` : "—"}</b><small>provider estimate</small></div>
-              <div><span>Quote time</span><b>{state === "ok" && q?.quotedAt ? new Date(q.quotedAt).toLocaleTimeString() : "—"}</b><small>provider timestamp</small></div>
-              <div><span>Expiry</span><b className={expired ? s.warn : ""}>{state === "ok" && q?.deadline ? (expired ? "Expired" : `${Math.max(0, Math.round((new Date(q.deadline).getTime() - now) / 1000))}s`) : "—"}</b><small>{expired ? "request a new quote" : "deadline"}</small></div>
+              <div><span>Est. duration</span><b>{state === "ok" && typeof q?.timeEstimate === "number" ? `~${fmtDuration(q.timeEstimate)}` : "—"}</b><small>provider estimate</small></div>
+              <div><span>Quote time</span><b>{state === "ok" && q?.quotedAt ? fmtQuoteClock(q.quotedAt) : "—"}</b><small>{state === "ok" && q?.quotedAt ? fmtAgo(q.quotedAt, now) : "provider timestamp"}</small></div>
+              <div><span>Expiry</span><b className={expired ? s.warn : ""}>{state === "ok" && q?.deadline ? (expired ? "Expired" : fmtDuration(expiryRemSec)) : "—"}</b><small>{expired ? "request a new quote" : state === "ok" && q?.deadline ? `until ${fmtQuoteClock(q.deadline)}` : "quote window"}</small></div>
             </div>
           </div>
-          <div className={s.footLine}>GET /v0/tokens · POST /v0/quote · GET /v0/status · via server proxy</div>
+          <div className={s.footLine}>GET /v0/tokens · POST /v0/quote · POST /v0/deposit/submit · GET /v0/status</div>
         </section>
 
         <aside className={s.action}>
           <div className={s.mode}>
-            <button className={!execMode ? s.mOn : ""} onClick={() => { setExecMode(false); setState("idle"); setQ(null); setSwapStatus(null); }}>⇄ Quote</button>
-            <button className={execMode ? s.mOn : ""} onClick={() => { setExecMode(true); setState("idle"); setQ(null); setSwapStatus(null); }}>◈ Execute</button>
+            <button className={!execMode ? s.mOn : ""} onClick={() => { setExecMode(false); setState("idle"); setQ(null); setSwapStatus(null); setSwapDetails(null); }}>⇄ Preview</button>
+            <button className={execMode ? s.mOn : ""} onClick={() => { setExecMode(true); setState("idle"); setQ(null); setSwapStatus(null); setSwapDetails(null); }}>◈ Live</button>
           </div>
           <div className={s.aBody}>
-            <span className={s.k}>{execMode ? "Live Mainnet execution · real funds" : "Route preview · no funds moved"}</span>
-            <h3>{execMode ? "Execute cross-chain route" : "Get quote"}</h3>
+            <span className={s.k}>{execMode ? "Live execution · real funds" : "Preview · no funds moved"}</span>
+            <h3>{execMode ? "Execute live route" : "Preview quote"}</h3>
             <div className={s.field}>
               <div className={s.fTop}>
                 <span>You send</span>
@@ -402,7 +556,7 @@ export default function Routes() {
             </div>
             <div className={r.swap}>↓</div>
             <div className={s.field}>
-              <div className={s.fTop}><span>You receive ({execMode ? "live" : "quote"})</span>
+              <div className={s.fTop}><span>You receive ({execMode ? "live" : "preview"})</span>
                 <select value={dest} onChange={(e) => { setDest(e.target.value); setState("idle"); setQ(null); }} aria-label="Destination chain" className={r.sel}>
                   {k.dests.map((d) => <option key={d} disabled={!!toks && !find(k.to, d)}>{d}{toks && !find(k.to, d) ? " · not in catalog" : ""}</option>)}
                 </select>
@@ -411,14 +565,14 @@ export default function Routes() {
             </div>
             <label className={s.field}><div className={s.fTop}><span>Recipient · {dest}</span><span>{execMode ? "required (live)" : "optional in preview"}</span></div><input className={r.addr} placeholder={execMode ? `Your ${dest} address` : `Optional (${dest} preview)`} value={recipient} onChange={(e) => setRecipient(e.target.value)} /></label>
             <label className={s.field}><div className={s.fTop}><span>Refund · {k.fromChain}</span><span>{execMode ? "required (live)" : "optional in preview"}</span></div><input className={r.addr} placeholder={execMode ? `Your ${k.fromChain} address` : `Optional (${k.fromChain} preview)`} value={refundTo} onChange={(e) => setRefundTo(e.target.value)} /></label>
-            <div className={s.sim}><div><span>Slippage limit</span><b>0.5%</b></div><div><span>Mode</span><b>{execMode ? "dry:false (LIVE)" : "dry:true"}</b></div></div>
+            <div className={s.sim}><div><span>Slippage limit</span><b>0.5%</b></div><div><span>Mode</span><b>{execMode ? "Live" : "Preview"}</b></div></div>
             {overHoodBal && <p className={`${s.note} ${s.warn}`}>Input exceeds your Robinhood Chain balance ({hoodBal.toFixed(2)} {k.from}) — you can still request a deposit address or lower the amount.</p>}
             {state === "unavailable" && <p className={`${s.note} ${s.warn}`}>{q?.reason ?? "Unavailable"}.</p>}
             {toks && !available.length && <p className={`${s.note} ${s.warn}`}>No destination for {k.to} found in current discovery.</p>}
             <button className={s.cta} disabled={state === "loading" || !parseFloat(amt) || !origin || !destTok} onClick={getQuote}>
-              {state === "loading" ? "Requesting…" : state === "ok" ? (expired ? "Refresh quote" : execMode ? "Refresh live quote" : "Requote") : !toks ? "Loading catalog…" : !origin || !destTok ? "Route not in catalog" : execMode ? "Get live deposit address" : "Get quote"}
+              {state === "loading" ? "Requesting…" : state === "ok" ? (expired ? "Refresh quote" : execMode ? "Refresh live quote" : "Requote") : !toks ? "Loading catalog…" : !origin || !destTok ? "Route not in catalog" : execMode ? "Get live deposit address" : "Preview quote"}
             </button>
-            <p className={s.note}>{execMode ? "Issues a real 1Click deposit address & tracks live settlement" : "Mainnet market estimate · no deposit address issued"}</p>
+            <p className={s.note}>{execMode ? "Issues a dedicated 1Click deposit address & tracks live settlement" : "Market estimate · no deposit address issued"}</p>
           </div>
         </aside>
       </div>

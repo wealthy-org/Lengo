@@ -5,7 +5,7 @@ import s from "./story.module.css";
 const steps = [
   { k: "DEPOSIT", t: "Deposit", d: "Approve the exact amount to LengoMarket, then lock WETH collateral on Robinhood Chain Mainnet.", pub: "Your address, collateral, and tx hash are verifiable on Blockscout.", big: "2.0000", unit: "WETH", from: "connected wallet", to: "LengoMarket", meta: "allowance: exact amount" },
   { k: "BORROW", t: "Borrow", d: "Pick an amount inside 60% max LTV. Health Factor, LTV, interest, and liquidation price update before you sign.", pub: "USDG lands directly in your wallet on Robinhood Chain (4663).", big: "1,360", unit: "USDG", from: "pool liquidity", to: "your wallet", meta: "HF 1.875 · LTV 40%" },
-  { k: "ROUTE", t: "Route", d: "Preview cross-chain payout conversion from USDG on Robinhood Chain to USDC on Solana or Base via NEAR Intents 1Click.", pub: "Quote preview active today; v1 payout rollout in progress.", big: "≈ USDC", unit: "Solana", from: "USDG · hood", to: "USDC · solana", meta: "status: preview" },
+  { k: "ROUTE", t: "Route", d: "Route borrowed USDG on Robinhood Chain directly into USDC on Solana or Base via NEAR Intents 1Click.", pub: "Live end-to-end settlement verified on Robinhood Chain & Solana Mainnet.", big: "USDC", unit: "Solana", from: "USDG · hood", to: "USDC · solana", meta: "status: live" },
   { k: "REPAY", t: "Repay & exit", d: "Repay part or Repay All with accrued interest and zero dust. Then withdraw every WETH that is yours.", pub: "Debt to zero, collateral back, all verified on the explorer.", big: "0.00", unit: "debt", from: "your wallet", to: "LengoMarket", meta: "withdraw all · unlocked" },
 ];
 

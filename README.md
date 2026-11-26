@@ -17,7 +17,7 @@ Lengo lets you borrow `USDG` against `WETH` collateral on **Robinhood Chain Main
 |---|---|
 | 7 Isolated lending markets (`WETH`, `cbBTC`, `WBTC`, `USDe`, `NVDA`, `TSLA`, `AAPL` / `USDG`) | ✅ Live on Robinhood Chain Mainnet (`4663`, capped beta) |
 | Keeperless oracle (`ChainlinkOracle` → 7 Chainlink feeds) | ✅ Live onchain (`0xAc892397986B84ff42894739F05fE884D1D4c6da`) |
-| Cross-chain payout via NEAR Intents 1Click | ✅ Live quotes (`dry: true`) + Live execution (`dry: false`) |
+| Cross-chain payout via NEAR Intents 1Click | ✅ Preview & Live settlement (`USDG` RH → `USDC` Solana/Base) |
 | Testnet sandbox (`tBTC / tUSDC`, chain `46630`) | ✅ Live for risk & liquidation testing |
 | Native BTC / ZEC collateral | 🔬 Research ([docs/M5-BTC-SPIKE.md](docs/M5-BTC-SPIKE.md)) |
 | External security audit | ⏳ Capped beta |
@@ -86,7 +86,7 @@ The full deployment manifest and a 16-transaction proof index (M1 lifecycle, M2 
 |---|---|
 | `/` | Landing |
 | `/app` | Markets: deposit, borrow, repay, withdraw, lend; live health factor, LTV and liquidation price; HF alerts |
-| `/app/routes` | NEAR Intents 1Click route preview (live discovery and quotes, `dry: true`) |
+| `/app/routes` | NEAR Intents 1Click cross-chain routing (`Preview` & `Live` settlement modes) |
 | `/app/activity` | Onchain event history, each tx linked to the explorer |
 | `/faucet` | Mint demo tBTC / tUSDC (capped, 24 h cooldown, no value) |
 | `/docs` | Formulas, parameters, limits |
@@ -98,7 +98,9 @@ Each transaction shows a step modal (confirm in wallet → pending → confirmed
 | Route | Purpose |
 |---|---|
 | `GET /api/routes/tokens` | 1Click token discovery (cached) |
-| `POST /api/routes/quote` | Server proxy to 1Click `/v0/quote`, always `dry: true`; quotes are logged with the recipient hashed |
+| `POST /api/routes/quote` | Server proxy to 1Click `/v0/quote` (`Preview` or `Live` mode); quotes are logged with recipient hashed |
+| `POST /api/routes/submit` | Submits origin-chain deposit `txHash` to 1Click `/v0/deposit/submit` |
+| `GET /api/routes/status` | Polls live solver & destination settlement status from 1Click `/v0/status` |
 | `GET /api/activity[?account=0x…]` | Market-wide or per-account events from the Neon read model |
 | `POST /api/index/sync` | Indexer trigger (needs `INDEXER_SECRET`) |
 | `POST /api/oracle/refresh` | Optional on-demand stale-price refresh (rate-limited) |
@@ -171,10 +173,9 @@ npx wrangler deploy            # secrets: KEEPER_PRIVATE_KEY, DATABASE_URL (wran
 
 Set `KEEPER_ON = "false"` in `keeper/wrangler.toml` to pause price refreshes, for example during a liquidation demo with a price override.
 
-## Limits in v0.1
+## Current scope & safety limits
 
-- **Testnet only.** tBTC has no Bitcoin backing, and tUSDC is not Circle USDC. Demo assets have no value.
-- **Contracts are not audited.**
-- **Demo oracle.** Prices come from a keeper-maintained baseline, not a market feed. Overrides emit `demoOverride = true`.
-- **Route preview only.** It never executes a swap or issues a deposit address. 1Click quotes are mainnet market estimates.
-- Native BTC/ZEC collateral, private positions and executed cross-chain payouts are on the roadmap.
+- **Capped Mainnet Beta (`4663`).** `WETH / USDG` is live under conservative beta caps (`25 WETH` collateral / `50,000 USDG` supply), with 6 additional isolated markets (`cbBTC`, `WBTC`, `USDe`, `NVDA`, `TSLA`, `AAPL`) deployed and awaiting seeding after external security review.
+- **Testnet sandbox (`46630`).** `tBTC` has no Bitcoin backing, and `tUSDC` is not Circle USDC; demo assets have no value.
+- **Cross-chain payout (`Preview` & `Live`).** NEAR Intents 1Click supports both read-only market quotes and live end-to-end settlement (`USDG` on Robinhood Chain → `USDC` on Solana, Base, Arbitrum, or Ethereum).
+- **Native BTC/ZEC collateral** locking, proof, and redemption are currently in research ([docs/M5-BTC-SPIKE.md](docs/M5-BTC-SPIKE.md)).
