@@ -86,7 +86,7 @@ type PresetKind = {
 const PRESETS: PresetKind[] = [
   {
     id: "payout",
-    tag: "UPDATE 3 · MULTI-PAYOUT",
+    tag: "14+ CHAINS · MULTI-STABLE PAYOUT",
     label: "Borrow payout",
     sub: "USDG → 14+ chains · USDC/USDT/DAI",
     originChains: ["Robinhood (hood)"],
@@ -103,7 +103,7 @@ const PRESETS: PresetKind[] = [
   },
   {
     id: "collateral",
-    tag: "UPDATE 1 · CROSS-CHAIN COLLATERAL",
+    tag: "CROSS-CHAIN COLLATERAL INFLOW",
     label: "Cross-chain collateral",
     sub: "Any chain → ETH / WETH → LengoMarket",
     originChains: ["Solana", "Base", "Arbitrum", "Ethereum", "Optimism", "Polygon", "BNB Chain", "Avalanche", "Bitcoin"],
@@ -115,12 +115,12 @@ const PRESETS: PresetKind[] = [
     defaultToChain: "Robinhood (hood)",
     defaultToAsset: "ETH",
     defaultAmt: "0.03",
-    note: "Deposit assets from an external network (e.g. SOL on Solana or USDC on Base) via NEAR Intents 1Click into ETH/WETH on Robinhood Chain, then lock directly into LengoMarket collateral.",
-    steps: ["Select origin network & token", "Route into ETH / WETH on RHC", "Lock WETH collateral in LengoMarket", "Origin tx + LengoMarket tx recorded"],
+    note: "Route assets from an external network (e.g. SOL on Solana or USDC on Base) via NEAR Intents 1Click into ETH/WETH on Robinhood Chain, then deposit directly into LengoMarket collateral.",
+    steps: ["Select origin network & token", "Route into ETH / WETH on RHC", "Deposit WETH collateral in LengoMarket", "Borrow USDG against locked collateral"],
   },
   {
     id: "repay",
-    tag: "UPDATE 4 · ANY-CHAIN REPAY",
+    tag: "ANY-CHAIN DEBT SETTLEMENT",
     label: "Cross-chain repay",
     sub: "Any stablecoin → repay USDG & unlock",
     originChains: ["Solana", "Base", "Arbitrum", "Polygon", "Optimism", "Ethereum", "BNB Chain", "Avalanche", "TRON", "TON", "NEAR"],
@@ -132,12 +132,12 @@ const PRESETS: PresetKind[] = [
     defaultToChain: "Robinhood (hood)",
     defaultToAsset: "USDG",
     defaultAmt: "5",
-    note: "Repay your Robinhood Chain USDG debt from any external chain using USDC, USDT, or DAI via NEAR Intents 1Click, then immediately unlock & withdraw your collateral.",
-    steps: ["Pick external chain & stablecoin", "1Click settles USDG to your RH wallet", "Execute Repay All on LengoMarket", "Withdraw unlocked collateral"],
+    note: "Settle your Robinhood Chain USDG debt from any external network via NEAR Intents 1Click, then unlock and withdraw your collateral in one continuous flow.",
+    steps: ["Pick external chain & asset", "1Click settles USDG to your RH wallet", "Execute Repay All on LengoMarket", "Withdraw unlocked collateral"],
   },
   {
     id: "swap",
-    tag: "INTENT ROUTER",
+    tag: "1CLICK INTENT ROUTER",
     label: "BTC / ZEC swap",
     sub: "BTC · ZEC → USDC / USDT",
     originChains: ["Bitcoin", "Zcash"],
@@ -249,7 +249,7 @@ function RoutesInner() {
   const [now, setNow] = useState(Date.now());
   const reqId = useRef(0);
 
-  // Target LengoMarket for Update 1 (Cross-chain Collateral) & Update 4 (Cross-chain Repay)
+  // Target LengoMarket for Cross-chain Collateral & Cross-chain Repay
   const targetMarketSpec = useMemo(() => {
     if (preset.id === "collateral" && toAsset === "USDe") {
       return MAINNET_MARKETS.find((m) => m.id === "USDe") ?? MAINNET_MARKETS[0];
@@ -610,7 +610,7 @@ function RoutesInner() {
 
   const expiryRemSec = q?.deadline ? Math.max(0, Math.round((new Date(q.deadline).getTime() - now) / 1000)) : 0;
 
-  // LengoMarket live metrics for Update 1 (Collateral) & Update 4 (Repay)
+  // LengoMarket live metrics for Cross-chain Collateral & Cross-chain Repay
   const rhCollWallet = lengo.data?.collBal ?? 0;
   const rhUsdgWallet = lengo.data?.debtBal ?? 0;
   const rhPosColl = lengo.data?.coll ?? 0;
@@ -843,7 +843,7 @@ function RoutesInner() {
               )}
             </div>
 
-            {/* Live Protocol Impact Strip for Update 1 (Collateral) & Update 4 (Repay) */}
+            {/* Live Protocol Impact Strip for Cross-chain Collateral & Cross-chain Repay */}
             {preset.id === "collateral" && (
               <div className={r.impact}>
                 <div>
@@ -862,9 +862,9 @@ function RoutesInner() {
                   <small>after locking in LengoMarket</small>
                 </div>
                 <div>
-                  <span>Proof Structure</span>
-                  <b>2 Onchain Txs</b>
-                  <small>Origin send + LengoMarket lock</small>
+                  <span>Settlement Path</span>
+                  <b>1Click → LengoMarket</b>
+                  <small>Inbound route + collateral deposit</small>
                 </div>
               </div>
             )}
@@ -983,7 +983,7 @@ function RoutesInner() {
               </div>
             )}
 
-            {/* Update 1: Step 2 Guided Action — Lock Routed Asset as Collateral in LengoMarket */}
+            {/* Step 2 Guided Action — Lock Routed Asset as Collateral in LengoMarket */}
             {preset.id === "collateral" && isConnected && (swapStatus === "SUCCESS" || rhCollWallet > 0) && (
               <div className={`${s.sim} bevel`} style={{ marginTop: 12, padding: 14, border: "1px solid var(--line2)", background: "var(--bg)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -1015,7 +1015,7 @@ function RoutesInner() {
               </div>
             )}
 
-            {/* Update 4: Step 2 & 3 Guided Action — Repay USDG Debt & Withdraw Collateral on LengoMarket */}
+            {/* Step 2 & 3 Guided Action — Repay USDG Debt & Withdraw Collateral on LengoMarket */}
             {preset.id === "repay" && isConnected && (rhPosDebt > 0 || rhPosColl > 0) && (
               <div className={`${s.sim} bevel`} style={{ marginTop: 12, padding: 14, border: "1px solid var(--line2)", background: "var(--bg)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>

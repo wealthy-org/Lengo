@@ -5,7 +5,7 @@
 **RPC:** `https://rpc.mainnet.chain.robinhood.com` / `https://4663.rpc.thirdweb.com`  
 **Explorer:** `https://robinhoodchain.blockscout.com`  
 **Verification:** Sourcify (`exact_match`)  
-**Status:** ✅ **Update 1: First Loan Live — COMPLETED ONCHAIN**
+**Status:** ✅ **Mainnet Live — Verified Onchain (Chain 4663)**
 
 ---
 
@@ -39,7 +39,7 @@
 | 5 | **Repay USDG (`0.05 USDG` Full Debt)** | `122,705,471` | [`0xabdb082c…5bcb`](https://robinhoodchain.blockscout.com/tx/0xabdb082cf3c0fd5fd1875f616b0b4fa3b71bd7f3ac811157edffd4ad32725bcb) |
 | 6 | **Withdraw Collateral (`0.0001 WETH`)** | `122,705,887` | [`0x1123391f…a2f7`](https://robinhoodchain.blockscout.com/tx/0x1123391fe9d0a87e5c2146b2cb577573b022bc48dbc31f1f37ff625e0416a2f7) |
 
-### Phase C — Update 4: Cross-Chain NEAR Intents Payout (`USDG` Robinhood Chain → `USDC` Solana)
+### Phase C — Cross-Chain NEAR Intents Multi-Chain Payout (`USDG` Robinhood Chain → `USDC` Solana & Base)
 - **Sender (Robinhood Chain `4663`):** `0xb91E596EF3E1855df77bC34b2d094eF8704bB5AE`
 - **1Click Deposit Address:** `0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283`
 - **Recipient (Solana Mainnet):** `HZXty2J7GcbFzfyRqY2x2WBMss7AMhA1K7EjJS8gBKiY`
@@ -54,7 +54,7 @@
 | 5 | NEAR Intents 1Click | Correlation `da9d3f29-ff04-41ed-8225-66e584e2e515` · `SUCCESS` | [`0x0cC24E33…2E3d`](https://explorer.near-intents.org/transactions/0x0cC24E339540688717D23c86fE2783e3DD7C2E3d) |
 | 6 | Base Mainnet | `0.296513 USDC` delivered on Base (`0xb91E…B5AE`) | [`0x7e4f2eb4…cd0d`](https://basescan.org/tx/0x7e4f2eb4a67b2e083993793c4154ce34a23781d6f03e1b866b5e3e78b4c2cd0d) |
 
-### Phase D — Update 5: RWA Equity Markets Seeded & Opened (`NVDA`, `TSLA`, `AAPL` / `USDG`)
+### Phase D — Isolated RWA Equity Markets (`NVDA`, `TSLA`, `AAPL` / `USDG`)
 - **Lender (`0xb91E596EF3E1855df77bC34b2d094eF8704bB5AE`):**
 
 | Market | Contract | Action | Block | Supply Tx Hash (Blockscout) | Approve Tx Hash |
@@ -63,7 +63,7 @@
 | **TSLA / USDG** | `0xa4CaCae0e5221d6B5a2B1630f7F6f36e6b9eF99a` | `supply(0.01 USDG)` | `123,528,282` | [`0x3ba93b61…352b`](https://robinhoodchain.blockscout.com/tx/0x3ba93b6139f3be8c253c9b3a678bfaa2f084dbbb617bfa01980aeec24f24352b) | [`0x252a…`](https://robinhoodchain.blockscout.com/address/0xa4CaCae0e5221d6B5a2B1630f7F6f36e6b9eF99a) |
 | **AAPL / USDG** | `0xDF97819e82A634ff82689c282067b74D574467A3` | `supply(0.01 USDG)` | `123,528,546` | [`0xefce4d41…5ec7`](https://robinhoodchain.blockscout.com/tx/0xefce4d41320bf3d7175043d6dbfbe0720c7f18390bd3b36db2b08922bed05ec7) | [`0x75d8767c…8fa3`](https://robinhoodchain.blockscout.com/tx/0x75d8767c5968f05b5893d96cd5ab5ae78f1938f11a0cadc2332eb6525cc58fa3) |
 
-### Phase E — Update 4: Cross-Chain Repay & Collateral Unlock (`WETH / USDG` on Chain `4663`)
+### Phase E — Cross-Chain Debt Repayment & Collateral Exit (`WETH / USDG` on Chain `4663`)
 - **Borrower (`0xb91E596EF3E1855df77bC34b2d094eF8704bB5AE`):**
 
 | Step | Action | Block | Transaction Hash |
