@@ -38,6 +38,17 @@ Lengo lets you borrow `USDG` against `WETH` collateral on **Robinhood Chain Main
 
 Start block `122296154` · Manifests: [`contracts/deployments/4663.json`](contracts/deployments/4663.json) & [`contracts/deployments/4663-markets.json`](contracts/deployments/4663-markets.json).
 
+### Live Mainnet Proofs (`4663` & Solana)
+
+| Flow | Details | Explorer Proof |
+|---|---|---|
+| **Supply `USDG`** | `2.00 USDG` seeded into `WETH/USDG` pool (block `122,693,997`) | [`0x04887e2d…f0d7`](https://robinhoodchain.blockscout.com/tx/0x04887e2dd03391090f3f90eb170bba562955d76122e24bdafb2fbf73f715f0d7) |
+| **Deposit `WETH` → Borrow `USDG`** | Collateral deposit + `0.50 USDG` borrow (block `122,705,021`) | [`0x57356f96…5f4d`](https://robinhoodchain.blockscout.com/tx/0x57356f96ef1e9bebc9345de9530628c919faf2f9348c082f83b62cb240435f4d) |
+| **Repay All → Withdraw `WETH`** | Zero-dust full repay + collateral exit (block `122,705,887`) | [`0x1123391f…a2f7`](https://robinhoodchain.blockscout.com/tx/0x1123391fe9d0a87e5c2146b2cb577573b022bc48dbc31f1f37ff625e0416a2f7) |
+| **1Click `USDG` Deposit (RH)** | `1.00 USDG` ERC-20 transfer to 1Click (block `123,473,713`) | [`0xc6684d36…9644`](https://robinhoodchain.blockscout.com/tx/0xc6684d3643a3d0378129c7b2ed80de1f44851e8ae71d4dcbb520b52016d09644) |
+| **NEAR Intents Settlement** | `SUCCESS` (`0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283`) | [`View on NEAR Intents`](https://explorer.near-intents.org/transactions/0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283) |
+| **Solana `USDC` Payout** | `0.806257 USDC` delivered on Solana Mainnet | [`PWUk1xC3…7RUwV`](https://solscan.io/tx/PWUk1xC3DdzyGvPZu9rVviDkj1EpNapzftXxjWPWwpfdFf6PyRMAWkmZqWbp8oCgk4jhuJFDgqz8pRzZV77RUwV) |
+
 ## How it works
 
 ```
