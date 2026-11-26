@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Pair } from "../../TokenIcon";
+import { Pair, TokenIcon } from "../../TokenIcon";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { formatUnits, type Address, type Chain } from "viem";
 import { arbitrum, avalanche, base, bsc, mainnet, optimism, polygon } from "viem/chains";
@@ -43,30 +43,31 @@ type Quote = {
   destination?: { assetId?: string; symbol: string; chain: string; decimals: number; contractAddress?: string };
 };
 
-const CHAIN_META: Record<string, { key: string; evmChain?: Chain; explorerTx: string }> = {
-  "Robinhood (hood)": { key: "hood", evmChain: rhMainnet, explorerTx: "https://robinhoodchain.blockscout.com/tx/" },
-  Solana: { key: "sol", explorerTx: "https://solscan.io/tx/" },
-  Base: { key: "base", evmChain: base, explorerTx: "https://basescan.org/tx/" },
-  Arbitrum: { key: "arb", evmChain: arbitrum, explorerTx: "https://arbiscan.io/tx/" },
-  Ethereum: { key: "eth", evmChain: mainnet, explorerTx: "https://etherscan.io/tx/" },
-  Optimism: { key: "op", evmChain: optimism, explorerTx: "https://optimistic.etherscan.io/tx/" },
-  Polygon: { key: "pol", evmChain: polygon, explorerTx: "https://polygonscan.com/tx/" },
-  "BNB Chain": { key: "bsc", evmChain: bsc, explorerTx: "https://bscscan.com/tx/" },
-  Avalanche: { key: "avax", evmChain: avalanche, explorerTx: "https://snowtrace.io/tx/" },
-  NEAR: { key: "near", explorerTx: "https://nearblocks.io/txns/" },
-  TON: { key: "ton", explorerTx: "https://tonviewer.com/transaction/" },
-  TRON: { key: "tron", explorerTx: "https://tronscan.org/#/transaction/" },
-  Sui: { key: "sui", explorerTx: "https://suiscan.xyz/mainnet/tx/" },
-  Aptos: { key: "aptos", explorerTx: "https://explorer.aptoslabs.com/txn/" },
-  Stellar: { key: "stellar", explorerTx: "https://stellar.expert/explorer/public/tx/" },
-  Bitcoin: { key: "btc", explorerTx: "https://mempool.space/tx/" },
-  Zcash: { key: "zec", explorerTx: "https://blockchair.com/zcash/transaction/" },
+const CHAIN_META: Record<string, { key: string; short: string; evmChain?: Chain; explorerTx: string }> = {
+  "Robinhood (hood)": { key: "hood", short: "Robinhood", evmChain: rhMainnet, explorerTx: "https://robinhoodchain.blockscout.com/tx/" },
+  Solana: { key: "sol", short: "Solana", explorerTx: "https://solscan.io/tx/" },
+  Base: { key: "base", short: "Base", evmChain: base, explorerTx: "https://basescan.org/tx/" },
+  Arbitrum: { key: "arb", short: "Arbitrum", evmChain: arbitrum, explorerTx: "https://arbiscan.io/tx/" },
+  Ethereum: { key: "eth", short: "Ethereum", evmChain: mainnet, explorerTx: "https://etherscan.io/tx/" },
+  Optimism: { key: "op", short: "Optimism", evmChain: optimism, explorerTx: "https://optimistic.etherscan.io/tx/" },
+  Polygon: { key: "pol", short: "Polygon", evmChain: polygon, explorerTx: "https://polygonscan.com/tx/" },
+  "BNB Chain": { key: "bsc", short: "BNB", evmChain: bsc, explorerTx: "https://bscscan.com/tx/" },
+  Avalanche: { key: "avax", short: "Avalanche", evmChain: avalanche, explorerTx: "https://snowtrace.io/tx/" },
+  NEAR: { key: "near", short: "NEAR", explorerTx: "https://nearblocks.io/txns/" },
+  TON: { key: "ton", short: "TON", explorerTx: "https://tonviewer.com/transaction/" },
+  TRON: { key: "tron", short: "TRON", explorerTx: "https://tronscan.org/#/transaction/" },
+  Sui: { key: "sui", short: "Sui", explorerTx: "https://suiscan.xyz/mainnet/tx/" },
+  Aptos: { key: "aptos", short: "Aptos", explorerTx: "https://explorer.aptoslabs.com/txn/" },
+  Stellar: { key: "stellar", short: "Stellar", explorerTx: "https://stellar.expert/explorer/public/tx/" },
+  Bitcoin: { key: "btc", short: "Bitcoin", explorerTx: "https://mempool.space/tx/" },
+  Zcash: { key: "zec", short: "Zcash", explorerTx: "https://blockchair.com/zcash/transaction/" },
 };
 
 const isEvmLabel = (label: string) => Boolean(CHAIN_META[label]?.evmChain);
 
 type PresetKind = {
   id: "payout" | "collateral" | "repay" | "swap";
+  tag: string;
   label: string;
   sub: string;
   originChains: string[];
@@ -85,40 +86,43 @@ type PresetKind = {
 const PRESETS: PresetKind[] = [
   {
     id: "payout",
+    tag: "UPDATE 3 · MULTI-PAYOUT",
     label: "Borrow payout",
-    sub: "USDG hood → multi-chain stable",
+    sub: "USDG → 14+ chains · USDC/USDT/DAI",
     originChains: ["Robinhood (hood)"],
     originAssets: ["USDG"],
-    destChains: ["Solana", "Base", "Arbitrum", "Ethereum", "Optimism", "Polygon", "BNB Chain", "Avalanche", "NEAR", "TON", "TRON", "Sui", "Aptos", "Stellar"],
+    destChains: ["Solana", "Base", "Arbitrum", "Ethereum", "Optimism", "Polygon", "BNB Chain", "Avalanche", "TON", "TRON", "Sui", "NEAR", "Aptos", "Stellar"],
     destAssets: ["USDC", "USDT", "DAI"],
     defaultFromChain: "Robinhood (hood)",
     defaultFromAsset: "USDG",
     defaultToChain: "Solana",
     defaultToAsset: "USDC",
     defaultAmt: "10",
-    note: "Route borrowed USDG on Robinhood Chain into USDC, USDT, or DAI across 14+ destination chains via NEAR Intents 1Click.",
-    steps: ["Borrow USDG on Robinhood Chain", "Pick target chain & stablecoin", "Send USDG to 1Click", "Receive USDC / USDT on destination chain"],
+    note: "Select any target chain and preferred stablecoin (USDC, USDT, or DAI) below — live NEAR Intents solver quotes update automatically.",
+    steps: ["Borrow USDG on Robinhood Chain", "Pick target chain & stablecoin", "Send USDG to 1Click", "Receive USDC / USDT / DAI on target chain"],
   },
   {
     id: "collateral",
+    tag: "UPDATE 1 · CROSS-CHAIN COLLATERAL",
     label: "Cross-chain collateral",
-    sub: "Any chain → WETH / USDe on RH",
+    sub: "Any chain → ETH / WETH → LengoMarket",
     originChains: ["Solana", "Base", "Arbitrum", "Ethereum", "Optimism", "Polygon", "BNB Chain", "Avalanche", "Bitcoin"],
     originAssets: ["SOL", "USDC", "USDT", "ETH", "BTC"],
     destChains: ["Robinhood (hood)"],
-    destAssets: ["WETH", "USDe"],
-    defaultFromChain: "Base",
-    defaultFromAsset: "USDC",
+    destAssets: ["ETH", "WETH", "USDe"],
+    defaultFromChain: "Solana",
+    defaultFromAsset: "SOL",
     defaultToChain: "Robinhood (hood)",
-    defaultToAsset: "WETH",
-    defaultAmt: "25",
-    note: "Deposit assets from another chain via NEAR Intents 1Click into WETH or USDe on Robinhood Chain, then lock directly into LengoMarket as collateral.",
-    steps: ["Choose origin chain & asset", "Route into WETH on Robinhood Chain", "Lock WETH collateral in LengoMarket", "Both origin & LengoMarket txs recorded"],
+    defaultToAsset: "ETH",
+    defaultAmt: "0.03",
+    note: "Deposit assets from an external network (e.g. SOL on Solana or USDC on Base) via NEAR Intents 1Click into ETH/WETH on Robinhood Chain, then lock directly into LengoMarket collateral.",
+    steps: ["Select origin network & token", "Route into ETH / WETH on RHC", "Lock WETH collateral in LengoMarket", "Origin tx + LengoMarket tx recorded"],
   },
   {
     id: "repay",
+    tag: "UPDATE 4 · ANY-CHAIN REPAY",
     label: "Cross-chain repay",
-    sub: "Any stablecoin → repay USDG debt",
+    sub: "Any stablecoin → repay USDG & unlock",
     originChains: ["Solana", "Base", "Arbitrum", "Polygon", "Optimism", "Ethereum", "BNB Chain", "Avalanche", "TRON", "TON", "NEAR"],
     originAssets: ["USDC", "USDT", "DAI", "SOL", "ETH"],
     destChains: ["Robinhood (hood)"],
@@ -128,11 +132,12 @@ const PRESETS: PresetKind[] = [
     defaultToChain: "Robinhood (hood)",
     defaultToAsset: "USDG",
     defaultAmt: "5",
-    note: "Repay your USDG debt on Robinhood Chain using USDC or USDT from any chain via NEAR Intents 1Click, then unlock & withdraw your collateral.",
-    steps: ["Route external USDC / USDT → USDG on RH", "1Click settles USDG to your RH wallet", "Execute Repay All on LengoMarket", "Withdraw unlocked collateral"],
+    note: "Repay your Robinhood Chain USDG debt from any external chain using USDC, USDT, or DAI via NEAR Intents 1Click, then immediately unlock & withdraw your collateral.",
+    steps: ["Pick external chain & stablecoin", "1Click settles USDG to your RH wallet", "Execute Repay All on LengoMarket", "Withdraw unlocked collateral"],
   },
   {
     id: "swap",
+    tag: "INTENT ROUTER",
     label: "BTC / ZEC swap",
     sub: "BTC · ZEC → USDC / USDT",
     originChains: ["Bitcoin", "Zcash"],
@@ -145,7 +150,7 @@ const PRESETS: PresetKind[] = [
     defaultToAsset: "USDC",
     defaultAmt: "0.01",
     note: "Cross-chain BTC or transparent ZEC swap via NEAR Intents 1Click (distinct from native collateral locking).",
-    steps: ["Request 1Click swap quote", "Send BTC / ZEC to deposit address", "Solver settles on NEAR Intents", "Receive stablecoin on target chain"],
+    steps: ["Select BTC or ZEC origin", "Send to 1Click deposit address", "Solver settles on NEAR Intents", "Receive USDC / USDT on target chain"],
   },
 ];
 
@@ -269,6 +274,13 @@ function RoutesInner() {
     }
   }, [lengoTx.steps, preset.id, targetMarketSpec.collSymbol]);
 
+  const resetQuoteOnly = () => {
+    setQ((prev) => (prev?.depositAddress ? null : prev));
+    setSwapStatus(null);
+    setSwapDetails(null);
+    setDepositTx(null);
+  };
+
   const applyPreset = (p: PresetKind, customAmt?: string) => {
     setPreset(p);
     setFromChain(p.defaultFromChain);
@@ -342,7 +354,7 @@ function RoutesInner() {
     return toks?.find((t) => t.symbol === sym && t.blockchain === ck);
   };
 
-  // Auto-align asset selection when switching chain so user never lands on an unsupported pair when another valid asset exists
+  // Auto-align asset selection when switching chain so user always lands on a valid pair
   useEffect(() => {
     if (!toks) return;
     if (!findTok(fromAsset, fromChain)) {
@@ -355,6 +367,45 @@ function RoutesInner() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toks, fromChain, toChain, preset.id]);
+
+  const origin = findTok(fromAsset, fromChain);
+  const destTok = findTok(toAsset, toChain);
+
+  // Auto-fetch a read-only market quote whenever pair/amount changes and no live depositAddress is active yet!
+  useEffect(() => {
+    if (!origin || !destTok || !(parseFloat(amt) > 0)) return;
+    if (execMode && q?.depositAddress) return;
+    const timer = setTimeout(async () => {
+      const id = ++reqId.current;
+      setState("loading");
+      try {
+        const res = await fetch("/api/routes/quote", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            originAsset: origin.assetId,
+            destinationAsset: destTok.assetId,
+            amount: amt,
+            recipient,
+            refundTo,
+            slippageBps: 50,
+            execute: false, // read-only auto-preview; dedicated deposit address issued only when clicking CTA in Live mode
+          }),
+        });
+        const j: Quote = await res.json();
+        if (id !== reqId.current) return;
+        setQ(j);
+        setState(j.status === "ok" ? "ok" : "unavailable");
+      } catch (e) {
+        if (id === reqId.current) {
+          setQ({ status: "unavailable", reason: String(e) });
+          setState("unavailable");
+        }
+      }
+    }, 320);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [origin?.assetId, destTok?.assetId, amt]);
 
   // Poll live 1Click status when an executable quote has issued a depositAddress
   useEffect(() => {
@@ -387,8 +438,6 @@ function RoutesInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q?.depositAddress, q?.dry]);
 
-  const origin = findTok(fromAsset, fromChain);
-  const destTok = findTok(toAsset, toChain);
   const expired = q?.deadline ? new Date(q.deadline).getTime() < now : false;
 
   const originEvmChain = CHAIN_META[fromChain]?.evmChain;
@@ -412,7 +461,7 @@ function RoutesInner() {
   const overOriginBal =
     execMode && !!originEvmChain && !!originErc20 && isConnected && originBal !== null && (parseFloat(amt) || 0) > originBal + 1e-6;
 
-  async function getQuote() {
+  async function requestQuote(forceLive = execMode) {
     if (!origin || !destTok) return;
     const id = ++reqId.current;
     setState("loading");
@@ -430,14 +479,14 @@ function RoutesInner() {
           recipient,
           refundTo,
           slippageBps: 50,
-          execute: execMode,
+          execute: forceLive,
         }),
       });
       const j: Quote = await res.json();
       if (id !== reqId.current) return;
       setQ(j);
       setState(j.status === "ok" ? "ok" : "unavailable");
-      if (j.status === "ok" && execMode && j.depositAddress) {
+      if (j.status === "ok" && forceLive && j.depositAddress) {
         setSwapStatus("PENDING_DEPOSIT");
       }
     } catch (e) {
@@ -561,13 +610,16 @@ function RoutesInner() {
 
   const expiryRemSec = q?.deadline ? Math.max(0, Math.round((new Date(q.deadline).getTime() - now) / 1000)) : 0;
 
-  // LengoMarket live balances on Robinhood Chain for Step-2 Guided Actions (Updates 1 & 4)
+  // LengoMarket live metrics for Update 1 (Collateral) & Update 4 (Repay)
   const rhCollWallet = lengo.data?.collBal ?? 0;
   const rhUsdgWallet = lengo.data?.debtBal ?? 0;
   const rhPosColl = lengo.data?.coll ?? 0;
   const rhPosDebt = lengo.data?.debt ?? 0;
-  const settledOutAmt = Number(swapDetails?.amountOutFormatted || q?.amountOut || "0");
-  const depositReadyAmt = Math.min(rhCollWallet, settledOutAmt > 0 ? settledOutAmt : rhCollWallet);
+  const rhCollPrice = lengo.pool?.price ?? targetMarketSpec.fallbackPrice;
+  const estOutNum = Number(swapDetails?.amountOutFormatted || q?.amountOut || "0");
+  const depositReadyAmt = Math.min(rhCollWallet, estOutNum > 0 ? estOutNum : rhCollWallet);
+  const estNewCollUsd = (rhPosColl + (estOutNum > 0 ? estOutNum : 0)) * rhCollPrice;
+  const estBorrowCapUsd = Math.max(0, estNewCollUsd * targetMarketSpec.maxLtv - rhPosDebt);
 
   return (
     <>
@@ -575,16 +627,16 @@ function RoutesInner() {
         <div>
           <h1>Routes</h1>
           <p>
-            Cross-chain collateral inflow, multi-chain stablecoin payouts, and any-chain debt repayment via NEAR Intents 1Click.
+            Cross-chain collateral inflow, 14+ chain multi-stablecoin payouts, and any-chain debt repayment via NEAR Intents 1Click.
           </p>
         </div>
-        <span>{execMode ? "Live Mode · dedicated deposit address" : "Preview Mode · no funds moved"}</span>
+        <span>{execMode ? "Live Mode · dedicated deposit address" : "Preview Mode · auto-quoting live market rates"}</span>
       </div>
 
       <div className={`${s.frame} bevel`}>
         <aside className={s.list}>
           <div className={s.listHead}><span>Route flows</span><b>{PRESETS.length}</b></div>
-          <div style={{ height: 14 }} />
+          <div style={{ height: 12 }} />
           {PRESETS.map((x) => (
             <button key={x.id} className={`${s.mkt} ${preset.id === x.id ? s.mktOn : ""}`} onClick={() => applyPreset(x)}>
               <Pair a={x.defaultFromAsset} b={x.defaultToAsset} />
@@ -592,8 +644,8 @@ function RoutesInner() {
             </button>
           ))}
           <div className={r.journey}>
-            <span className={s.k}>{preset.label} flow</span>
-            <em>Preview &amp; Live Settlement</em>
+            <span className={s.k}>{preset.label}</span>
+            <em>{preset.tag}</em>
             {preset.steps.map((t, i) => <div key={t}><i>{i + 1}</i>{t}</div>)}
           </div>
         </aside>
@@ -601,24 +653,29 @@ function RoutesInner() {
         <section key={preset.id} className={`${s.center} pane-swap`}>
           <div className={s.mHead}>
             <Pair a={fromAsset} b={toAsset} size={42} />
-            <div><h2>{fromAsset} → {toAsset}</h2><p>{fromChain} → {toChain}</p></div>
+            <div>
+              <h2>{fromAsset} → {toAsset}{preset.id === "collateral" ? ` → LengoMarket` : preset.id === "repay" ? ` → Repay Debt` : ""}</h2>
+              <p>{CHAIN_META[fromChain]?.short ?? fromChain} → {CHAIN_META[toChain]?.short ?? toChain} · {preset.tag}</p>
+            </div>
             <div className={s.badges}>
               <span className={execMode ? s.active : ""}>{execMode ? "Live" : "Preview"}</span>
-              <span>{execMode ? "Executable" : "Read-only"}</span>
+              <span>{q?.depositAddress ? "Address Issued" : execMode ? "Executable" : "Auto-Quote"}</span>
             </div>
           </div>
+
           <div className={s.stats} style={{ gridTemplateColumns: "repeat(5,1fr)" }}>
             <div><span>Provider</span><b>1Click</b></div>
-            <div><span>Origin</span><b>{fromAsset} · {fromChain.split(" ")[0]}</b></div>
-            <div><span>Destination</span><b>{toAsset} · {toChain.split(" ")[0]}</b></div>
+            <div><span>Origin</span><b>{fromAsset} · {CHAIN_META[fromChain]?.short ?? fromChain}</b></div>
+            <div><span>Destination</span><b>{toAsset} · {CHAIN_META[toChain]?.short ?? toChain}</b></div>
             <div><span>Slippage</span><b>0.50%</b></div>
             <div>
               <span>Status</span>
               <b className={state === "unavailable" || expired || swapStatus === "FAILED" ? s.warn : state === "ok" ? s.ok : ""}>
-                {state === "loading" ? <span className="skel skel-sm" /> : swapStatus ? fmtSwapStatus(swapStatus) : state === "idle" ? "Not requested" : state === "ok" ? (expired ? "Expired" : "Quote valid") : "Unavailable"}
+                {state === "loading" ? <span className="skel skel-sm" /> : swapStatus ? fmtSwapStatus(swapStatus) : state === "ok" ? (expired ? "Expired" : q?.depositAddress ? "Ready to deposit" : "Live quote ready") : state === "unavailable" ? "Unavailable" : "Ready"}
               </b>
             </div>
           </div>
+
           <div className={s.strip}>
             <span>
               {toks
@@ -628,28 +685,220 @@ function RoutesInner() {
                   : <span className="skel skel-md" />}
             </span>
             <span>{!toks && !discErr ? <span className="skel skel-md" /> : origin ? origin.assetId.slice(0, 34) + "…" : "pair not in catalog"}</span>
-            <span className={execMode && q?.depositAddress ? s.ok : s.amberT}>
-              {execMode && q?.depositAddress ? `Deposit ${q.depositAddress.slice(0, 8)}…${q.depositAddress.slice(-6)}` : "Preview mode (no deposit address)"}
+            <span className={q?.depositAddress ? s.ok : execMode ? s.amberT : ""}>
+              {q?.depositAddress
+                ? `Deposit ${q.depositAddress.slice(0, 8)}…${q.depositAddress.slice(-6)}`
+                : execMode
+                  ? "Live Mode · enter recipient & click Get Live Deposit Address"
+                  : "Preview Mode · click any chain or token below"}
             </span>
           </div>
 
           <div className={s.viewBody}>
+            {/* Interactive Visual Chain & Token Selector Matrix */}
+            <div className={r.pickBar}>
+              {preset.originChains.length > 1 && (
+                <div className={r.pickRow}>
+                  <span className={r.pickLbl}>Origin Chain</span>
+                  <div className={r.pills}>
+                    {preset.originChains.map((c) => {
+                      const hasAny = !toks || preset.originAssets.some((sym) => !!findTok(sym, c));
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          disabled={!hasAny}
+                          className={`${r.pill} ${fromChain === c ? r.pillOn : ""}`}
+                          onClick={() => {
+                            setFromChain(c);
+                            resetQuoteOnly();
+                          }}
+                        >
+                          <i className={r.pillDot} />
+                          {CHAIN_META[c]?.short ?? c}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {preset.originAssets.length > 1 && (
+                <div className={r.pickRow}>
+                  <span className={r.pickLbl}>Origin Asset</span>
+                  <div className={r.pills}>
+                    {preset.originAssets.map((sym) => {
+                      const ok = !toks || !!findTok(sym, fromChain);
+                      return (
+                        <button
+                          key={sym}
+                          type="button"
+                          disabled={!ok}
+                          className={`${r.pill} ${fromAsset === sym ? r.pillOn : ""}`}
+                          onClick={() => {
+                            setFromAsset(sym);
+                            resetQuoteOnly();
+                          }}
+                        >
+                          <TokenIcon sym={sym} size={15} />
+                          {sym}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {preset.destChains.length > 1 && (
+                <div className={r.pickRow}>
+                  <span className={r.pickLbl}>Target Chain</span>
+                  <div className={r.pills}>
+                    {preset.destChains.map((d) => {
+                      const hasAny = !toks || preset.destAssets.some((sym) => !!findTok(sym, d));
+                      return (
+                        <button
+                          key={d}
+                          type="button"
+                          disabled={!hasAny}
+                          className={`${r.pill} ${toChain === d ? r.pillOn : ""}`}
+                          onClick={() => {
+                            setToChain(d);
+                            resetQuoteOnly();
+                          }}
+                        >
+                          <i className={r.pillDot} />
+                          {CHAIN_META[d]?.short ?? d}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {preset.destAssets.length > 1 && (
+                <div className={r.pickRow}>
+                  <span className={r.pickLbl}>{preset.id === "collateral" ? "RHC Collateral" : "Stablecoin Out"}</span>
+                  <div className={r.pills}>
+                    {preset.destAssets.map((sym) => {
+                      const ok = !toks || !!findTok(sym, toChain);
+                      return (
+                        <button
+                          key={sym}
+                          type="button"
+                          disabled={!ok}
+                          className={`${r.pill} ${toAsset === sym ? r.pillOn : ""}`}
+                          onClick={() => {
+                            setToAsset(sym);
+                            resetQuoteOnly();
+                          }}
+                        >
+                          <TokenIcon sym={sym} size={15} />
+                          {sym}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Visual 3-Node or 4-Node Pipeline (with LengoMarket Final Stage on Collateral & Repay!) */}
             <div className={r.route}>
-              <div className={r.node}><span>From</span><b>{amt || "0"} {fromAsset}</b><small>{fromChain}</small></div>
-              <div className={r.wire}><i /><em>NEAR Intents · 1Click</em></div>
-              <div className={r.node}><span>Solver network</span><b>{execMode ? (swapStatus ? fmtSwapStatus(swapStatus) : "Live Intent") : "Preview"}</b><small>{execMode ? "live settlement" : "preview · no funds moved"}</small></div>
+              <div className={r.node}>
+                <span>01 · Send ({CHAIN_META[fromChain]?.short ?? fromChain})</span>
+                <b>{amt || "0"} {fromAsset}</b>
+                <small>{fromChain}</small>
+              </div>
+              <div className={r.wire}><i /><em>1Click</em></div>
+              <div className={r.node}>
+                <span>02 · Solver Intent</span>
+                <b>{swapStatus ? fmtSwapStatus(swapStatus) : execMode ? "Live Intent" : "Auto-Quote"}</b>
+                <small>{execMode ? "real settlement" : "live market rate"}</small>
+              </div>
               <div className={r.wire}><i /><em>settle</em></div>
               <div className={`${r.node} ${r.dst}`}>
-                <span>To</span>
+                <span>03 · Receive ({CHAIN_META[toChain]?.short ?? toChain})</span>
                 <b>{state === "loading" ? <span className="skel skel-md" /> : state === "ok" ? `${q?.amountOut} ${toAsset}` : `— ${toAsset}`}</b>
-                <small>{toChain}</small>
+                <small>{state === "ok" && q?.amountOutUsd ? `≈ $${Number(q.amountOutUsd).toFixed(2)} USD` : toChain}</small>
               </div>
+              {(preset.id === "collateral" || preset.id === "repay") && (
+                <>
+                  <div className={r.wire}><i /><em>onchain</em></div>
+                  <div className={`${r.node} ${r.mktNode}`}>
+                    <span>04 · LengoMarket (4663)</span>
+                    <b>
+                      {preset.id === "collateral"
+                        ? `Lock ${toAsset}`
+                        : rhPosDebt > 0
+                          ? `Repay $${rhPosDebt.toFixed(2)}`
+                          : "Clear Debt"}
+                    </b>
+                    <small>
+                      {preset.id === "collateral"
+                        ? `${Math.round(targetMarketSpec.maxLtv * 100)}% Max LTV · ${targetMarketSpec.pair}`
+                        : "Unlock WETH collateral"}
+                    </small>
+                  </div>
+                </>
+              )}
             </div>
+
+            {/* Live Protocol Impact Strip for Update 1 (Collateral) & Update 4 (Repay) */}
+            {preset.id === "collateral" && (
+              <div className={r.impact}>
+                <div>
+                  <span>Target Market</span>
+                  <b>{targetMarketSpec.pair}</b>
+                  <small>Max LTV {Math.round(targetMarketSpec.maxLtv * 100)}% · LT {Math.round(targetMarketSpec.liqThreshold * 100)}%</small>
+                </div>
+                <div>
+                  <span>Est. {toAsset} Received</span>
+                  <b className={s.ok}>{state === "loading" ? <span className="skel skel-sm" /> : state === "ok" ? `${Number(q?.amountOut || 0).toFixed(4)} ${toAsset}` : "—"}</b>
+                  <small>landed on Robinhood Chain</small>
+                </div>
+                <div>
+                  <span>New Borrow Capacity</span>
+                  <b className={s.ok}>{state === "loading" ? <span className="skel skel-sm" /> : `$${estBorrowCapUsd.toFixed(2)} USDG`}</b>
+                  <small>after locking in LengoMarket</small>
+                </div>
+                <div>
+                  <span>Proof Structure</span>
+                  <b>2 Onchain Txs</b>
+                  <small>Origin send + LengoMarket lock</small>
+                </div>
+              </div>
+            )}
+
+            {preset.id === "repay" && (
+              <div className={r.impact}>
+                <div>
+                  <span>Current RHC Debt</span>
+                  <b className={rhPosDebt > 0 ? s.warn : s.ok}>${rhPosDebt.toFixed(4)} USDG</b>
+                  <small>{isConnected ? "accrued on LengoMarket" : "connect wallet to read"}</small>
+                </div>
+                <div>
+                  <span>Locked Collateral</span>
+                  <b>{rhPosColl.toFixed(4)} WETH</b>
+                  <small>≈ ${(rhPosColl * rhCollPrice).toFixed(2)} USD</small>
+                </div>
+                <div>
+                  <span>Est. USDG Delivered</span>
+                  <b className={s.ok}>{state === "loading" ? <span className="skel skel-sm" /> : state === "ok" ? `${Number(q?.amountOut || 0).toFixed(2)} USDG` : "—"}</b>
+                  <small>{state === "ok" && Number(q?.amountOut || 0) >= rhPosDebt ? "covers 100% of debt ✓" : "partial / custom repay"}</small>
+                </div>
+                <div>
+                  <span>Post-Repay Status</span>
+                  <b className={s.ok}>Withdraw Ready</b>
+                  <small>0 debt · full exit unlocked</small>
+                </div>
+              </div>
+            )}
+
             <p className={r.note}>{preset.note}</p>
 
             {/* Step 1: Live 1Click Deposit & Proof Box */}
             {execMode && state === "ok" && q?.depositAddress && (
-              <div className={`${s.sim} bevel`} style={{ marginTop: 18, padding: 14, border: "1px solid var(--lime)" }}>
+              <div className={`${s.sim} bevel`} style={{ marginTop: 14, padding: 14, border: "1px solid var(--lime)" }}>
                 <div style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
                     <span style={{ fontSize: 10, letterSpacing: "0.08em", color: "var(--tx3)" }}>
@@ -680,13 +929,12 @@ function RoutesInner() {
                     </a>
                     {canSendDirect && !depositTx && (
                       <button type="button" className="btn btn-primary" disabled={sending} onClick={sendFromEvmWallet}>
-                        {sending ? "Sending…" : `Send ${amt} ${fromAsset} from ${fromChain.split(" ")[0]} Wallet →`}
+                        {sending ? "Sending…" : `Send ${amt} ${fromAsset} from ${CHAIN_META[fromChain]?.short ?? fromChain} Wallet →`}
                       </button>
                     )}
                   </div>
                 </div>
 
-                {/* Optional Origin Tx Hash submission when sending from non-EVM wallet (Phantom / Bitcoin / TronLink / Tonkeeper) */}
                 {!originEvmChain && !primaryOriginHash && (
                   <div style={{ gridColumn: "1 / -1", display: "flex", gap: 8, marginTop: 8 }}>
                     <input
@@ -705,7 +953,7 @@ function RoutesInner() {
                   <div style={{ gridColumn: "1 / -1", display: "flex", flexWrap: "wrap", gap: 14, fontSize: 11, fontFamily: "var(--mono)", color: "var(--tx2)", marginTop: 8, paddingTop: 8, borderTop: "1px dashed var(--line2)" }}>
                     {primaryOriginHash && primaryOriginUrl && (
                       <span>
-                        Origin {fromChain.split(" ")[0]} tx:{" "}
+                        Origin {CHAIN_META[fromChain]?.short ?? fromChain} tx:{" "}
                         <a href={primaryOriginUrl} target="_blank" rel="noreferrer">
                           {primaryOriginHash.slice(0, 8)}…{primaryOriginHash.slice(-6)} ↗
                         </a>
@@ -716,7 +964,7 @@ function RoutesInner() {
                     </span>
                     {destTxs.map((tx) => (
                       <span key={tx.hash}>
-                        {toChain.split(" ")[0]} {toAsset} tx:{" "}
+                        {CHAIN_META[toChain]?.short ?? toChain} {toAsset} tx:{" "}
                         <a href={tx.url} target="_blank" rel="noreferrer">
                           {tx.hash.slice(0, 8)}…{tx.hash.slice(-6)} ↗
                         </a>
@@ -737,7 +985,7 @@ function RoutesInner() {
 
             {/* Update 1: Step 2 Guided Action — Lock Routed Asset as Collateral in LengoMarket */}
             {preset.id === "collateral" && isConnected && (swapStatus === "SUCCESS" || rhCollWallet > 0) && (
-              <div className={`${s.sim} bevel`} style={{ marginTop: 14, padding: 14, border: "1px solid var(--line2)", background: "var(--bg)" }}>
+              <div className={`${s.sim} bevel`} style={{ marginTop: 12, padding: 14, border: "1px solid var(--line2)", background: "var(--bg)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <div>
                     <span style={{ display: "block", fontSize: 10, letterSpacing: "0.08em", color: "var(--lime)" }}>
@@ -769,7 +1017,7 @@ function RoutesInner() {
 
             {/* Update 4: Step 2 & 3 Guided Action — Repay USDG Debt & Withdraw Collateral on LengoMarket */}
             {preset.id === "repay" && isConnected && (rhPosDebt > 0 || rhPosColl > 0) && (
-              <div className={`${s.sim} bevel`} style={{ marginTop: 14, padding: 14, border: "1px solid var(--line2)", background: "var(--bg)" }}>
+              <div className={`${s.sim} bevel`} style={{ marginTop: 12, padding: 14, border: "1px solid var(--line2)", background: "var(--bg)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <div>
                     <span style={{ display: "block", fontSize: 10, letterSpacing: "0.08em", color: "var(--lime)" }}>
@@ -813,7 +1061,7 @@ function RoutesInner() {
               </div>
             )}
 
-            <div className={s.kv} style={{ marginTop: 22 }}>
+            <div className={s.kv} style={{ marginTop: 16 }}>
               <div><span>Amount out</span><b>{state === "loading" ? <span className="skel skel-md" /> : state === "ok" ? `${q?.amountOut} ${toAsset}` : "—"}</b><small>{state === "loading" ? <span className="skel skel-xs" /> : state === "ok" ? `≈ $${Number(q?.amountOutUsd).toFixed(2)}` : "after quote"}</small></div>
               <div><span>Minimum received</span><b>{state === "loading" ? <span className="skel skel-md" /> : state === "ok" ? `${fmtOut(q?.minAmountOut)} ${toAsset}` : "—"}</b><small>0.5% slippage bound</small></div>
               <div><span>Known fees</span><b>{state === "loading" ? <span className="skel skel-sm" /> : state === "ok" ? `${(q?.fees?.appFees ?? []).reduce((a, f) => a + f.fee, 0) / 100}% app` : "—"}</b><small>{state === "loading" ? <span className="skel skel-xs" /> : state === "ok" ? `withdraw ${fmtOut(q?.fees?.withdrawFee)} ${toAsset}` : "provider + app"}</small></div>
@@ -827,15 +1075,35 @@ function RoutesInner() {
 
         <aside className={s.action}>
           <div className={s.mode}>
-            <button className={!execMode ? s.mOn : ""} onClick={() => { setExecMode(false); setState("idle"); setQ(null); setSwapStatus(null); setSwapDetails(null); }}>⇄ Preview</button>
-            <button className={execMode ? s.mOn : ""} onClick={() => { setExecMode(true); setState("idle"); setQ(null); setSwapStatus(null); setSwapDetails(null); }}>◈ Live</button>
+            <button
+              className={!execMode ? s.mOn : ""}
+              onClick={() => {
+                setExecMode(false);
+                setSwapStatus(null);
+                setSwapDetails(null);
+                setDepositTx(null);
+                setQ((prev) => (prev ? { ...prev, depositAddress: undefined, dry: true } : null));
+              }}
+            >
+              ⇄ Preview
+            </button>
+            <button
+              className={execMode ? s.mOn : ""}
+              onClick={() => {
+                setExecMode(true);
+                setSwapStatus(null);
+                setSwapDetails(null);
+              }}
+            >
+              ◈ Live
+            </button>
           </div>
-          <div key={`${preset.id}:${execMode}`} className={`${s.aBody} pane-swap`}>
-            <span className={s.k}>{execMode ? "Live execution · real funds" : "Preview · no funds moved"}</span>
-            <h3>{preset.label}</h3>
+          <div key={`${preset.id}:${execMode}`} className={`${s.aBody} pane-swap`} style={{ padding: "18px 20px", gap: 11 }}>
+            <span className={s.k}>{execMode ? "Live execution · real funds" : "Preview · auto-quoted market rate"}</span>
+            <h3 style={{ fontSize: 23 }}>{preset.label}</h3>
 
-            {/* Origin Field with Dynamic Chain + Asset Selector */}
-            <div className={s.field}>
+            {/* Origin Field */}
+            <div className={s.field} style={{ padding: "12px 14px" }}>
               <div className={s.fTop}>
                 <span>
                   You send ·{" "}
@@ -844,18 +1112,17 @@ function RoutesInner() {
                       value={fromChain}
                       onChange={(e) => {
                         setFromChain(e.target.value);
-                        setState("idle");
-                        setQ(null);
+                        resetQuoteOnly();
                       }}
                       aria-label="Origin chain"
                       className={r.sel}
                     >
                       {preset.originChains.map((c) => (
-                        <option key={c} value={c}>{c}</option>
+                        <option key={c} value={c}>{CHAIN_META[c]?.short ?? c}</option>
                       ))}
                     </select>
                   ) : (
-                    fromChain
+                    CHAIN_META[fromChain]?.short ?? fromChain
                   )}
                 </span>
                 <span>
@@ -865,31 +1132,31 @@ function RoutesInner() {
                       className={s.inlineBtn}
                       onClick={() => {
                         setAmt((rhPosDebt * 1.02 + 0.25).toFixed(2));
-                        setState("idle");
-                        setQ(null);
+                        resetQuoteOnly();
                       }}
                     >
                       Debt ${rhPosDebt.toFixed(2)} + fee
                     </button>
+                  ) : evmBalQuery.isLoading && isConnected ? (
+                    <span className="skel skel-xs" />
                   ) : originBal !== null && isConnected ? (
                     `Bal ${originBal.toFixed(originDec === 6 ? 2 : 4)} ${fromAsset}`
                   ) : execMode ? (
                     "Exact input"
                   ) : (
-                    "Hypothetical"
+                    "Auto-quote"
                   )}
                 </span>
               </div>
-              <div className={s.fRow}>
+              <div className={s.fRow} style={{ marginTop: 8 }}>
                 <input
                   inputMode="decimal"
                   value={amt}
                   aria-label="Amount in"
+                  style={{ fontSize: 23 }}
                   onChange={(e) => {
                     setAmt(e.target.value.replace(/[^0-9.]/g, ""));
-                    setState("idle");
-                    setQ(null);
-                    reqId.current++;
+                    resetQuoteOnly();
                   }}
                 />
                 {originBal !== null && isConnected && originBal > 0 && (
@@ -898,9 +1165,7 @@ function RoutesInner() {
                     onClick={() => {
                       const f = 10 ** Math.min(originDec, 6);
                       setAmt(String(Math.floor((originBal + 1e-12) * f) / f));
-                      setState("idle");
-                      setQ(null);
-                      reqId.current++;
+                      resetQuoteOnly();
                     }}
                   >
                     Max
@@ -911,12 +1176,11 @@ function RoutesInner() {
                     value={fromAsset}
                     onChange={(e) => {
                       setFromAsset(e.target.value);
-                      setState("idle");
-                      setQ(null);
+                      resetQuoteOnly();
                     }}
                     aria-label="Origin token"
                     className={r.sel}
-                    style={{ padding: "8px 10px", fontSize: 12 }}
+                    style={{ padding: "7px 9px", fontSize: 12 }}
                   >
                     {preset.originAssets.map((sym) => {
                       const ok = !toks || !!findTok(sym, fromChain);
@@ -935,17 +1199,16 @@ function RoutesInner() {
 
             <div className={r.swap}>↓</div>
 
-            {/* Destination Field with Dynamic Chain + Stablecoin/Asset Selector */}
-            <div className={s.field}>
+            {/* Destination Field */}
+            <div className={s.field} style={{ padding: "12px 14px" }}>
               <div className={s.fTop}>
-                <span>You receive ({execMode ? "live" : "preview"})</span>
+                <span>You receive ({execMode ? "live" : "quote"})</span>
                 {preset.destChains.length > 1 ? (
                   <select
                     value={toChain}
                     onChange={(e) => {
                       setToChain(e.target.value);
-                      setState("idle");
-                      setQ(null);
+                      resetQuoteOnly();
                     }}
                     aria-label="Destination chain"
                     className={r.sel}
@@ -954,32 +1217,31 @@ function RoutesInner() {
                       const hasAny = !toks || preset.destAssets.some((sym) => !!findTok(sym, d));
                       return (
                         <option key={d} value={d} disabled={!hasAny}>
-                          {d}{!hasAny ? " · not in catalog" : ""}
+                          {d}{!hasAny ? " · n/a" : ""}
                         </option>
                       );
                     })}
                   </select>
                 ) : (
-                  <span>{toChain}</span>
+                  <span>{CHAIN_META[toChain]?.short ?? toChain}</span>
                 )}
               </div>
-              <div className={s.fRow}>
+              <div className={s.fRow} style={{ marginTop: 8 }}>
                 {state === "loading" ? (
-                  <div style={{ flex: 1, padding: "6px 0" }}><span className="skel skel-lg" /></div>
+                  <div style={{ flex: 1, padding: "4px 0" }}><span className="skel skel-lg" /></div>
                 ) : (
-                  <input value={state === "ok" ? q?.amountOut ?? "—" : "—"} readOnly aria-label="Amount out" />
+                  <input value={state === "ok" ? q?.amountOut ?? "—" : "—"} readOnly aria-label="Amount out" style={{ fontSize: 23 }} />
                 )}
                 {preset.destAssets.length > 1 ? (
                   <select
                     value={toAsset}
                     onChange={(e) => {
                       setToAsset(e.target.value);
-                      setState("idle");
-                      setQ(null);
+                      resetQuoteOnly();
                     }}
                     aria-label="Destination token"
                     className={r.sel}
-                    style={{ padding: "8px 10px", fontSize: 12 }}
+                    style={{ padding: "7px 9px", fontSize: 12 }}
                   >
                     {preset.destAssets.map((sym) => {
                       const ok = !toks || !!findTok(sym, toChain);
@@ -996,47 +1258,44 @@ function RoutesInner() {
               </div>
             </div>
 
-            <label className={s.field}>
-              <div className={s.fTop}><span>Recipient · {toChain}</span><span>{execMode ? "required (live)" : "optional in preview"}</span></div>
+            <label className={s.field} style={{ padding: "11px 14px" }}>
+              <div className={s.fTop}><span>Recipient · {CHAIN_META[toChain]?.short ?? toChain}</span><span>{execMode ? "required (live)" : "optional"}</span></div>
               <input className={r.addr} placeholder={execMode ? `Your ${toChain} address` : `Optional (${toChain} preview)`} value={recipient} onChange={(e) => setRecipient(e.target.value)} />
             </label>
-            <label className={s.field}>
-              <div className={s.fTop}><span>Refund · {fromChain}</span><span>{execMode ? "required (live)" : "optional in preview"}</span></div>
+            <label className={s.field} style={{ padding: "11px 14px" }}>
+              <div className={s.fTop}><span>Refund · {CHAIN_META[fromChain]?.short ?? fromChain}</span><span>{execMode ? "required (live)" : "optional"}</span></div>
               <input className={r.addr} placeholder={execMode ? `Your ${fromChain} address` : `Optional (${fromChain} preview)`} value={refundTo} onChange={(e) => setRefundTo(e.target.value)} />
             </label>
-            <div className={s.sim}>
+            <div className={s.sim} style={{ padding: "2px 0", gap: 6 }}>
               <div><span>Slippage limit</span><b>0.5%</b></div>
               <div><span>Mode</span><b>{execMode ? "Live" : "Preview"}</b></div>
             </div>
             {overOriginBal && originBal !== null && (
               <p className={`${s.note} ${s.warn}`}>
-                Input exceeds your {fromChain} balance ({originBal.toFixed(originDec === 6 ? 2 : 4)} {fromAsset}) — you can still request a deposit address or lower the amount.
+                Input exceeds your {CHAIN_META[fromChain]?.short ?? fromChain} balance ({originBal.toFixed(originDec === 6 ? 2 : 4)} {fromAsset}) — lower the amount to send directly from wallet.
               </p>
             )}
             {state === "unavailable" && <p className={`${s.note} ${s.warn}`}>{q?.reason ?? "Unavailable"}.</p>}
-            <button className={s.cta} disabled={state === "loading" || !parseFloat(amt) || !origin || !destTok} onClick={getQuote}>
+            <button className={s.cta} style={{ padding: 15 }} disabled={state === "loading" || !parseFloat(amt) || !origin || !destTok} onClick={() => requestQuote(execMode)}>
               {state === "loading"
                 ? "Requesting…"
-                : state === "ok"
-                  ? expired
-                    ? "Refresh quote"
+                : !toks
+                  ? "Loading catalog…"
+                  : !origin || !destTok
+                    ? `${fromAsset} → ${toAsset} not on ${toChain}`
                     : execMode
-                      ? "Refresh live quote"
-                      : "Requote"
-                  : !toks
-                    ? "Loading catalog…"
-                    : !origin || !destTok
-                      ? `${fromAsset} → ${toAsset} not on ${toChain}`
-                      : execMode
-                        ? "Get live deposit address"
-                        : "Preview quote"}
+                      ? q?.depositAddress
+                        ? expired
+                          ? "Refresh deposit address"
+                          : "Refresh live quote"
+                        : "Get live deposit address"
+                      : "Refresh quote"}
             </button>
-            <p className={s.note}>{execMode ? "Issues a dedicated 1Click deposit address & tracks live settlement" : "Market estimate · no deposit address issued"}</p>
+            <p className={s.note}>{execMode ? "Issues a dedicated 1Click deposit address & tracks live settlement" : "Auto-updates live market estimate · zero funds moved"}</p>
           </div>
         </aside>
       </div>
 
-      {/* Step Modal for Step-2 LengoMarket Deposit / Repay / Withdraw */}
       {lengoTx.steps && (
         <div className={s.modalWrap} role="dialog" aria-modal="true" aria-label="LengoMarket Transaction">
           <div className={`${s.modal} bevel`}>
