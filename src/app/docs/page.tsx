@@ -252,6 +252,30 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
                 </b>
               </div>
               <div>
+                <span>Seed Crypto Pool · cbBTC/USDG</span>
+                <b>
+                  <a href="https://robinhoodchain.blockscout.com/tx/0xdb808435bd3f9dac585e9658ba6c0cc331902b9e515f29a605e574de9853e0fa" target="_blank" rel="noreferrer">
+                    0xdb808435…e0fa ↗
+                  </a>
+                </b>
+              </div>
+              <div>
+                <span>Seed Crypto Pool · WBTC/USDG</span>
+                <b>
+                  <a href="https://robinhoodchain.blockscout.com/tx/0x5d55c1ad35e0986b3e7db7b0e648f037823b0eac714faa3376af039f7cc1b81f" target="_blank" rel="noreferrer">
+                    0x5d55c1ad…b81f ↗
+                  </a>
+                </b>
+              </div>
+              <div>
+                <span>Seed Stable Pool · USDe/USDG</span>
+                <b>
+                  <a href="https://robinhoodchain.blockscout.com/tx/0xb035a9c29b5ac2906007f2a05cf6822d3845de29e92e145d78d5f2db15748b63" target="_blank" rel="noreferrer">
+                    0xb035a9c2…8b63 ↗
+                  </a>
+                </b>
+              </div>
+              <div>
                 <span>Cross-Chain Repay All · USDG</span>
                 <b>
                   <a href="https://robinhoodchain.blockscout.com/tx/0x88a0e4bfdfa2b444d205b3f8b125afab714346d86a864451e5a36aa8e55844c8" target="_blank" rel="noreferrer">

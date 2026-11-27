@@ -5,19 +5,19 @@ import s from "./console.module.css";
 
 const assets = [
   { sym: "WETH", name: "WETH / USDG", st: "LIVE", note: "Crypto · 60% LTV", c: "#627eea" },
+  { sym: "cbBTC", name: "cbBTC / USDG", st: "LIVE", note: "Crypto · 65% LTV", c: "#f2a93b" },
+  { sym: "WBTC", name: "WBTC / USDG", st: "LIVE", note: "Crypto · 65% LTV", c: "#f2a93b" },
+  { sym: "USDe", name: "USDe / USDG", st: "LIVE", note: "Ethena · 80% LTV", c: "#8ab4f8" },
   { sym: "NVDA", name: "NVDA / USDG", st: "LIVE", note: "RH Stock · 24/7", c: "#76b900" },
   { sym: "TSLA", name: "TSLA / USDG", st: "LIVE", note: "RH Stock · 24/7", c: "#e82127" },
   { sym: "AAPL", name: "AAPL / USDG", st: "LIVE", note: "RH Stock · Mkt Hrs", c: "#d4d8dc" },
-  { sym: "cbBTC", name: "cbBTC / USDG", st: "DEPLOYED", note: "Crypto · 65% LTV", c: "#f2a93b" },
-  { sym: "WBTC", name: "WBTC / USDG", st: "DEPLOYED", note: "Crypto · 65% LTV", c: "#f2a93b" },
-  { sym: "USDe", name: "USDe / USDG", st: "DEPLOYED", note: "Ethena · 80% LTV", c: "#8ab4f8" },
   { sym: "USDG", name: "USDG → USDC", st: "LIVE", note: "1Click · 14+ Chains", c: "#7fe0b4" },
 ];
 
 export function MarketList() {
   return (
     <div className={`${s.panel} bevel`}>
-      <div className={s.head}><span>COLLATERAL &amp; ROUTES</span><span>4 SEEDED · 7 DEPLOYED</span></div>
+      <div className={s.head}><span>COLLATERAL &amp; ROUTES</span><span>7 MARKETS SEEDED · LIVE</span></div>
       {assets.map((a) => (
         <div key={a.name} className={s.asset}>
           <TokenIcon sym={a.sym} size={24} />
@@ -33,6 +33,9 @@ export function MarketList() {
 const EXPLORER_TX = "https://robinhoodchain.blockscout.com/tx/";
 
 const verifiedProofs = [
+  { k: "SEED·USDe",  b: "124,065,694", h: "0xb035…8b63", full: "0xb035a9c29b5ac2906007f2a05cf6822d3845de29e92e145d78d5f2db15748b63", amt: "0.01 USDG → USDe", tag: "TX ↗" },
+  { k: "SEED·WBTC",  b: "124,065,612", h: "0x5d55…b81f", full: "0x5d55c1ad35e0986b3e7db7b0e648f037823b0eac714faa3376af039f7cc1b81f", amt: "0.01 USDG → WBTC", tag: "TX ↗" },
+  { k: "SEED·cbBTC", b: "124,065,539", h: "0xdb80…e0fa", full: "0xdb808435bd3f9dac585e9658ba6c0cc331902b9e515f29a605e574de9853e0fa", amt: "0.01 USDG → cbBTC", tag: "TX ↗" },
   { k: "WITHDRAW", b: "123,542,369", h: "0x563d…b41f", full: "0x563d35bd6f8dbb8e56c1029e04dda04f164b2ba1bdd893e216d22195b6aab41f", amt: "0.0010 WETH EXIT", tag: "TX ↗" },
   { k: "REPAY",    b: "123,537,392", h: "0x88a0…44c8", full: "0x88a0e4bfdfa2b444d205b3f8b125afab714346d86a864451e5a36aa8e55844c8", amt: "0.005 USDG FULL", tag: "TX ↗" },
   { k: "PAYOUT",   b: "123,532,715", h: "0xa484…a7f0", full: "0xa484f312f7419d09f0d64fd85bcaff29394ed072d53603c510f2d523cf77a7f0", amt: "0.30 USDG → BASE", tag: "1CLICK ↗" },
