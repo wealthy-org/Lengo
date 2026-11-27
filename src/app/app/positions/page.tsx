@@ -219,8 +219,8 @@ export default function PositionsPage() {
                     </small>
                   </div>
                   <div className={p.tags}>
-                    <em style={{ color: "var(--lime)", borderColor: "rgba(201,242,122,.4)" }}>
-                      {r.isPoolLive ? "Live" : "Live · Open"}
+                    <em style={r.isPoolLive ? { color: "var(--lime)", borderColor: "rgba(201,242,122,.4)" } : undefined}>
+                      {r.isPoolLive ? "Live · Seeded" : "Deployed · Empty"}
                     </em>
                     <em className={r.stale ? s.warn : ""}>
                       {r.priceAt > 0

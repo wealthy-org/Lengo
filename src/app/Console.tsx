@@ -5,19 +5,19 @@ import s from "./console.module.css";
 
 const assets = [
   { sym: "WETH", name: "WETH / USDG", st: "LIVE", note: "Crypto · 60% LTV", c: "#627eea" },
-  { sym: "cbBTC", name: "cbBTC / USDG", st: "LIVE", note: "Crypto · 65% LTV", c: "#f2a93b" },
-  { sym: "WBTC", name: "WBTC / USDG", st: "LIVE", note: "Crypto · 65% LTV", c: "#f2a93b" },
-  { sym: "USDe", name: "USDe / USDG", st: "LIVE", note: "Ethena · 80% LTV", c: "#8ab4f8" },
   { sym: "NVDA", name: "NVDA / USDG", st: "LIVE", note: "RH Stock · 24/7", c: "#76b900" },
   { sym: "TSLA", name: "TSLA / USDG", st: "LIVE", note: "RH Stock · 24/7", c: "#e82127" },
-  { sym: "AAPL", name: "AAPL / USDG", st: "LIVE", note: "RH Stock · Equity", c: "#d4d8dc" },
+  { sym: "AAPL", name: "AAPL / USDG", st: "LIVE", note: "RH Stock · Mkt Hrs", c: "#d4d8dc" },
+  { sym: "cbBTC", name: "cbBTC / USDG", st: "DEPLOYED", note: "Crypto · 65% LTV", c: "#f2a93b" },
+  { sym: "WBTC", name: "WBTC / USDG", st: "DEPLOYED", note: "Crypto · 65% LTV", c: "#f2a93b" },
+  { sym: "USDe", name: "USDe / USDG", st: "DEPLOYED", note: "Ethena · 80% LTV", c: "#8ab4f8" },
   { sym: "USDG", name: "USDG → USDC", st: "LIVE", note: "1Click · 14+ Chains", c: "#7fe0b4" },
 ];
 
 export function MarketList() {
   return (
     <div className={`${s.panel} bevel`}>
-      <div className={s.head}><span>COLLATERAL &amp; ROUTES</span><span>{assets.length} LIVE</span></div>
+      <div className={s.head}><span>COLLATERAL &amp; ROUTES</span><span>4 SEEDED · 7 DEPLOYED</span></div>
       {assets.map((a) => (
         <div key={a.name} className={s.asset}>
           <TokenIcon sym={a.sym} size={24} />

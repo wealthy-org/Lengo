@@ -261,8 +261,10 @@ function MarketsInner() {
                 >
                   <Pair a={m.collSymbol} b={m.debtSymbol} />
                   <span><b>{m.pair}</b><small>{m.sub}</small></span>
-                  {isDeployedMkt ? (
+                  {isDeployedMkt && (m.isSeeded !== false || (active && pool.supplied > 0)) ? (
                     <em style={{ color: "var(--lime)", borderColor: "rgba(201,242,122,.4)" }}>Live</em>
+                  ) : isDeployedMkt ? (
+                    <em>Deployed</em>
                   ) : (
                     <em>Soon</em>
                   )}

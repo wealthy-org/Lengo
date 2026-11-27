@@ -12,6 +12,11 @@ export type MarketSpec = {
   collateral: Address;
   debtAsset: Address;
   chainlinkFeed?: Address;
+  feedLabel?: string;
+  collateralCapLabel?: string;
+  supplyCapLabel?: string;
+  uiMultiplier?: string;
+  isSeeded?: boolean;
   market?: Address;
   oracle?: Address;
   collDecimals: number;
@@ -39,6 +44,10 @@ export const MAINNET_MARKETS: MarketSpec[] = [
     collateral: "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
     debtAsset: USDG,
     chainlinkFeed: "0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9",
+    feedLabel: "ETH / USD",
+    collateralCapLabel: "25 WETH",
+    supplyCapLabel: "50,000 USDG",
+    isSeeded: true,
     market: a(process.env.NEXT_PUBLIC_LENGO_MAINNET_MARKET) ?? a(deployedMap.WETH),
     oracle: ORACLE,
     collDecimals: 18,
@@ -59,6 +68,10 @@ export const MAINNET_MARKETS: MarketSpec[] = [
     collateral: "0xCEC185eB182c47d1bA1EFc84e6959e18cd620Be4",
     debtAsset: USDG,
     chainlinkFeed: "0x0009cD492adf8167f9eEBf1293556A673530a21a",
+    feedLabel: "CBBTC / USD",
+    collateralCapLabel: "1 cbBTC",
+    supplyCapLabel: "50,000 USDG",
+    isSeeded: false,
     market: a(deployedMap.cbBTC),
     oracle: ORACLE,
     collDecimals: 8,
@@ -79,6 +92,10 @@ export const MAINNET_MARKETS: MarketSpec[] = [
     collateral: "0x6bac06600D220Ac5Ac281AD1f504D2Cf0F90F6e6",
     debtAsset: USDG,
     chainlinkFeed: "0x62107b0d3adA75fc1697fD342d99eed947a3aA5E",
+    feedLabel: "WBTC / USD",
+    collateralCapLabel: "1 WBTC",
+    supplyCapLabel: "50,000 USDG",
+    isSeeded: false,
     market: a(deployedMap.WBTC),
     oracle: ORACLE,
     collDecimals: 8,
@@ -99,6 +116,10 @@ export const MAINNET_MARKETS: MarketSpec[] = [
     collateral: "0x5d3a1Ff2b6BAb83b63cd9AD0787074081a52ef34",
     debtAsset: USDG,
     chainlinkFeed: "0xb9fB4e65744E4178894f7C61CF80E8a48A5f224a",
+    feedLabel: "USDE / USD",
+    collateralCapLabel: "50,000 USDe",
+    supplyCapLabel: "50,000 USDG",
+    isSeeded: false,
     market: a(deployedMap.USDe),
     oracle: ORACLE,
     collDecimals: 18,
@@ -119,6 +140,11 @@ export const MAINNET_MARKETS: MarketSpec[] = [
     collateral: "0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC",
     debtAsset: USDG,
     chainlinkFeed: "0x321A36e441DfBadA01Aa6f9884F14a344E133D1F",
+    feedLabel: "Robinhood NVDA (24/7)",
+    collateralCapLabel: "300 NVDA",
+    supplyCapLabel: "50,000 USDG",
+    uiMultiplier: "1.000775",
+    isSeeded: true,
     market: a(deployedMap.NVDA),
     oracle: ORACLE,
     collDecimals: 18,
@@ -139,6 +165,11 @@ export const MAINNET_MARKETS: MarketSpec[] = [
     collateral: "0x322F0929c4625eD5bAd873c95208D54E1c003b2d",
     debtAsset: USDG,
     chainlinkFeed: "0x39eDf5ef54150A30d2C4F1b982FbB8f93050BC37",
+    feedLabel: "Robinhood TSLA (24/7)",
+    collateralCapLabel: "150 TSLA",
+    supplyCapLabel: "50,000 USDG",
+    uiMultiplier: "1.000000",
+    isSeeded: true,
     market: a(deployedMap.TSLA),
     oracle: ORACLE,
     collDecimals: 18,
@@ -159,6 +190,11 @@ export const MAINNET_MARKETS: MarketSpec[] = [
     collateral: "0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9",
     debtAsset: USDG,
     chainlinkFeed: "0x6B22A786bAa607d76728168703a39Ea9C99f2cD0",
+    feedLabel: "Robinhood AAPL / USD (US market hours)",
+    collateralCapLabel: "150 AAPL",
+    supplyCapLabel: "50,000 USDG",
+    uiMultiplier: "1.001091",
+    isSeeded: true,
     market: a(deployedMap.AAPL),
     oracle: ORACLE,
     collDecimals: 18,
