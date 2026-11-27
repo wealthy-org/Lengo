@@ -14,10 +14,10 @@ import CopyCA from "./CopyCA";
 const tick = [["WETH/USDG","APR","8.00%"],["Max LTV","","60%"],["Liq. threshold","","75%"],["USDG → USDC","1Click","Live Payout"],["Oracle","Chainlink","ETH/USD"],["Chain","Robinhood","4663"],["Chart","Pyth Pro","Live 48h"],["Liq. bonus","","5%"]];
 const params = [["Max borrow LTV","60%"],["Liquidation threshold","75%"],["Eligible when","HF < 1"],["Liquidator bonus","5%"],["Close factor","50% per call"],["Borrow APR","8% fixed"],["TVL caps (beta)","25 WETH · 50k USDG"],["Oracle","Chainlink ETH/USD"]];
 const disclosure: [string, string, "live" | "preview" | "muted", string][] = [
-  ["Lending engine", "Isolated WETH / USDG market · Sourcify verified", "live", "External third-party security review"],
+  ["Lending engine", "Isolated WETH / USDG market · Sourcify verified", "live", "Independent security review by HEY Research Lab"],
   ["Collateral markets", "7 isolated Crypto & RWA Stock markets live onchain", "live", "Expand USDG liquidity depth across BTC & Equity pools"],
   ["Supply & borrow", "Public USDG lending · 8.0% fixed borrow APR", "live", "Dynamic utilization interest curve"],
-  ["Price oracle", "Chainlink ETH/USD feed · fully keeperless", "live", "Secondary oracle fallback guard"],
+  ["Price oracle", "Chainlink ETH/BTC/RWA feeds · Ownable2Step adapter", "live", "48h Timelock + multisig oracle ownership"],
   ["Cross-chain flows", "1Click Collateral, 14+ chain Payout & Any-Chain Repay", "live", "Single-signature atomic intent wrapper"],
   ["$LENGO utility token", "0xc256…7eef on RH 4663 · 0% 1Click routing fee tier (≥10k LENGO)", "live", "Staked LENGO borrow APR rebate & risk-param governance"],
   ["Native BTC & ZEC", "In research — not accepted on Mainnet yet", "muted", "Origin-chain lock, proof & redemption"],

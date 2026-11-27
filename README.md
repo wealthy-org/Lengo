@@ -16,11 +16,11 @@ Lengo lets you borrow `USDG` against `WETH` collateral on **Robinhood Chain Main
 | | Status |
 |---|---|
 | 7 Isolated lending markets (`WETH`, `cbBTC`, `WBTC`, `USDe`, `NVDA`, `TSLA`, `AAPL` / `USDG`) | ✅ Live on Robinhood Chain Mainnet (`4663`, capped beta) |
-| Keeperless oracle (`ChainlinkOracle` → 7 Chainlink feeds) | ✅ Live onchain (`0xAc892397986B84ff42894739F05fE884D1D4c6da`) |
+| ChainlinkOracle adapter (`ChainlinkOracle` → 7 Chainlink feeds + `$1.00` USDG peg) | ✅ Live onchain (`0xAc892397986B84ff42894739F05fE884D1D4c6da` · `Ownable2Step`) |
 | Cross-chain payout via NEAR Intents 1Click | ✅ Preview & Live settlement (`USDG` RH → `USDC` Solana/Base) |
 | Testnet sandbox (`tBTC / tUSDC`, chain `46630`) | ✅ Live for risk & liquidation testing |
 | Native BTC / ZEC collateral | 🔬 Research ([docs/M5-BTC-SPIKE.md](docs/M5-BTC-SPIKE.md)) |
-| External security audit | ⏳ Capped beta |
+| Security review | ✅ Independent security review by HEY Research Lab (not a formal audit · capped beta) |
 
 ## Deployed contracts: Robinhood Chain Mainnet (4663)
 

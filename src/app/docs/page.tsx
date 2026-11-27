@@ -123,9 +123,14 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
               ))}
             </div>
             <p>
-              Built with Solidity 0.8.24, Foundry, and pinned OpenZeppelin 5.1.0. Verified on Sourcify &amp; Blockscout.{" "}
-              <code>ChainlinkOracle</code> is keeperless in production — it reads Chainlink&apos;s official price feeds directly via <code>latestRoundData()</code> with round-completeness and heartbeat staleness checks, while <code>Ownable2Step</code> governs feed wiring (<code>setFeed</code> / <code>setFixedPeg</code> for the $1.00 USDG peg).{" "}
-              The <code>$LENGO</code> token (<a href={addrUrl(MAINNET_LENGO_TOKEN, "mainnet")} target="_blank" rel="noreferrer">{MAINNET_LENGO_TOKEN} ↗</a>) is queried live onchain across <code>/app</code>, <code>/app/positions</code>, and <code>/app/routes</code>: wallets holding ≥ 10,000 <code>LENGO</code> automatically unlock the <b>0% 1Click App Routing Fee tier</b>.
+              Built with Solidity 0.8.24, Foundry, and pinned OpenZeppelin 5.1.0. Verified (<code>exact_match</code> creation &amp; runtime bytecode) on Sourcify &amp; Blockscout, and covered by an <b>independent security review by HEY Research Lab</b> (note: an independent security review, not a formal audit).
+            </p>
+            <p>
+              <b>Oracle &amp; Guardian Architecture (M-1 / I-6 Disclosure):</b> Each <code>LengoMarket</code> holds an immutable reference to <code>ChainlinkOracle</code> (<a href={addrUrl(DEPLOYMENTS.mainnet.oracle ?? "0xAc892397986B84ff42894739F05fE884D1D4c6da", "mainnet")} target="_blank" rel="noreferrer">{DEPLOYMENTS.mainnet.oracle} ↗</a>), which reads Chainlink&apos;s official price feeds via <code>latestRoundData()</code> with round-completeness (<code>answer &gt; 0</code>, <code>updatedAt &gt; 0</code>, <code>answeredInRound &gt;= roundId</code>) and staleness checks.{" "}
+              <code>ChainlinkOracle</code> inherits OpenZeppelin <code>Ownable2Step</code>: its owner (currently the deployer/guardian address <code>0x9178…7681</code>, scheduled to transition to a ≥ 48-hour timelock + multisig) can call <code>setFeed(asset, feed, maxStaleness)</code> and <code>setFixedPeg(asset, price8Dec)</code> (used to peg <code>USDG</code> at $1.00). Until ownership is behind a timelock or renounced, the oracle owner has privileged ability to update feed addresses, staleness windows, or fixed pegs across markets sharing this adapter.
+            </p>
+            <p>
+              <b>$LENGO Utility Tier:</b> The <code>$LENGO</code> token (<a href={addrUrl(MAINNET_LENGO_TOKEN, "mainnet")} target="_blank" rel="noreferrer">{MAINNET_LENGO_TOKEN} ↗</a>) is queried live onchain across <code>/app</code>, <code>/app/positions</code>, and <code>/app/routes</code>: wallets holding ≥ 10,000 <code>LENGO</code> automatically unlock the <b>0% 1Click App Routing Fee tier</b>.
             </p>
             <h3 style={{ marginTop: 24, fontSize: 13, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--lime)" }}>
               First Loan Live Proofs — Mainnet 4663 (Completed)
@@ -287,12 +292,15 @@ Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pr
           </section>
 
           <section id="limits">
-            <h2>Safety &amp; current scope</h2>
+            <h2>Safety, risk disclosures &amp; current scope</h2>
             <ul>
-              <li><b>Capped Mainnet Beta</b>: Contracts are verified on Sourcify/Blockscout, covered by unit, fuzz, edge-case, and 128,000-call invariant suites, and currently undergoing an independent fork-based security review. TVL is bounded by per-market beta caps (e.g. 25 WETH / 50,000 USDG).</li>
-              <li><b>Non-custodial exit guarantee</b>: Even if the guardian pauses new deposits/borrows or if an oracle feed goes stale, <code>repay</code>, debt-free <code>withdrawCollateral</code>, and <code>withdrawSupply</code> remain permanently open.</li>
+              <li><b>Independent Security Review (Not a Formal Audit)</b>: All 7 deployed <code>LengoMarket</code> contracts and <code>ChainlinkOracle</code> are <code>exact_match</code> verified on Sourcify/Blockscout, tested against unit, fuzz, and 128,000-call stateful invariant suites, and have undergone an <b>independent security review by HEY Research Lab</b>. TVL is bounded by conservative per-market beta caps (e.g. 25 WETH / 50,000 USDG).</li>
+              <li><b>Non-custodial exit guarantee</b>: Even if the guardian pauses new deposits/borrows, <code>repay</code>, debt-free <code>withdrawCollateral</code>, and <code>withdrawSupply</code> remain permanently open. The guardian cannot move user funds, alter LTV/LT/APR parameters, or swap the market&apos;s oracle address.</li>
+              <li><b>Oracle staleness &amp; US market-hours feeds (L-2 / I-2 / I-8)</b>: <code>borrow</code>, <code>liquidate</code>, and <code>withdrawCollateral</code> (when debt &gt; 0) require a fresh oracle reading within the configured window. While <code>NVDA/USDG</code> and <code>TSLA/USDG</code> use 24/7 Chainlink equity feeds (90,000 s window), <code>AAPL/USDG</code> tracks regular US equity market hours (pausing updates over weekends/market holidays, during which new borrows and liquidations are gated by the 90,000 s freshness guard). Position Health (<code>/app/positions</code>) displays live oracle price age alongside every Health Factor.</li>
+              <li><b>Fixed APR &amp; pool liquidity utilization (I-5)</b>: Markets accrue interest at a fixed per-second RAY borrow rate without a variable utilization kink. If 100% of supplied <code>USDG</code> is actively borrowed (0 idle liquidity), lender <code>withdrawSupply</code> calls will revert with <code>InsufficientLiquidity()</code> until borrowers repay or additional <code>USDG</code> is supplied.</li>
+              <li><b>USDG $1.00 fixed peg &amp; stock token issuer controls (I-1 / I-4 / I-9)</b>: <code>USDG</code> is valued at a $1.00 fixed peg in <code>ChainlinkOracle</code>. Tokenized equities (<code>NVDA</code>, <code>TSLA</code>, <code>AAPL</code>) are issuer-upgradable ERC-20 proxies subject to issuer pause/compliance controls and corporate-action multipliers; Lengo never lists fee-on-transfer tokens.</li>
               <li><b>Native BTC / ZEC collateral</b>: Mainnet supports 7 isolated ERC-20 Crypto &amp; RWA Stock markets today; native non-EVM BTC &amp; ZEC origin-chain locking is in research.</li>
-              <li><b>Charts</b>: Multi-timeframe (<code>15m / 1h / 4h / 1d</code>) historical candles in the UI are powered by Pyth Pro, while all onchain LTV and liquidation checks strictly read Chainlink on Robinhood Chain.</li>
+              <li><b>Charts</b>: Multi-timeframe (<code>15m / 1h / 4h / 1d</code>) historical candles in the UI are powered by Pyth Pro, while all onchain LTV and liquidation checks strictly read <code>ChainlinkOracle</code> on Robinhood Chain.</li>
             </ul>
           </section>
 

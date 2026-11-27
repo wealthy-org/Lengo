@@ -11,6 +11,13 @@ const usd = (n: number, d = 2) =>
   "$" + n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 const hfTxt = (h: number) => (h === Infinity ? "No debt" : h.toFixed(2));
 const tone = (h: number) => (h === Infinity || h >= 1.3 ? s.ok : h >= 1.15 ? s.warn : s.bad);
+const fmtAge = (sec: number) => {
+  if (sec <= 0) return "live";
+  if (sec < 60) return `${sec}s ago`;
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h ${Math.floor((sec % 3600) / 60)}m ago`;
+  return `${Math.floor(sec / 86400)}d ${Math.floor((sec % 86400) / 3600)}h ago`;
+};
 
 type FilterTab = "All" | "My Positions" | "Crypto" | "RWA Stocks";
 
@@ -208,11 +215,17 @@ export default function PositionsPage() {
                     <h3>{r.spec.pair}</h3>
                     <small>
                       {r.spec.category} · Max LTV {Math.round(r.spec.maxLtv * 100)}% · LT {Math.round(r.spec.liqThreshold * 100)}% · {(r.spec.apr * 100).toFixed(1)}% APR
+                      {r.spec.id === "AAPL" ? " · US Market Hours Feed" : ""}
                     </small>
                   </div>
                   <div className={p.tags}>
                     <em style={{ color: "var(--lime)", borderColor: "rgba(201,242,122,.4)" }}>
                       {r.isPoolLive ? "Live" : "Live · Open"}
+                    </em>
+                    <em className={r.stale ? s.warn : ""}>
+                      {r.priceAt > 0
+                        ? `Oracle ${fmtAge(Math.max(0, Math.floor(Date.now() / 1000) - r.priceAt))} · ${r.stale ? "Stale" : "Fresh"}`
+                        : "Oracle Live"}
                     </em>
                     {hasPos && (
                       <em className={tone(simHf)}>
@@ -226,7 +239,10 @@ export default function PositionsPage() {
                   <div>
                     <span>Health Factor</span>
                     <b className={tone(simHf)}>{hfTxt(simHf)}</b>
-                    <small>{r.debt > 0 ? `${r.dropToLiqPct.toFixed(1)}% drop buffer` : `LT ${Math.round(r.spec.liqThreshold * 100)}%`}</small>
+                    <small>
+                      {r.debt > 0 ? `${r.dropToLiqPct.toFixed(1)}% drop buffer` : `LT ${Math.round(r.spec.liqThreshold * 100)}%`}
+                      {r.priceAt > 0 ? ` · ${fmtAge(Math.max(0, Math.floor(Date.now() / 1000) - r.priceAt))}` : ""}
+                    </small>
                   </div>
                   <div>
                     <span>Liquidation Price</span>
