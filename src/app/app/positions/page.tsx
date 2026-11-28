@@ -331,7 +331,7 @@ export default function PositionsPage() {
                         <Link href={`/app?market=${r.spec.id}&act=Repay`} className={p.actPrimary}>
                           Repay
                         </Link>
-                        <Link href={`/app/routes?preset=repay&mode=live&amt=${(r.debt * 1.005).toFixed(2)}`}>
+                        <Link href={`/app/routes?preset=repay&mode=live&market=${r.spec.id}&amt=${(r.debt * 1.005).toFixed(2)}`}>
                           Cross-Chain Repay ↗
                         </Link>
                       </>

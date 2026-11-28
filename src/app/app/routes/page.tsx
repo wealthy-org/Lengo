@@ -269,7 +269,7 @@ function RoutesInner() {
 
   // Target LengoMarket for Cross-chain Collateral, Cross-chain Repay & Cross-chain Supply
   const targetMarketSpec = useMemo(() => {
-    if (preset.id === "supply") {
+    if (preset.id === "supply" || preset.id === "repay") {
       return MAINNET_MARKETS.find((m) => m.id === supplyPoolId) ?? MAINNET_MARKETS[0];
     }
     if (preset.id === "collateral" && toAsset === "USDe") {
@@ -328,6 +328,10 @@ function RoutesInner() {
     const pParam = searchParams.get("preset");
     const mParam = searchParams.get("mode");
     const aParam = searchParams.get("amt");
+    const mktParam = searchParams.get("market");
+    if (mktParam && MAINNET_MARKETS.some((m) => m.id === mktParam)) {
+      setSupplyPoolId(mktParam);
+    }
     if (mParam === "live") setExecMode(true);
     else if (mParam === "preview") setExecMode(false);
     const found = PRESETS.find((x) => x.id === pParam);
@@ -755,7 +759,7 @@ function RoutesInner() {
                         ? `${Math.round(targetMarketSpec.maxLtv * 100)}% Max LTV · ${targetMarketSpec.pair}`
                         : preset.id === "supply"
                           ? `Earn ${(targetMarketSpec.apr * 100).toFixed(1)}% borrower APR`
-                          : "Unlock WETH collateral"}
+                          : `Unlock ${targetMarketSpec.collSymbol} collateral`}
                     </small>
                   </div>
                 </>
@@ -791,13 +795,26 @@ function RoutesInner() {
             {preset.id === "repay" && (
               <div className={r.impact}>
                 <div>
-                  <span>Current RHC Debt</span>
-                  <b className={rhPosDebt > 0 ? s.warn : s.ok}>${rhPosDebt.toFixed(4)} USDG</b>
-                  <small>{isConnected ? "accrued on LengoMarket" : "connect wallet to read"}</small>
+                  <span>Target Market Position</span>
+                  <b>
+                    <select
+                      value={supplyPoolId}
+                      onChange={(e) => setSupplyPoolId(e.target.value)}
+                      className={r.sel}
+                      aria-label="Target repay market"
+                    >
+                      {MAINNET_MARKETS.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.pair} ({m.category})
+                        </option>
+                      ))}
+                    </select>
+                  </b>
+                  <small>{isConnected ? `Debt: $${rhPosDebt.toFixed(4)} USDG` : "connect wallet to read"}</small>
                 </div>
                 <div>
                   <span>Locked Collateral</span>
-                  <b>{rhPosColl.toFixed(4)} WETH</b>
+                  <b>{rhPosColl.toFixed(4)} {targetMarketSpec.collSymbol}</b>
                   <small>≈ ${(rhPosColl * rhCollPrice).toFixed(2)} USD</small>
                 </div>
                 <div>
@@ -808,7 +825,7 @@ function RoutesInner() {
                 <div>
                   <span>Post-Repay Status</span>
                   <b className={s.ok}>Withdraw Ready</b>
-                  <small>0 debt · full exit unlocked</small>
+                  <small>0 debt · full {targetMarketSpec.collSymbol} exit</small>
                 </div>
               </div>
             )}
@@ -978,10 +995,10 @@ function RoutesInner() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   <div>
                     <span style={{ display: "block", fontSize: 10, letterSpacing: "0.08em", color: "var(--lime)" }}>
-                      STEP 2 &amp; 3 · SETTLE DEBT &amp; UNLOCK COLLATERAL ON LENGOMARKET (RH 4663)
+                      STEP 2 &amp; 3 · SETTLE DEBT &amp; UNLOCK {targetMarketSpec.collSymbol} ON LENGOMARKET (RH 4663)
                     </span>
                     <small style={{ fontFamily: "var(--mono)", fontSize: 11.5, color: "var(--tx2)" }}>
-                      Outstanding debt: <b>${rhPosDebt.toFixed(4)} USDG</b> · RH Wallet USDG: <b>${rhUsdgWallet.toFixed(2)}</b> · Locked collateral: <b>{rhPosColl.toFixed(4)} WETH</b>
+                      Outstanding debt: <b>${rhPosDebt.toFixed(4)} USDG</b> · RH Wallet USDG: <b>${rhUsdgWallet.toFixed(2)}</b> · Locked collateral: <b>{rhPosColl.toFixed(4)} {targetMarketSpec.collSymbol}</b>
                     </small>
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -1010,7 +1027,7 @@ function RoutesInner() {
                         disabled={lengoTx.busy}
                         onClick={() => lengoTx.run("Withdraw", String(rhPosColl))}
                       >
-                        {lengoTx.busy ? "Withdrawing…" : `Withdraw All ${rhPosColl.toFixed(4)} WETH →`}
+                        {lengoTx.busy ? "Withdrawing…" : `Withdraw All ${rhPosColl.toFixed(4)} ${targetMarketSpec.collSymbol} →`}
                       </button>
                     )}
                   </div>

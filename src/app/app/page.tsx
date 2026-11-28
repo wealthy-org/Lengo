@@ -407,7 +407,7 @@ function MarketsInner() {
                     </Link>
                   )}
                   {debt > 0 && (
-                    <Link href={`/app/routes?preset=repay&mode=live&amt=${(debt * 1.02 + 0.25).toFixed(2)}`} className="btn">
+                    <Link href={`/app/routes?preset=repay&mode=live&market=${spec.id}&amt=${(debt * 1.02 + 0.25).toFixed(2)}`} className="btn">
                       Repay from Any Chain →
                     </Link>
                   )}
