@@ -5,6 +5,7 @@ import { Pair } from "../../TokenIcon";
 import s from "../trade.module.css";
 import p from "./positions.module.css";
 import { usePortfolio, type MarketHealthRow } from "@/lib/usePortfolio";
+import { useHarmonicSessions } from "@/lib/useHarmonicSession";
 import { addrUrl } from "@/lib/chain";
 
 const usd = (n: number, d = 2) =>
@@ -23,6 +24,7 @@ type FilterTab = "All" | "My Positions" | "Crypto" | "RWA Stocks";
 
 export default function PositionsPage() {
   const P = usePortfolio();
+  const { sessions: harmonicSessions } = useHarmonicSessions();
   const [tab, setTab] = useState<FilterTab>("All");
   const [shockPct, setShockPct] = useState<number>(0); // 0, -15, -30, -45
 
@@ -215,13 +217,33 @@ export default function PositionsPage() {
                     <h3>{r.spec.pair}</h3>
                     <small>
                       {r.spec.category} · Max LTV {Math.round(r.spec.maxLtv * 100)}% · LT {Math.round(r.spec.liqThreshold * 100)}% · {(r.spec.apr * 100).toFixed(1)}% APR
-                      {r.spec.id === "AAPL" ? " · US Market Hours Feed" : ""}
+                      {r.spec.id === "AAPL" ? " · US Market Hours" : r.spec.category === "Robinhood Stock" ? " · 24/5 Session" : ""}
+                      {harmonicSessions[r.spec.id]
+                        ? ` · Harmonic: ${harmonicSessions[r.spec.id].label} (upd ${fmtAge(harmonicSessions[r.spec.id].ageSec)})`
+                        : ""}
                     </small>
                   </div>
                   <div className={p.tags}>
                     <em style={r.isPoolLive ? { color: "var(--lime)", borderColor: "rgba(201,242,122,.4)" } : undefined}>
                       {r.isPoolLive ? "Live · Seeded" : "Deployed · Empty"}
                     </em>
+                    {harmonicSessions[r.spec.id] && (() => {
+                      const hs = harmonicSessions[r.spec.id];
+                      const toneCls = hs.verdict === "halted" ? s.bad : hs.canExec ? s.ok : s.warn;
+                      return (
+                        <a
+                          href={hs.endpointUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={`Harmonic Session Oracle (Block ${hs.block}): ${hs.reason}`}
+                          style={{ textDecoration: "none" }}
+                        >
+                          <em className={toneCls}>
+                            ● {hs.shortLabel} · {fmtAge(hs.ageSec)} ↗
+                          </em>
+                        </a>
+                      );
+                    })()}
                     <em className={r.stale ? s.warn : ""}>
                       {r.priceAt > 0
                         ? `Oracle ${fmtAge(Math.max(0, Math.floor(Date.now() / 1000) - r.priceAt))} · ${r.stale ? "Stale" : "Fresh"}`

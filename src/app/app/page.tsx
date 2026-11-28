@@ -11,6 +11,7 @@ import TradingChart, { type ChartData } from "./TradingChart";
 import type { Timeframe } from "../api/prices/history/route";
 import { useToast } from "../Toaster";
 import { useLengo, useLengoTx } from "@/lib/useLengo";
+import { useHarmonicSessions } from "@/lib/useHarmonicSession";
 import { MAINNET_MARKETS, TESTNET_MARKET, type MarketSpec } from "@/lib/markets";
 import { txUrl, addrUrl } from "@/lib/chain";
 import { useNetwork } from "@/lib/useNetwork";
@@ -44,6 +45,8 @@ function MarketsInner() {
   const APR = spec.apr;
 
   const L = useLengo(spec);
+  const { sessions: harmonicSessions } = useHarmonicSessions();
+  const curSession = harmonicSessions[spec.id];
   const { connectAsync } = useConnect();
   const [posCount, setPosCount] = useState<number | null>(null);
   const [statsTick, setStatsTick] = useState(0);
@@ -282,6 +285,17 @@ function MarketsInner() {
             </div>
             <div className={s.badges}>
               <span className={s.active}>{isMainnet ? "Mainnet · Live" : "Testnet · Live"}</span>
+              {curSession && (
+                <a
+                  href={curSession.endpointUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={`Harmonic Session Oracle (Block ${curSession.block}): ${curSession.reason}`}
+                  className={curSession.verdict === "halted" ? s.bad : curSession.canExec ? s.active : s.warn}
+                >
+                  ● {curSession.label} · {fmtAge(curSession.ageSec)} ago ↗
+                </a>
+              )}
               <a href={addrUrl(spec.market ?? spec.chainlinkFeed ?? spec.collateral, net.mode)} target="_blank" rel="noreferrer">Explorer ↗</a>
             </div>
           </div>
@@ -523,6 +537,14 @@ Liq. price    = D / (qty × ${LIQ.toFixed(2)}) = ${liqP ? usd(liqP, priceDigits)
                 </div>
                 {over && <p className={`${s.note} ${s.bad}`}>Exceeds the allowed maximum.</p>}
                 {blockedByPause && <p className={`${s.note} ${s.bad}`}>Market is paused for new deposits/borrows. Repay and Withdraw remain open.</p>}
+                {curSession && !curSession.canExec && (
+                  <p className={`${s.note} ${curSession.verdict === "halted" ? s.bad : s.warn}`}>
+                    <b>Harmonic Session Oracle ({curSession.label}):</b> {curSession.reason}.{" "}
+                    <a href={curSession.endpointUrl} target="_blank" rel="noreferrer" style={{ textDecoration: "underline" }}>
+                      Verify session status ↗
+                    </a>
+                  </p>
+                )}
                 {blockedByStale && !isMainnet && <p className={`${s.note} ${s.bad}`}>Oracle price is stale. <button className={s.inlineBtn} disabled={refreshing} onClick={requestRefresh}>{refreshing ? "Refreshing…" : "Request price refresh"}</button></p>}
                 {L.marketDeployed && avail <= 0 && act === "Borrow" && <p className={`${s.note} ${s.warn}`}>No liquidity in this isolated pool yet — supply {debtSym} first.</p>}
                 <button className={s.cta} disabled={!a || over || blocked || tx2.busy} onClick={submit}>
