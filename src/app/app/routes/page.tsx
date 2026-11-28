@@ -66,7 +66,7 @@ const CHAIN_META: Record<string, { key: string; short: string; evmChain?: Chain;
 const isEvmLabel = (label: string) => Boolean(CHAIN_META[label]?.evmChain);
 
 type PresetKind = {
-  id: "payout" | "collateral" | "repay" | "swap";
+  id: "payout" | "collateral" | "repay" | "supply" | "swap";
   tag: string;
   label: string;
   sub: string;
@@ -134,6 +134,23 @@ const PRESETS: PresetKind[] = [
     defaultAmt: "5",
     note: "Settle your Robinhood Chain USDG debt from any external network via NEAR Intents 1Click, then unlock and withdraw your collateral in one continuous flow.",
     steps: ["Pick external chain & asset", "1Click settles USDG to your RH wallet", "Execute Repay All on LengoMarket", "Withdraw unlocked collateral"],
+  },
+  {
+    id: "supply",
+    tag: "COMMUNITY POOL · CROSS-CHAIN LEND",
+    label: "Cross-chain supply",
+    sub: "Any chain → USDG → earn Lengo yield",
+    originChains: ["Solana", "Base", "Arbitrum", "Polygon", "Optimism", "Ethereum", "BNB Chain", "Avalanche", "TRON", "TON", "NEAR"],
+    originAssets: ["USDC", "USDT", "DAI", "SOL", "ETH"],
+    destChains: ["Robinhood (hood)"],
+    destAssets: ["USDG"],
+    defaultFromChain: "Solana",
+    defaultFromAsset: "USDC",
+    defaultToChain: "Robinhood (hood)",
+    defaultToAsset: "USDG",
+    defaultAmt: "10",
+    note: "Supply liquidity from any external chain into Lengo's isolated Crypto & RWA Stock lending pools on Robinhood Chain via NEAR Intents 1Click to earn borrower APR.",
+    steps: ["Pick origin network & asset", "1Click routes into USDG on Robinhood Chain", "Select isolated Crypto or RWA market", "Supply USDG to pool & accrue lender yield"],
   },
   {
     id: "swap",
@@ -244,18 +261,22 @@ function RoutesInner() {
   const [depositTx, setDepositTx] = useState<string | null>(null);
   const [manualTx, setManualTx] = useState("");
   const [lengoTxHashes, setLengoTxHashes] = useState<{ label: string; hash: string }[]>([]);
+  const [supplyPoolId, setSupplyPoolId] = useState<string>(MAINNET_MARKETS[0].id);
   const [sending, setSending] = useState(false);
   const [copiedDep, setCopiedDep] = useState(false);
   const [now, setNow] = useState(Date.now());
   const reqId = useRef(0);
 
-  // Target LengoMarket for Cross-chain Collateral & Cross-chain Repay
+  // Target LengoMarket for Cross-chain Collateral, Cross-chain Repay & Cross-chain Supply
   const targetMarketSpec = useMemo(() => {
+    if (preset.id === "supply") {
+      return MAINNET_MARKETS.find((m) => m.id === supplyPoolId) ?? MAINNET_MARKETS[0];
+    }
     if (preset.id === "collateral" && toAsset === "USDe") {
       return MAINNET_MARKETS.find((m) => m.id === "USDe") ?? MAINNET_MARKETS[0];
     }
     return MAINNET_MARKETS[0]; // WETH / USDG primary live market
-  }, [preset.id, toAsset]);
+  }, [preset.id, toAsset, supplyPoolId]);
 
   const lengo = useLengo(targetMarketSpec);
   const lengoTx = useLengoTx(() => {
@@ -655,7 +676,7 @@ function RoutesInner() {
           <div className={s.mHead}>
             <Pair a={fromAsset} b={toAsset} size={42} />
             <div>
-              <h2>{fromAsset} → {toAsset}{preset.id === "collateral" ? ` → LengoMarket` : preset.id === "repay" ? ` → Repay Debt` : ""}</h2>
+              <h2>{fromAsset} → {toAsset}{preset.id === "collateral" ? ` → LengoMarket` : preset.id === "repay" ? ` → Repay Debt` : preset.id === "supply" ? ` → Supply ${targetMarketSpec.pair}` : ""}</h2>
               <p>{CHAIN_META[fromChain]?.short ?? fromChain} → {CHAIN_META[toChain]?.short ?? toChain} · {preset.tag}</p>
             </div>
             <div className={s.badges}>
@@ -715,7 +736,7 @@ function RoutesInner() {
                 <b>{state === "loading" ? <span className="skel skel-md" /> : state === "ok" ? `${q?.amountOut} ${toAsset}` : `— ${toAsset}`}</b>
                 <small>{state === "ok" && q?.amountOutUsd ? `≈ $${Number(q.amountOutUsd).toFixed(2)} USD` : toChain}</small>
               </div>
-              {(preset.id === "collateral" || preset.id === "repay") && (
+              {(preset.id === "collateral" || preset.id === "repay" || preset.id === "supply") && (
                 <>
                   <div className={r.wire}><i /><em>onchain</em></div>
                   <div className={`${r.node} ${r.mktNode}`}>
@@ -723,14 +744,18 @@ function RoutesInner() {
                     <b>
                       {preset.id === "collateral"
                         ? `Lock ${toAsset}`
-                        : rhPosDebt > 0
-                          ? `Repay $${rhPosDebt.toFixed(2)}`
-                          : "Clear Debt"}
+                        : preset.id === "supply"
+                          ? `Supply ${targetMarketSpec.pair}`
+                          : rhPosDebt > 0
+                            ? `Repay $${rhPosDebt.toFixed(2)}`
+                            : "Clear Debt"}
                     </b>
                     <small>
                       {preset.id === "collateral"
                         ? `${Math.round(targetMarketSpec.maxLtv * 100)}% Max LTV · ${targetMarketSpec.pair}`
-                        : "Unlock WETH collateral"}
+                        : preset.id === "supply"
+                          ? `Earn ${(targetMarketSpec.apr * 100).toFixed(1)}% borrower APR`
+                          : "Unlock WETH collateral"}
                     </small>
                   </div>
                 </>
@@ -784,6 +809,44 @@ function RoutesInner() {
                   <span>Post-Repay Status</span>
                   <b className={s.ok}>Withdraw Ready</b>
                   <small>0 debt · full exit unlocked</small>
+                </div>
+              </div>
+            )}
+
+            {preset.id === "supply" && (
+              <div className={r.impact}>
+                <div>
+                  <span>Target Lending Pool</span>
+                  <b>
+                    <select
+                      value={supplyPoolId}
+                      onChange={(e) => setSupplyPoolId(e.target.value)}
+                      className={r.sel}
+                      aria-label="Target lending pool"
+                    >
+                      {MAINNET_MARKETS.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.pair} ({(m.apr * 100).toFixed(1)}% APR)
+                        </option>
+                      ))}
+                    </select>
+                  </b>
+                  <small>{targetMarketSpec.category} isolated market</small>
+                </div>
+                <div>
+                  <span>Pool Supplied / Cap</span>
+                  <b>${(lengo.pool?.supplied ?? 0).toFixed(2)} USDG</b>
+                  <small>Cap {targetMarketSpec.supplyCapLabel ?? "50,000 USDG"}</small>
+                </div>
+                <div>
+                  <span>Est. USDG to Supply</span>
+                  <b className={s.ok}>{state === "loading" ? <span className="skel skel-sm" /> : state === "ok" ? `${Number(q?.amountOut || 0).toFixed(2)} USDG` : "—"}</b>
+                  <small>routed via NEAR Intents 1Click</small>
+                </div>
+                <div>
+                  <span>Borrower Interest Rate</span>
+                  <b className={s.ok}>{(targetMarketSpec.apr * 100).toFixed(1)}% Fixed APR</b>
+                  <small>accrues per second in RAY</small>
                 </div>
               </div>
             )}
@@ -950,6 +1013,41 @@ function RoutesInner() {
                         {lengoTx.busy ? "Withdrawing…" : `Withdraw All ${rhPosColl.toFixed(4)} WETH →`}
                       </button>
                     )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2 Guided Action — Supply Routed USDG to Selected Isolated Pool */}
+            {preset.id === "supply" && isConnected && (swapStatus === "SUCCESS" || rhUsdgWallet > 0) && (
+              <div className={`${s.sim} bevel`} style={{ marginTop: 12, padding: 14, border: "1px solid var(--line2)", background: "var(--bg)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <div>
+                    <span style={{ display: "block", fontSize: 10, letterSpacing: "0.08em", color: "var(--lime)" }}>
+                      STEP 2 · SUPPLY ROUTED USDG TO {targetMarketSpec.pair} POOL (ROBINHOOD CHAIN 4663)
+                    </span>
+                    <small style={{ fontFamily: "var(--mono)", fontSize: 11.5, color: "var(--tx2)" }}>
+                      RH Wallet USDG: <b>${rhUsdgWallet.toFixed(2)} USDG</b> · Your current pool claim: <b>${(lengo.data?.claim ?? 0).toFixed(2)} USDG</b>
+                    </small>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      disabled={rhUsdgWallet <= 0 || lengoTx.busy}
+                      onClick={() => {
+                        const supAmt = Math.min(rhUsdgWallet, estOutNum > 0 ? estOutNum : rhUsdgWallet);
+                        const formatted = String(Math.floor(supAmt * 1e6) / 1e6);
+                        if (parseFloat(formatted) > 0) lengoTx.run("Supply", formatted);
+                      }}
+                    >
+                      {lengoTx.busy
+                        ? "Supplying…"
+                        : `Supply ${Math.min(rhUsdgWallet, estOutNum > 0 ? estOutNum : rhUsdgWallet).toFixed(2)} USDG to ${targetMarketSpec.pair} →`}
+                    </button>
+                    <Link href={`/app?market=${targetMarketSpec.id}&mode=Lend`} className="btn">
+                      Open {targetMarketSpec.pair} Pool ↗
+                    </Link>
                   </div>
                 </div>
               </div>
