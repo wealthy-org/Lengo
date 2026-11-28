@@ -5,347 +5,423 @@ import { MAINNET_MARKETS } from "@/lib/markets";
 
 const toc = [
   ["start", "Getting started"],
-  ["formulas", "Formulas"],
-  ["params", "Parameters"],
-  ["contracts", "Contracts"],
+  ["formulas", "Risk math & formulas"],
+  ["params", "Market parameters"],
+  ["contracts", "Contracts & proofs"],
   ["routes", "Cross-chain routes"],
-  ["limits", "Safety & limits"],
+  ["limits", "Security & disclosures"],
   ["roadmap", "Roadmap"],
 ];
 
-const params = [
-  ["Market pair", "WETH (18 dec collateral) / USDG (6 dec debt)"],
-  ["Max borrow LTV", "60%"],
-  ["Liquidation threshold", "75%"],
-  ["Liquidation eligibility", "HF < 1.00"],
-  ["Liquidator bonus", "5% of repaid debt value"],
-  ["Close factor", "≤ 50% of debt per liquidation call"],
-  ["Borrow APR", "8% fixed, per-second accrual into a global RAY index"],
-  ["Beta TVL caps", "25 WETH collateral cap · 50,000 USDG supply cap"],
-  ["Emergency pause", "Guardian can pause new deposits/borrows; repay, withdraw & liquidate never pause"],
-  ["Price oracle", "Chainlink ETH/USD proxy (7,200 s heartbeat guard, keeperless) + $1.00 USDG peg"],
+const coreParams: [string, string, string][] = [
+  ["Debt Asset", "USDG (6 dec)", "$1.00 fixed peg · Robinhood Chain"],
+  ["Max Borrow LTV", "50% – 80%", "60% WETH · 65% BTC · 50–55% RWA"],
+  ["Liq. Threshold", "65% – 88%", "75% WETH · 78% BTC · 65–70% RWA"],
+  ["Liquidation Trigger", "HF < 1.00", "50% max close factor · 5% bonus"],
+  ["Borrow APR", "6.5% – 9.0%", "Fixed rate · per-second RAY index"],
+  ["Supply Cap", "50,000 USDG", "Per isolated market beta cap"],
+  ["Price Oracle", "ChainlinkOracle", "Official Chainlink feeds + heartbeat"],
+  ["Exit Guarantee", "Always Open", "Repay & withdraw never pause"],
 ];
 
 const CHAINLINK_ETH_USD = "0x78F3556b67E17Df817D51Ef5a990cDaF09E8d3A9";
 
+const shortAddr = (v?: string) => (v && v.length > 14 ? `${v.slice(0, 8)}…${v.slice(-6)}` : v ?? "—");
+
 export default function Docs() {
   const mainnetAddrs: [string, string | undefined][] = [
-    ...MAINNET_MARKETS.map((m) => [`LengoMarket (${m.pair})`, m.market] as [string, string | undefined]),
-    ["ChainlinkOracle (Adapter)", DEPLOYMENTS.mainnet.oracle],
-    ["Chainlink ETH / USD Proxy", CHAINLINK_ETH_USD],
-    ["USDG Debt Asset (6 dec)", DEPLOYMENTS.mainnet.debtAsset],
-    ["$LENGO Utility Token (18 dec)", MAINNET_LENGO_TOKEN],
+    ...MAINNET_MARKETS.map((m) => [`LengoMarket · ${m.pair}`, m.market] as [string, string | undefined]),
+    ["ChainlinkOracle · Adapter", DEPLOYMENTS.mainnet.oracle],
+    ["Chainlink · ETH/USD Proxy", CHAINLINK_ETH_USD],
+    ["USDG · Debt Token (6 dec)", DEPLOYMENTS.mainnet.debtAsset],
+    ["$LENGO · Utility Token (18 dec)", MAINNET_LENGO_TOKEN],
+    ["HarmonicRiskFeed · Session Oracle", "0xd91e56a9999974a1319150cd6fa00bc87cc2d91d"],
   ];
+
   const testnetAddrs: [string, string | undefined][] = [
     ["LengoMarket (Testnet · 46630)", DEPLOYMENTS.testnet.market],
-    ["DemoOracle (Testnet)", DEPLOYMENTS.testnet.oracle],
-    ["tBTC (8 dec · Testnet)", DEPLOYMENTS.testnet.collateral],
-    ["tUSDC (6 dec · Testnet)", DEPLOYMENTS.testnet.debtAsset],
+    ["DemoOracle (Testnet · 46630)", DEPLOYMENTS.testnet.oracle],
+    ["tBTC Collateral (8 dec)", DEPLOYMENTS.testnet.collateral],
+    ["tUSDC Debt (6 dec)", DEPLOYMENTS.testnet.debtAsset],
   ];
 
   return (
     <>
       <div className={s.pageHead}>
         <div>
-          <h1>Docs</h1>
-          <p>Architecture, risk math, deployed Robinhood Chain Mainnet contracts, and cross-chain routing.</p>
+          <h1>Documentation</h1>
+          <p>Protocol architecture, risk math, verified Robinhood Chain Mainnet (4663) contracts, onchain proofs, and security disclosures.</p>
         </div>
         <span>Mainnet Beta · Robinhood Chain · 4663</span>
       </div>
+
       <div className={d.wrap}>
-        <nav className={d.toc}>
-          {toc.map(([id, t], i) => (
-            <a key={id} href={`#${id}`}>
-              <span>{String(i + 1).padStart(2, "0")}</span>
-              {t}
-            </a>
-          ))}
-        </nav>
+        <aside className={d.tocWrap}>
+          <nav className={d.toc}>
+            {toc.map(([id, t], i) => (
+              <a key={id} href={`#${id}`}>
+                <span>{String(i + 1).padStart(2, "0")}</span>
+                {t}
+              </a>
+            ))}
+          </nav>
+          <div className={d.tocMeta}>
+            <span>Verification Status</span>
+            <b>● 7 Markets Seeded &amp; Live</b>
+            <p>
+              Bytecode verified (<code>exact_match</code>) on Sourcify &amp; Blockscout. Covered by an independent security review by HEY Research Lab.
+            </p>
+          </div>
+        </aside>
+
         <article className={d.body}>
+          {/* 01 · GETTING STARTED */}
           <section id="start">
-            <h2>Getting started on Mainnet</h2>
-            <ol>
-              <li>Connect an EVM wallet — Lengo automatically configures and switches to <b>Robinhood Chain Mainnet (chain ID 4663)</b>.</li>
-              <li>Bringing collateral from another network? Open <a href="/app/routes?preset=collateral&mode=live">Routes → Cross-chain collateral</a> to route <code>SOL</code>, <code>USDC</code>, <code>USDT</code>, <code>ETH</code>, or <code>BTC</code> into <code>WETH</code> / <code>USDe</code> on Robinhood Chain and lock directly into <code>LengoMarket</code>.</li>
-              <li>On <a href="/app">Markets</a>, supply <b>USDG</b> to earn borrower interest, or deposit collateral across 7 isolated Crypto &amp; RWA Stock markets (<code>WETH</code>, <code>cbBTC</code>, <code>WBTC</code>, <code>USDe</code>, <code>NVDA</code>, <code>TSLA</code>, <code>AAPL</code>) and borrow <b>USDG</b>.</li>
-              <li>Monitor real-time Health Factor, Liquidation Price, LT proximity alerts, and price-shock stress tests on <a href="/app/positions">Positions</a>.</li>
-              <li>Route borrowed <b>USDG</b> into <b>USDC, USDT, or DAI</b> across 14+ chains — or repay <b>USDG</b> debt from any chain — in <a href="/app/routes">Routes</a> (<b>Live</b> mode), and verify every event in <a href="/app/activity">Activity</a>.</li>
-            </ol>
+            <div className={d.secHead}>
+              <h2>01 · Getting started on Mainnet</h2>
+              <span className={d.secTag}>Robinhood Chain (4663) + NEAR Intents 1Click</span>
+            </div>
+            <div className={d.stepsGrid}>
+              <div className={d.stepCard}>
+                <i>Step 01 · Connect</i>
+                <b>Switch to RH 4663</b>
+                <p>Connect any EVM wallet. Lengo automatically configures and switches to Robinhood Chain Mainnet (`4663`).</p>
+              </div>
+              <div className={d.stepCard}>
+                <i>Step 02 · Collateral</i>
+                <b>Deposit or Bridge In</b>
+                <p>
+                  Deposit `WETH`, `cbBTC`, `WBTC`, `USDe`, or RWA equities (`NVDA`, `TSLA`, `AAPL`) on <a href="/app">Markets</a>, or route from external chains via <a href="/app/routes?preset=collateral&mode=live">Routes</a>.
+                </p>
+              </div>
+              <div className={d.stepCard}>
+                <i>Step 03 · Borrow &amp; Lend</i>
+                <b>Supply or Borrow USDG</b>
+                <p>Supply `USDG` to earn borrower interest, or borrow `USDG` against locked collateral within each market&apos;s Max LTV.</p>
+              </div>
+              <div className={d.stepCard}>
+                <i>Step 04 · Monitor</i>
+                <b>Track Position Health</b>
+                <p>
+                  Inspect real-time Health Factor, Liquidation Price, oracle age, Harmonic stock session status, and price-shock simulations on <a href="/app/positions">Positions</a>.
+                </p>
+              </div>
+              <div className={d.stepCard}>
+                <i>Step 05 · Route &amp; Repay</i>
+                <b>14+ Chain Settlement</b>
+                <p>
+                  Route borrowed `USDG` into `USDC`, `USDT`, or `DAI` across 14+ networks — or repay `USDG` debt from any chain — in <a href="/app/routes">Routes</a>.
+                </p>
+              </div>
+            </div>
           </section>
 
+          {/* 02 · FORMULAS */}
           <section id="formulas">
-            <h2>Formulas</h2>
-            <pre>{`C = collateral value in USD (Chainlink ETH/USD price × WETH quantity)
-D = USDG debt including accrued interest (debtShares × projectedBorrowIndex / 1e27)
+            <div className={d.secHead}>
+              <h2>02 · Risk math &amp; formulas</h2>
+              <span className={d.secTag}>Deterministic RAY (1e27) accounting</span>
+            </div>
+            <div className={d.split2}>
+              <pre>{`C = collateral value in USD (Chainlink price × collateral quantity)
+D = USDG debt incl. accrued interest (debtShares × borrowIndex / 1e27)
 
 LTV                     = D / C
-Health factor           = (C × liquidationThreshold) / D
-Extra borrow capacity   = max(0, C × maxBorrowLTV − D)
-Est. liquidation price  = D / (collateralQuantity × liquidationThreshold)`}</pre>
-            <p>With D = 0 the UI displays <b>No debt</b>, never NaN. Repay All passes <code>type(uint256).max</code> so debt shares clear to exact zero with no dust.</p>
-            <p className={d.ex}>Example: 2 WETH at $1,700 ($3,400) with 1,360 USDG debt → LTV 40.0%, HF 1.875, liquidation price $906.67.</p>
+Health Factor (HF)      = (C × liquidationThreshold) / D
+Remaining Borrow Room   = max(0, C × maxBorrowLTV − D)
+Est. Liquidation Price  = D / (collateralQuantity × liquidationThreshold)`}</pre>
+              <div className={d.infoCard}>
+                <div>
+                  <b>Accounting &amp; Rounding Guarantees</b>
+                  <p style={{ marginTop: 6 }}>
+                    When <code>D = 0</code>, Health Factor displays <b>No debt</b> (never <code>NaN</code>). Calling <b>Repay All</b> passes <code>type(uint256).max</code>, burning all borrower debt shares to exact zero with no residual dust. Virtual shares (<code>1e6</code> shares / <code>1</code> asset) prevent first-depositor inflation attacks.
+                  </p>
+                </div>
+                <div className={d.ex}>
+                  <b>Worked Example:</b> 2 WETH at $1,700 ($3,400 collateral) with 1,360 USDG debt in a 60% LTV / 75% LT market → <b>LTV 40.0%</b>, <b>HF 1.875</b>, <b>Liquidation Price $906.67</b>.
+                </div>
+              </div>
+            </div>
           </section>
 
+          {/* 03 · PARAMETERS */}
           <section id="params">
-            <h2>Mainnet parameters</h2>
-            <p>Immutable risk parameters deployed on Robinhood Chain Mainnet (4663), paired with conservative beta TVL caps.</p>
-            <div className={d.table}>
-              {params.map(([k, v]) => (
-                <div key={k}>
+            <div className={d.secHead}>
+              <h2>03 · Mainnet parameters &amp; market specs</h2>
+              <span className={d.secTag}>7 Isolated Crypto &amp; RWA Equity Pools</span>
+            </div>
+            <div className={d.paramGrid}>
+              {coreParams.map(([k, v, sub]) => (
+                <div key={k} className={d.paramCell}>
                   <span>{k}</span>
                   <b>{v}</b>
+                  <small>{sub}</small>
                 </div>
               ))}
             </div>
-            <h3 style={{ marginTop: 22, fontSize: 13, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--lime)" }}>
-              Per-Market Onchain Parameters &amp; Caps (All 7 Verified Mainnet Markets)
-            </h3>
-            <div className={d.table}>
-              {MAINNET_MARKETS.map((m) => (
-                <div key={m.id}>
-                  <span>
-                    {m.pair} ({m.isSeeded ? "LIVE · Seeded" : "DEPLOYED · Unseeded"})
-                  </span>
+
+            <div className={d.subHead}>Per-Market Onchain Configuration (All 7 Seeded &amp; Verified Mainnet Pools)</div>
+            <div className={d.mktTableWrap}>
+              <table className={d.mktTable}>
+                <thead>
+                  <tr>
+                    <th>Market Pair</th>
+                    <th>Category</th>
+                    <th>Chainlink Feed</th>
+                    <th>Max Age</th>
+                    <th>Max LTV</th>
+                    <th>Liq. Threshold</th>
+                    <th>Borrow APR</th>
+                    <th>Collateral Cap</th>
+                    <th>Supply Cap</th>
+                    <th>ERC-8056 Multiplier</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {MAINNET_MARKETS.map((m) => (
+                    <tr key={m.id}>
+                      <td><b>{m.pair}</b></td>
+                      <td>{m.category}</td>
+                      <td>{m.feedLabel ?? m.collSymbol}</td>
+                      <td>{m.maxOracleAge.toLocaleString("en-US")}s</td>
+                      <td>{Math.round(m.maxLtv * 100)}%</td>
+                      <td>{Math.round(m.liqThreshold * 100)}%</td>
+                      <td>{(m.apr * 100).toFixed(1)}%</td>
+                      <td>{m.collateralCapLabel ?? "—"}</td>
+                      <td>{m.supplyCapLabel ?? "50,000 USDG"}</td>
+                      <td>{m.uiMultiplier ?? "1.000000 (ERC-20)"}</td>
+                      <td><span className={d.badgeLive}>● Seeded · Live</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* 04 · CONTRACTS & PROOFS */}
+          <section id="contracts">
+            <div className={d.secHead}>
+              <h2>04 · Deployed contracts &amp; live proofs</h2>
+              <span className={d.secTag}>Sourcify Exact Match · Chain ID 4663</span>
+            </div>
+
+            <div className={d.addrGrid}>
+              {mainnetAddrs.map(([k, v]) => (
+                <div key={k} className={d.addrRow}>
+                  <span>{k}</span>
                   <b>
-                    Feed: {m.feedLabel ?? m.collSymbol} ({m.maxOracleAge.toLocaleString("en-US")}s) · LTV {Math.round(m.maxLtv * 100)}% · LT {Math.round(m.liqThreshold * 100)}% · {(m.apr * 100).toFixed(1)}% APR · Cap {m.collateralCapLabel ?? "—"} / {m.supplyCapLabel ?? "50,000 USDG"}
-                    {m.uiMultiplier ? ` · ERC-8056 uiMultiplier ${m.uiMultiplier}` : ""}
+                    {v ? (
+                      <a href={addrUrl(v, "mainnet")} target="_blank" rel="noreferrer" title={v}>
+                        {shortAddr(v)} ↗
+                      </a>
+                    ) : (
+                      "—"
+                    )}
                   </b>
                 </div>
               ))}
             </div>
-          </section>
 
-          <section id="contracts">
-            <h2>Deployed contracts — Robinhood Chain Mainnet (4663)</h2>
-            <div className={d.table}>
-              {mainnetAddrs.map(([k, v]) => (
-                <div key={k}>
-                  <span>{k}</span>
-                  <b>{v ? <a href={addrUrl(v, "mainnet")} target="_blank" rel="noreferrer">{v} ↗</a> : "—"}</b>
+            <div className={d.subHead}>Verified Mainnet Transaction Proofs (Robinhood Chain 4663, Solana &amp; Base)</div>
+            <div className={d.proofCols}>
+              {/* Column 1: Core Lending & Cross-Chain Repay */}
+              <div className={d.proofCard}>
+                <div className={d.proofHead}>
+                  <span>Lending &amp; Repay Lifecycle</span>
+                  <em>Chain 4663</em>
                 </div>
-              ))}
-            </div>
-            <p>
-              Built with Solidity 0.8.24, Foundry, and pinned OpenZeppelin 5.1.0. Verified (<code>exact_match</code> creation &amp; runtime bytecode) on Sourcify &amp; Blockscout, and covered by an <b>independent security review by HEY Research Lab</b> (note: an independent security review, not a formal audit).
-            </p>
-            <p>
-              <b>Oracle &amp; Guardian Architecture (M-1 / I-6 Disclosure):</b> Each <code>LengoMarket</code> holds an immutable reference to <code>ChainlinkOracle</code> (<a href={addrUrl(DEPLOYMENTS.mainnet.oracle ?? "0xAc892397986B84ff42894739F05fE884D1D4c6da", "mainnet")} target="_blank" rel="noreferrer">{DEPLOYMENTS.mainnet.oracle} ↗</a>), which reads Chainlink&apos;s official price feeds via <code>latestRoundData()</code> with round-completeness (<code>answer &gt; 0</code>, <code>updatedAt &gt; 0</code>, <code>answeredInRound &gt;= roundId</code>) and staleness checks.{" "}
-              <code>ChainlinkOracle</code> inherits OpenZeppelin <code>Ownable2Step</code>: its owner (currently the deployer/guardian address <code>0x9178…7681</code>, scheduled to transition to a ≥ 48-hour timelock + multisig) can call <code>setFeed(asset, feed, maxStaleness)</code> and <code>setFixedPeg(asset, price8Dec)</code> (used to peg <code>USDG</code> at $1.00). Until ownership is behind a timelock or renounced, the oracle owner has privileged ability to update feed addresses, staleness windows, or fixed pegs across markets sharing this adapter.
-            </p>
-            <p>
-              <b>$LENGO Utility Tier:</b> The <code>$LENGO</code> token (<a href={addrUrl(MAINNET_LENGO_TOKEN, "mainnet")} target="_blank" rel="noreferrer">{MAINNET_LENGO_TOKEN} ↗</a>) is queried live onchain across <code>/app</code>, <code>/app/positions</code>, and <code>/app/routes</code>: wallets holding ≥ 10,000 <code>LENGO</code> automatically unlock the <b>0% 1Click App Routing Fee tier</b>.
-            </p>
-            <h3 style={{ marginTop: 24, fontSize: 13, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--lime)" }}>
-              First Loan Live Proofs — Mainnet 4663 (Completed)
-            </h3>
-            <div className={d.table}>
-              <div>
-                <span>Supply USDG (Lender)</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0x04887e2dd03391090f3f90eb170bba562955d76122e24bdafb2fbf73f715f0d7" target="_blank" rel="noreferrer">
-                    0x04887e2d…f0d7 ↗
-                  </a>
-                </b>
+                <div className={d.proofItem}>
+                  <span>Supply USDG (WETH Pool)</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0x04887e2dd03391090f3f90eb170bba562955d76122e24bdafb2fbf73f715f0d7" target="_blank" rel="noreferrer">0x04887e…f0d7 ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Deposit WETH Collateral</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0x4ff7f8d8c6c72ede29a11b76ffddca948c662f57d4eb220a8e34654fde9d6b98" target="_blank" rel="noreferrer">0x4ff7f8…6b98 ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Borrow USDG</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0x57356f96ef1e9bebc9345de9530628c919faf2f9348c082f83b62cb240435f4d" target="_blank" rel="noreferrer">0x57356f…5f4d ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Repay Full USDG Debt (#1)</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0xabdb082cf3c0fd5fd1875f616b0b4fa3b71bd7f3ac811157edffd4ad32725bcb" target="_blank" rel="noreferrer">0xabdb08…5bcb ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Cross-Chain Repay All (#2)</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0x88a0e4bfdfa2b444d205b3f8b125afab714346d86a864451e5a36aa8e55844c8" target="_blank" rel="noreferrer">0x88a0e4…44c8 ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Post-Repay Collateral Exit</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0x563d35bd6f8dbb8e56c1029e04dda04f164b2ba1bdd893e216d22195b6aab41f" target="_blank" rel="noreferrer">0x563d35…b41f ↗</a></b>
+                </div>
               </div>
-              <div>
-                <span>Deposit WETH (Borrower)</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0x4ff7f8d8c6c72ede29a11b76ffddca948c662f57d4eb220a8e34654fde9d6b98" target="_blank" rel="noreferrer">
-                    0x4ff7f8d8…6b98 ↗
-                  </a>
-                </b>
+
+              {/* Column 2: 1Click Cross-Chain Payouts */}
+              <div className={d.proofCard}>
+                <div className={d.proofHead}>
+                  <span>1Click Cross-Chain Payouts</span>
+                  <em>Solana &amp; Base</em>
+                </div>
+                <div className={d.proofItem}>
+                  <span>1Click USDG Origin (RH → SOL)</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0xc6684d3643a3d0378129c7b2ed80de1f44851e8ae71d4dcbb520b52016d09644" target="_blank" rel="noreferrer">0xc6684d…9644 ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>NEAR Intents Solana Settlement</span>
+                  <b><a href="https://explorer.near-intents.org/transactions/0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283" target="_blank" rel="noreferrer">0x0D650E…6283 ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Solana USDC Payout (0.806 USDC)</span>
+                  <b><a href="https://solscan.io/tx/PWUk1xC3DdzyGvPZu9rVviDkj1EpNapzftXxjWPWwpfdFf6PyRMAWkmZqWbp8oCgk4jhuJFDgqz8pRzZV77RUwV" target="_blank" rel="noreferrer">PWUk1xC3…7RUwV ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>1Click USDG Origin (RH → Base)</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0xa484f312f7419d09f0d64fd85bcaff29394ed072d53603c510f2d523cf77a7f0" target="_blank" rel="noreferrer">0xa484f3…a7f0 ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>NEAR Intents Base Settlement</span>
+                  <b><a href="https://explorer.near-intents.org/transactions/0x0cC24E339540688717D23c86fE2783e3DD7C2E3d" target="_blank" rel="noreferrer">0x0cC24E…2E3d ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Base USDC Payout (0.2965 USDC)</span>
+                  <b><a href="https://basescan.org/tx/0x7e4f2eb4a67b2e083993793c4154ce34a23781d6f03e1b866b5e3e78b4c2cd0d" target="_blank" rel="noreferrer">0x7e4f2e…cd0d ↗</a></b>
+                </div>
               </div>
-              <div>
-                <span>Borrow USDG (Borrower)</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0x57356f96ef1e9bebc9345de9530628c919faf2f9348c082f83b62cb240435f4d" target="_blank" rel="noreferrer">
-                    0x57356f96…5f4d ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>Repay USDG (Borrower)</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0xabdb082cf3c0fd5fd1875f616b0b4fa3b71bd7f3ac811157edffd4ad32725bcb" target="_blank" rel="noreferrer">
-                    0xabdb082c…5bcb ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>Withdraw WETH (Borrower)</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0x1123391fe9d0a87e5c2146b2cb577573b022bc48dbc31f1f37ff625e0416a2f7" target="_blank" rel="noreferrer">
-                    0x1123391f…a2f7 ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>1Click USDG Deposit (RH → Solana)</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0xc6684d3643a3d0378129c7b2ed80de1f44851e8ae71d4dcbb520b52016d09644" target="_blank" rel="noreferrer">
-                    0xc6684d36…9644 ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>1Click USDC Payout (Solana)</span>
-                <b>
-                  <a href="https://solscan.io/tx/PWUk1xC3DdzyGvPZu9rVviDkj1EpNapzftXxjWPWwpfdFf6PyRMAWkmZqWbp8oCgk4jhuJFDgqz8pRzZV77RUwV" target="_blank" rel="noreferrer">
-                    PWUk1xC3…7RUwV ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>NEAR Intents Settlement</span>
-                <b>
-                  <a href="https://explorer.near-intents.org/transactions/0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283" target="_blank" rel="noreferrer">
-                    0x0D650Ee3…6283 · SUCCESS ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>1Click USDG Deposit (RH → Base)</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0xa484f312f7419d09f0d64fd85bcaff29394ed072d53603c510f2d523cf77a7f0" target="_blank" rel="noreferrer">
-                    0xa484f312…a7f0 ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>1Click USDC Payout (Base)</span>
-                <b>
-                  <a href="https://basescan.org/tx/0x7e4f2eb4a67b2e083993793c4154ce34a23781d6f03e1b866b5e3e78b4c2cd0d" target="_blank" rel="noreferrer">
-                    0x7e4f2eb4…cd0d ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>NEAR Intents Base Settlement</span>
-                <b>
-                  <a href="https://explorer.near-intents.org/transactions/0x0cC24E339540688717D23c86fE2783e3DD7C2E3d" target="_blank" rel="noreferrer">
-                    0x0cC24E33…2E3d · SUCCESS ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>Seed RWA Pool · NVDA/USDG</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0xef3a519afa18f8c11b68ff13348a11bbbffe3dd2255f83cdaa96d6befed58cfe" target="_blank" rel="noreferrer">
-                    0xef3a519a…8cfe ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>Seed RWA Pool · TSLA/USDG</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0x3ba93b6139f3be8c253c9b3a678bfaa2f084dbbb617bfa01980aeec24f24352b" target="_blank" rel="noreferrer">
-                    0x3ba93b61…352b ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>Seed RWA Pool · AAPL/USDG</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0xefce4d41320bf3d7175043d6dbfbe0720c7f18390bd3b36db2b08922bed05ec7" target="_blank" rel="noreferrer">
-                    0xefce4d41…5ec7 ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>Seed Crypto Pool · cbBTC/USDG</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0xdb808435bd3f9dac585e9658ba6c0cc331902b9e515f29a605e574de9853e0fa" target="_blank" rel="noreferrer">
-                    0xdb808435…e0fa ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>Seed Crypto Pool · WBTC/USDG</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0x5d55c1ad35e0986b3e7db7b0e648f037823b0eac714faa3376af039f7cc1b81f" target="_blank" rel="noreferrer">
-                    0x5d55c1ad…b81f ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>Seed Stable Pool · USDe/USDG</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0xb035a9c29b5ac2906007f2a05cf6822d3845de29e92e145d78d5f2db15748b63" target="_blank" rel="noreferrer">
-                    0xb035a9c2…8b63 ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>Cross-Chain Repay All · USDG</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0x88a0e4bfdfa2b444d205b3f8b125afab714346d86a864451e5a36aa8e55844c8" target="_blank" rel="noreferrer">
-                    0x88a0e4bf…44c8 ↗
-                  </a>
-                </b>
-              </div>
-              <div>
-                <span>Post-Repay Collateral Exit · WETH</span>
-                <b>
-                  <a href="https://robinhoodchain.blockscout.com/tx/0x563d35bd6f8dbb8e56c1029e04dda04f164b2ba1bdd893e216d22195b6aab41f" target="_blank" rel="noreferrer">
-                    0x563d35bd…b41f ↗
-                  </a>
-                </b>
+
+              {/* Column 3: All 6 Additional Market Seeds */}
+              <div className={d.proofCard}>
+                <div className={d.proofHead}>
+                  <span>Isolated Pool Seeding</span>
+                  <em>RWA &amp; Crypto</em>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Seed RWA · NVDA/USDG</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0xef3a519afa18f8c11b68ff13348a11bbbffe3dd2255f83cdaa96d6befed58cfe" target="_blank" rel="noreferrer">0xef3a51…8cfe ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Seed RWA · TSLA/USDG</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0x3ba93b6139f3be8c253c9b3a678bfaa2f084dbbb617bfa01980aeec24f24352b" target="_blank" rel="noreferrer">0x3ba93b…352b ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Seed RWA · AAPL/USDG</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0xefce4d41320bf3d7175043d6dbfbe0720c7f18390bd3b36db2b08922bed05ec7" target="_blank" rel="noreferrer">0xefce4d…5ec7 ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Seed Crypto · cbBTC/USDG</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0xdb808435bd3f9dac585e9658ba6c0cc331902b9e515f29a605e574de9853e0fa" target="_blank" rel="noreferrer">0xdb8084…e0fa ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Seed Crypto · WBTC/USDG</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0x5d55c1ad35e0986b3e7db7b0e648f037823b0eac714faa3376af039f7cc1b81f" target="_blank" rel="noreferrer">0x5d55c1…b81f ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Seed Stable · USDe/USDG</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0xb035a9c29b5ac2906007f2a05cf6822d3845de29e92e145d78d5f2db15748b63" target="_blank" rel="noreferrer">0xb035a9…8b63 ↗</a></b>
+                </div>
               </div>
             </div>
-            <h3 style={{ marginTop: 24, fontSize: 13, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--tx2)" }}>
-              Testnet sandbox — Robinhood Chain Testnet (46630)
-            </h3>
-            <div className={d.table}>
+
+            <div className={d.subHead} style={{ color: "var(--tx3)" }}>Testnet Sandbox — Robinhood Chain Testnet (46630)</div>
+            <div className={d.addrGrid}>
               {testnetAddrs.map(([k, v]) => (
-                <div key={k}>
+                <div key={k} className={d.addrRow}>
                   <span>{k}</span>
-                  <b>{v ? <a href={addrUrl(v, "testnet")} target="_blank" rel="noreferrer">{v} ↗</a> : "—"}</b>
+                  <b>{v ? <a href={addrUrl(v, "testnet")} target="_blank" rel="noreferrer" title={v}>{shortAddr(v)} ↗</a> : "—"}</b>
                 </div>
               ))}
             </div>
           </section>
 
+          {/* 05 · CROSS-CHAIN ROUTES */}
           <section id="routes">
-            <h2>Cross-chain routes (Preview &amp; Live)</h2>
-            <p>
-              The <a href="/app/routes">Routes</a> page integrates NEAR Intents 1Click in two modes: <b>Preview</b> (read-only market quotes with no deposit address) and <b>Live</b> (issues a dedicated deposit address, enforces strict ERC-20 origin asset verification on Robinhood Chain Mainnet, submits <code>txHash</code> to solvers, and polls live settlement status).
-            </p>
-            <ul>
-              <li><b>Borrow payout (multi-chain &amp; multi-stable)</b>: convert borrowed <code>USDG</code> on Robinhood Chain directly into <code>USDC</code>, <code>USDT</code>, or <code>DAI</code> across Solana, Base, Arbitrum, Ethereum, Optimism, Polygon, BNB Chain, Avalanche, NEAR, TON, TRON, Sui, Aptos, and Stellar.</li>
-              <li><b>Cross-chain collateral</b>: route <code>SOL</code>, <code>USDC</code>, <code>USDT</code>, <code>ETH</code>, or <code>BTC</code> from external chains into <code>WETH</code> / <code>USDe</code> on Robinhood Chain and lock directly into <code>LengoMarket</code>.</li>
-              <li><b>Cross-chain repay</b>: settle outstanding <code>USDG</code> debt from any supported stablecoin/chain via 1Click and immediately unlock collateral.</li>
-              <li><b>Position Health &amp; RWA Stocks</b>: monitor real-time Health Factor, Liquidation Price, and borrow headroom across Crypto &amp; Robinhood Stock markets (<code>NVDA</code>, <code>TSLA</code>, <code>AAPL</code>) on <a href="/app/positions">Positions</a>.</li>
-            </ul>
+            <div className={d.secHead}>
+              <h2>05 · Cross-chain routes &amp; $LENGO utility</h2>
+              <span className={d.secTag}>NEAR Intents 1Click · Live &amp; Preview</span>
+            </div>
+            <div className={d.cardGrid4}>
+              <div className={d.docCard}>
+                <div className={d.docCardHead}><b>Multi-Chain Payout</b><em>14+ Chains</em></div>
+                <p>Convert borrowed <code>USDG</code> on Robinhood Chain into <code>USDC</code>, <code>USDT</code>, or <code>DAI</code> across Solana, Base, Arbitrum, Ethereum, Optimism, Polygon, BNB, Avalanche, TON, TRON, Sui, NEAR, Aptos &amp; Stellar.</p>
+              </div>
+              <div className={d.docCard}>
+                <div className={d.docCardHead}><b>Cross-Chain Collateral</b><em>Inbound</em></div>
+                <p>Route <code>SOL</code>, <code>USDC</code>, <code>USDT</code>, <code>ETH</code>, or <code>BTC</code> from external chains into <code>ETH/WETH</code> or <code>USDe</code> on Robinhood Chain and lock directly into <code>LengoMarket</code>.</p>
+              </div>
+              <div className={d.docCard}>
+                <div className={d.docCardHead}><b>Any-Chain Repay</b><em>Full Cycle</em></div>
+                <p>Settle outstanding <code>USDG</code> debt on Robinhood Chain using assets from any external network via 1Click, then immediately unlock and withdraw collateral.</p>
+              </div>
+              <div className={d.docCard}>
+                <div className={d.docCardHead}><b>$LENGO Fee Tier</b><em>0% Fee</em></div>
+                <p>Wallets holding ≥ 10,000 <a href={addrUrl(MAINNET_LENGO_TOKEN, "mainnet")} target="_blank" rel="noreferrer">$LENGO ↗</a> on Robinhood Chain automatically unlock the 0% 1Click App Routing Fee tier across all routes.</p>
+              </div>
+            </div>
           </section>
 
+          {/* 06 · SECURITY & DISCLOSURES */}
           <section id="limits">
-            <h2>Safety, risk disclosures &amp; current scope</h2>
-            <ul>
-              <li><b>Independent Security Review (Not a Formal Audit)</b>: All 7 deployed <code>LengoMarket</code> contracts and <code>ChainlinkOracle</code> are <code>exact_match</code> verified on Sourcify/Blockscout, tested against unit, fuzz, and 128,000-call stateful invariant suites, and have undergone an <b>independent security review by HEY Research Lab</b>. TVL is bounded by conservative per-market beta caps (e.g. 25 WETH / 50,000 USDG).</li>
-              <li><b>Non-custodial exit guarantee</b>: Even if the guardian pauses new deposits/borrows, <code>repay</code>, debt-free <code>withdrawCollateral</code>, and <code>withdrawSupply</code> remain permanently open. The guardian cannot move user funds, alter LTV/LT/APR parameters, or swap the market&apos;s oracle address.</li>
-              <li><b>Oracle &amp; Guardian Architecture (M-1 / I-6)</b>: <code>ChainlinkOracle</code> inherits <code>Ownable2Step</code> (owner = deployer/guardian <code>0x9178…7681</code>, which currently carries an EIP-7702 smart-account delegation from wallet batching; <code>setGuardian</code> on <code>LengoMarket</code> is single-step). Moving oracle ownership and market guardianship to a ≥ 48-hour timelock + multisig is tracked as priority hardening.</li>
-              <li><b>Oracle staleness, WETH heartbeat &amp; US market-hours feeds (L-2 / I-2 / I-8)</b>: <code>borrow</code>, <code>liquidate</code>, and <code>withdrawCollateral</code> (when debt &gt; 0) require a fresh oracle reading. On Robinhood Chain, the ETH/USD Chainlink feed exhibits a 24-hour heartbeat with deviation triggers (occasionally exceeding 7,200 s between rounds). Because <code>ChainlinkOracle</code> returns <code>block.timestamp</code> when a feed&apos;s configured <code>maxStaleness</code> exceeds 7,200 s (I-2), aligning WETH&apos;s oracle <code>maxStaleness</code> to 24h+ buffer keeps liquidations open across quiet periods. While <code>NVDA/USDG</code> and <code>TSLA/USDG</code> use 24/7 Chainlink equity feeds (90,000 s window), <code>AAPL/USDG</code> tracks regular US equity market hours (pausing updates over weekends/market holidays). Position Health (<code>/app/positions</code>) displays live oracle price age alongside every Health Factor (I-8).</li>
-              <li><b>Sub-cent dust collateral &amp; partial repay edge cases (L-1 / I-7)</b>: In <code>LengoMarket</code> v1.0, bad-debt write-off triggers when a liquidation seizes 100% of a borrower&apos;s collateral (<code>p.collateral == 0</code>). If an underwater 18-decimal position is left with microscopic dust collateral worth less than 1 base unit of <code>USDG</code> (&lt; ~1.2×10<sup>7</sup> wei WETH), the exhausted-collateral branch rounds <code>repaid</code> to 0 and reverts with <code>ZeroAmount()</code> (L-1). Similarly, after <code>borrowIndex &gt; RAY</code>, sub-unit partial repayments that round to 0 debt shares are no-ops (I-7). Both are patched for v1.1 market deployments.</li>
-              <li><b>Fixed APR &amp; pool liquidity utilization (I-5)</b>: Markets accrue interest at a fixed per-second RAY borrow rate without a variable utilization kink. If 100% of supplied <code>USDG</code> is actively borrowed (0 idle liquidity), lender <code>withdrawSupply</code> calls will revert with <code>InsufficientLiquidity()</code> until borrowers repay or additional <code>USDG</code> is supplied.</li>
-              <li><b>ERC-8056 stock token multipliers, Harmonic Session Oracle, USDG $1.00 peg &amp; L2 sequencer (I-1 / I-3 / I-4 / I-9)</b>: <code>USDG</code> is valued at a $1.00 fixed peg in <code>ChainlinkOracle</code> (I-4). Tokenized equities (<code>NVDA</code>, <code>TSLA</code>, <code>AAPL</code>) are issuer-upgradable ERC-8056/ERC-20 proxies exposing <code>uiMultiplier()</code> (currently <code>1.000775</code> on NVDA, <code>1.001091</code> on AAPL, and <code>1.000000</code> on TSLA) and subject to issuer pause/compliance controls (I-1, I-9). Lengo now supports live market session telemetry (<code>Market Open</code> / <code>Closed</code> / <code>Weekend Hold</code> / <code>Halted</code>) for <code>NVDA</code>, <code>TSLA</code>, and <code>AAPL</code> via the <a href="https://harmonicagent.solutions/api/keeper/session?tokens=NVDA,TSLA,AAPL" target="_blank" rel="noreferrer">Harmonic Agent Session Oracle ↗</a> (onchain <code>HarmonicRiskFeed</code> at <a href="https://robinhoodchain.blockscout.com/address/0xd91e56a9999974a1319150cd6fa00bc87cc2d91d" target="_blank" rel="noreferrer">0xd91e…d91d ↗</a>). Robinhood Chain is an Arbitrum Orbit L2 with a single sequencer without an onchain sequencer-uptime feed yet (I-3). Lengo never lists fee-on-transfer tokens.</li>
-              <li><b>Native BTC / ZEC collateral</b>: Mainnet supports 7 isolated ERC-20 Crypto &amp; RWA Stock markets today; native non-EVM BTC &amp; ZEC origin-chain locking is in research.</li>
-              <li><b>Charts</b>: Multi-timeframe (<code>15m / 1h / 4h / 1d</code>) historical candles in the UI are powered by Pyth Pro, while all onchain LTV and liquidation checks strictly read <code>ChainlinkOracle</code> on Robinhood Chain.</li>
-            </ul>
+            <div className={d.secHead}>
+              <h2>06 · Security review &amp; architecture disclosures</h2>
+              <span className={d.secTag}>Independent Security Review by HEY Research Lab</span>
+            </div>
+            <div className={d.cardGrid2}>
+              <div className={d.docCard}>
+                <div className={d.docCardHead}><b>Independent Security Review</b><em>Not a Formal Audit</em></div>
+                <p>
+                  All 7 deployed <code>LengoMarket</code> contracts and <code>ChainlinkOracle</code> are <code>exact_match</code> verified on Sourcify &amp; Blockscout, tested against unit, fuzz, and 128,000-call stateful invariant suites, and covered by an <b>independent security review by HEY Research Lab</b>. TVL is bounded by per-market beta caps (e.g. 25 WETH / 50,000 USDG).
+                </p>
+              </div>
+              <div className={d.docCard}>
+                <div className={d.docCardHead}><b>Non-Custodial Exit Guarantee</b><em>Always Open</em></div>
+                <p>
+                  Even if the market guardian pauses new deposits or borrows, <code>repay</code>, debt-free <code>withdrawCollateral</code>, <code>withdrawSupply</code>, and <code>liquidate</code> remain permanently open. The guardian cannot move user funds, alter LTV/LT/APR parameters, or change a market&apos;s oracle address.
+                </p>
+              </div>
+              <div className={d.docCard}>
+                <div className={d.docCardHead}><b>Oracle &amp; Guardian Ownership</b><em>Ownable2Step</em></div>
+                <p>
+                  Each <code>LengoMarket</code> references <code>ChainlinkOracle</code> (<a href={addrUrl(DEPLOYMENTS.mainnet.oracle ?? "0xAc892397986B84ff42894739F05fE884D1D4c6da", "mainnet")} target="_blank" rel="noreferrer">0xAc89…c6da ↗</a>), which inherits <code>Ownable2Step</code>. Its owner (currently deployer/guardian <code>0x9178…7681</code> with EIP-7702 wallet delegation; <code>setGuardian</code> is single-step) can configure feeds via <code>setFeed</code> and <code>setFixedPeg</code> ($1.00 USDG). Transitioning ownership to a ≥ 48h timelock + multisig is tracked as priority hardening.
+                </p>
+              </div>
+              <div className={d.docCard}>
+                <div className={d.docCardHead}><b>Feed Heartbeats &amp; Market Sessions</b><em>Chainlink + Harmonic</em></div>
+                <p>
+                  <code>borrow</code>, <code>liquidate</code>, and leveraged <code>withdrawCollateral</code> require a fresh price reading. ETH/USD on Robinhood Chain operates on a 24h heartbeat + deviation trigger (aligning oracle <code>maxStaleness</code> &gt; 7,200 s keeps liquidations active during low-volatility windows). <code>NVDA</code> and <code>TSLA</code> use 24/7 feeds, while <code>AAPL</code> tracks US market hours. Lengo now supports live session status (<code>Open</code> / <code>Closed</code> / <code>Halted</code>) via the <a href="https://harmonicagent.solutions/api/keeper/session?tokens=NVDA,TSLA,AAPL" target="_blank" rel="noreferrer">Harmonic Agent Session Oracle ↗</a>.
+                </p>
+              </div>
+              <div className={d.docCard}>
+                <div className={d.docCardHead}><b>Fixed APR, Liquidity &amp; Rounding</b><em>RAY Accounting</em></div>
+                <p>
+                  Interest accrues at a fixed per-second RAY rate without a variable utilization kink; if 100% of supplied <code>USDG</code> is borrowed (0 idle cash), <code>withdrawSupply</code> waits for repayments or new supply. In v1.0, full-liquidation bad-debt write-off requires <code>collateral == 0</code> (leaving microscopic dust &lt; ~1.2×10<sup>7</sup> wei WETH or sub-unit 0-share partial repays to be addressed in v1.1 market deployments).
+                </p>
+              </div>
+              <div className={d.docCard}>
+                <div className={d.docCardHead}><b>ERC-8056 Equities, USDG Peg &amp; L2</b><em>Asset Controls</em></div>
+                <p>
+                  <code>USDG</code> is valued at a $1.00 fixed peg in <code>ChainlinkOracle</code>. Tokenized equities (<code>NVDA</code>, <code>TSLA</code>, <code>AAPL</code>) are issuer-upgradable ERC-8056 proxies exposing <code>uiMultiplier()</code> (<code>1.000775</code> NVDA, <code>1.001091</code> AAPL, <code>1.000000</code> TSLA) and issuer compliance controls; fee-on-transfer tokens are never listed. Robinhood Chain is an Arbitrum Orbit L2 with a single sequencer; UI charts use Pyth Pro while all onchain checks read Chainlink.
+                </p>
+              </div>
+            </div>
           </section>
 
+          {/* 07 · ROADMAP */}
           <section id="roadmap">
-            <h2>Roadmap</h2>
-            <div className={d.table}>
+            <div className={d.secHead}>
+              <h2>07 · Roadmap</h2>
+              <span className={d.secTag}>Execution Milestones</span>
+            </div>
+            <div className={d.roadGrid}>
               {[
-                ["Phase 1 · LIVE", "Isolated lending engine + Testnet sandbox (46630)"],
-                ["Phase 2 · LIVE", "Robinhood Chain Mainnet (4663) + keeperless ChainlinkOracle + Position Health"],
-                ["Phase 3 · LIVE", "NEAR Intents 1Click Cross-Chain Collateral, 14+ Chain USDC/USDT/DAI Payout & Any-Chain Repay"],
-                ["Phase 4 · LIVE", "7 isolated Crypto & RWA Stock markets (WETH, cbBTC, WBTC, USDe, NVDA, TSLA, AAPL) live on Mainnet"],
-                ["Phase 5 · RESEARCH", "Native BTC & ZEC collateral locking, proof & redemption"],
-              ].map(([k, v]) => (
-                <div key={k}>
-                  <span>{k}</span>
-                  <b>{v}</b>
+                ["Phase 1", "LIVE", "Isolated lending engine + Robinhood Chain Testnet sandbox (46630)"],
+                ["Phase 2", "LIVE", "Robinhood Chain Mainnet (4663) + ChainlinkOracle + Position Health"],
+                ["Phase 3", "LIVE", "NEAR Intents 1Click Cross-Chain Collateral, 14+ Chain Payout & Repay"],
+                ["Phase 4", "LIVE", "7 isolated Crypto & RWA Stock markets seeded & live + Harmonic session status"],
+                ["Phase 5", "RESEARCH", "48h Timelock + multisig oracle handoff & native BTC / ZEC locking"],
+              ].map(([p, st, desc]) => (
+                <div key={p} className={d.roadCard}>
+                  <div className={d.roadTop}><span>{p}</span><em>{st}</em></div>
+                  <p>{desc}</p>
                 </div>
               ))}
             </div>

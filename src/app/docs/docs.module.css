@@ -1,23 +1,102 @@
-.wrap{display:grid;grid-template-columns:220px minmax(0,1fr);gap:40px;align-items:start}
-.toc{position:sticky;top:90px;display:flex;flex-direction:column;border:1px solid var(--line)}
-.toc a{display:flex;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx2)}
+.wrap{display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px;align-items:start}
+.tocWrap{position:sticky;top:86px;display:flex;flex-direction:column;gap:14px}
+.toc{display:flex;flex-direction:column;border:1px solid var(--line);background:var(--bg2)}
+.toc a{display:flex;gap:12px;padding:11px 14px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx2);transition:background .15s,color .15s}
 .toc a:last-child{border-bottom:0}
-.toc a:hover{background:var(--panel);color:var(--tx)}
+.toc a:hover{background:var(--panel);color:var(--lime)}
 .toc span{color:var(--tx3)}
-.body{min-width:0;max-width:820px;display:flex;flex-direction:column;gap:56px}
-.body section{scroll-margin-top:90px}
-.body h2{font-weight:300;font-size:30px;text-transform:uppercase;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line)}
-.body p,.body li{color:var(--tx2);font-size:15px;line-height:1.75}
-.body p+p{margin-top:12px}
-.body ol,.body ul{padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.tocMeta{border:1px solid var(--line);background:var(--bg);padding:14px;display:flex;flex-direction:column;gap:8px}
+.tocMeta span{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3)}
+.tocMeta b{font-family:var(--mono);font-size:12px;font-weight:400;color:var(--lime)}
+.tocMeta p{font-size:12px;line-height:1.55;color:var(--tx2);margin:0}
+
+.body{min-width:0;width:100%;display:flex;flex-direction:column;gap:42px}
+.body section{scroll-margin-top:86px}
+.secHead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.body h2{font-weight:300;font-size:24px;letter-spacing:.03em;text-transform:uppercase;margin:0}
+.secTag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx3)}
+.subHead{margin:20px 0 10px;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--lime)}
+
+.body p,.body li{color:var(--tx2);font-size:13.5px;line-height:1.68}
+.body p+p{margin-top:10px}
 .body a{color:var(--lime)}
 .body b{color:var(--tx);font-weight:500}
-.body code{font-family:var(--mono);font-size:13px;color:var(--tx);background:var(--panel);padding:1px 6px}
-.body pre{font-family:var(--mono);font-size:13px;line-height:2;color:var(--tx2);background:var(--panel);border:1px solid var(--line);padding:20px;overflow-x:auto;margin-bottom:16px}
-.ex{border-left:2px solid var(--lime);padding-left:14px;margin-top:14px}
-.table{border:1px solid var(--line);margin:14px 0}
-.table div{display:grid;grid-template-columns:220px 1fr;gap:16px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:14px}
-.table div:last-child{border-bottom:0}
-.table span{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)}
-.table b{font-weight:400;color:var(--tx);word-break:break-all}
-@media (max-width:820px){.wrap{grid-template-columns:minmax(0,1fr)}.toc{position:static}.table div{grid-template-columns:1fr;gap:4px}}
+.body code{font-family:var(--mono);font-size:12px;color:var(--tx);background:var(--panel);padding:1px 6px;border:1px solid var(--line)}
+.body pre{font-family:var(--mono);font-size:12.5px;line-height:1.85;color:var(--tx2);background:var(--panel);border:1px solid var(--line);padding:16px 18px;overflow-x:auto;margin:0}
+
+/* Stepper cards for Getting Started */
+.stepsGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.stepCard{border:1px solid var(--line);background:var(--bg2);padding:14px;display:flex;flex-direction:column;gap:8px}
+.stepCard i{font-style:normal;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--lime);text-transform:uppercase}
+.stepCard b{font-size:13.5px;color:var(--tx)}
+.stepCard p{font-size:12.5px;line-height:1.55;color:var(--tx2);margin:0}
+
+/* 2-column split for formulas + example */
+.split2{display:grid;grid-template-columns:1.25fr 1fr;gap:14px;align-items:stretch}
+.infoCard{border:1px solid var(--line);background:var(--bg2);padding:16px;display:flex;flex-direction:column;justify-content:space-between;gap:12px}
+.ex{border-left:2px solid var(--lime);padding-left:12px;font-size:12.5px;color:var(--tx2)}
+
+/* Compact 4-column parameter grid */
+.paramGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);background:var(--bg)}
+.paramCell{padding:12px 14px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.paramCell:nth-child(4n){border-right:0}
+.paramCell span{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)}
+.paramCell b{font-family:var(--mono);font-size:13px;font-weight:400;color:var(--tx)}
+.paramCell small{font-size:11px;color:var(--tx3)}
+
+/* Multi-column market specification table */
+.mktTableWrap{border:1px solid var(--line);background:var(--bg);overflow-x:auto}
+.mktTable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;text-align:left}
+.mktTable th{padding:10px 12px;border-bottom:1px solid var(--line2);background:var(--bg2);font-size:9.5px;font-weight:400;letter-spacing:.11em;text-transform:uppercase;color:var(--tx3);white-space:nowrap}
+.mktTable td{padding:10px 12px;border-bottom:1px solid var(--line);color:var(--tx2);white-space:nowrap}
+.mktTable tr:last-child td{border-bottom:0}
+.mktTable tr:hover td{background:rgba(255,255,255,.015)}
+.mktTable td b{color:var(--tx);font-weight:500}
+.badgeLive{display:inline-block;padding:2px 7px;border:1px solid rgba(201,242,122,.45);background:rgba(201,242,122,.07);color:var(--lime);font-size:10px;letter-spacing:.06em;text-transform:uppercase}
+
+/* 2-column contracts grid */
+.addrGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--line);background:var(--bg)}
+.addrRow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);font-size:12.5px}
+.addrRow:nth-child(2n){border-right:0}
+.addrRow span{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx2)}
+.addrRow b{font-family:var(--mono);font-size:11.5px;font-weight:400;white-space:nowrap}
+
+/* 3-column categorized onchain proofs grid */
+.proofCols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.proofCard{border:1px solid var(--line);background:var(--bg2);display:flex;flex-direction:column}
+.proofHead{padding:10px 14px;border-bottom:1px solid var(--line);background:var(--bg);font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--lime);display:flex;justify-content:space-between}
+.proofHead em{font-style:normal;color:var(--tx3)}
+.proofItem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);font-size:12px}
+.proofItem:last-child{border-bottom:0}
+.proofItem span{color:var(--tx2);font-size:11.5px}
+.proofItem b{font-family:var(--mono);font-size:11px;font-weight:400;white-space:nowrap}
+
+/* 2-column cards for Routes & Safety Disclosures */
+.cardGrid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.cardGrid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.docCard{border:1px solid var(--line);background:var(--bg2);padding:15px 16px;display:flex;flex-direction:column;gap:7px}
+.docCardHead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.docCardHead b{font-size:13.5px;color:var(--tx)}
+.docCardHead em{font-style:normal;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--lime);padding:2px 6px;border:1px solid rgba(201,242,122,.35)}
+.docCard p{font-size:12.5px;line-height:1.6;color:var(--tx2);margin:0}
+
+/* 5-column horizontal roadmap */
+.roadGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.roadCard{border:1px solid var(--line);background:var(--bg2);padding:14px;display:flex;flex-direction:column;gap:8px}
+.roadTop{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3)}
+.roadTop em{font-style:normal;color:var(--lime)}
+.roadCard p{font-size:12.5px;line-height:1.55;color:var(--tx2);margin:0}
+
+@media (max-width:1180px){
+  .stepsGrid,.roadGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .proofCols{grid-template-columns:1fr}
+  .paramGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .paramCell:nth-child(2n){border-right:0}
+  .cardGrid4{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:860px){
+  .wrap{grid-template-columns:minmax(0,1fr)}
+  .tocWrap{position:static}
+  .split2,.addrGrid,.cardGrid2,.cardGrid4,.stepsGrid,.roadGrid{grid-template-columns:1fr}
+  .addrRow{border-right:0}
+}
