@@ -1123,12 +1123,19 @@ function RoutesInner() {
                     <a href="https://polygonscan.com/tx/0x1c58e043f21d7e69a29b0e9342d93b7875166d1aa97b5659e7e13f1d7e7cf782" target="_blank" rel="noreferrer">Polygon Tx 0x1c58…f782 ↗</a>
                   </span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", paddingBottom: 6, borderBottom: "1px dashed var(--line)" }}>
                   <span><b>Cross-Chain Repay &amp; Collateral Exit (RH 4663)</b> · Status: <b className={s.ok}>CONFIRMED</b></span>
                   <span style={{ display: "inline-flex", gap: 10, flexWrap: "wrap" }}>
                     <a href="https://explorer.near-intents.org/transactions/Tzb8ET9kjsEBR95A4qC35FXzJsWpuaCgE9wKaoajFN9" target="_blank" rel="noreferrer">1Click Intent Tzb8ET…jFN9 ↗</a>
                     <a href="https://robinhoodchain.blockscout.com/tx/0x88a0e4bfdfa2b444d205b3f8b125afab714346d86a864451e5a36aa8e55844c8" target="_blank" rel="noreferrer">Repay Tx 0x88a0…44c8 ↗</a>
                     <a href="https://robinhoodchain.blockscout.com/tx/0x563d35bd6f8dbb8e56c1029e04dda04f164b2ba1bdd893e216d22195b6aab41f" target="_blank" rel="noreferrer">Withdraw WETH Tx 0x563d…b41f ↗</a>
+                  </span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                  <span><b>Cross-Chain Community Pool Supply (0.25 USDG → WETH/USDG)</b> · Status: <b className={s.ok}>CONFIRMED</b></span>
+                  <span style={{ display: "inline-flex", gap: 10, flexWrap: "wrap" }}>
+                    <a href="https://robinhoodchain.blockscout.com/tx/0x1efaa7f0b285ac27db530f865910295cc5f0f123da833f37f2f1996359f74655" target="_blank" rel="noreferrer">Approve Tx 0x1efa…4655 ↗</a>
+                    <a href="https://robinhoodchain.blockscout.com/tx/0xcf2e76b91b2d4cc024616ce3accaecba8743ccc4ef022aff40c9639ec4e25c85" target="_blank" rel="noreferrer">Supply Tx 0xcf2e…5c85 ↗</a>
                   </span>
                 </div>
               </div>

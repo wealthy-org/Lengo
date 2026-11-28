@@ -255,6 +255,10 @@ Est. Liquidation Price  = D / (collateralQuantity × liquidationThreshold)`}</pr
                   <span>Post-Repay Collateral Exit</span>
                   <b><a href="https://robinhoodchain.blockscout.com/tx/0x563d35bd6f8dbb8e56c1029e04dda04f164b2ba1bdd893e216d22195b6aab41f" target="_blank" rel="noreferrer">0x563d35…b41f ↗</a></b>
                 </div>
+                <div className={d.proofItem}>
+                  <span>Cross-Chain Pool Supply (0.25 USDG)</span>
+                  <b><a href="https://robinhoodchain.blockscout.com/tx/0xcf2e76b91b2d4cc024616ce3accaecba8743ccc4ef022aff40c9639ec4e25c85" target="_blank" rel="noreferrer">0xcf2e76…5c85 ↗</a></b>
+                </div>
               </div>
 
               {/* Column 2: 1Click Cross-Chain Payouts */}
