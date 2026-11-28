@@ -33,6 +33,7 @@ export function MarketList() {
 const EXPLORER_TX = "https://robinhoodchain.blockscout.com/tx/";
 
 const verifiedProofs = [
+  { k: "SUPPLY·POOL",b: "125,097,052", h: "0x970c…a046", full: "0x970c967609fa3983467ebd3e781126dee2dadfa380151f266d219227a931a046", amt: "0.13 USDG → WETH", tag: "TX ↗" },
   { k: "SUPPLY·POOL",b: "124,805,845", h: "0xcf2e…5c85", full: "0xcf2e76b91b2d4cc024616ce3accaecba8743ccc4ef022aff40c9639ec4e25c85", amt: "0.25 USDG → WETH", tag: "TX ↗" },
   { k: "PAYOUT",     b: "124,802,422", h: "0x7c8e…9a99", full: "0x7c8e7d1659ad551de05b57b19abedb85b8aa367b237dfb0085fc61b0fc379a99", amt: "0.15 USDG → POL", tag: "1CLICK ↗" },
   { k: "PAYOUT",     b: "124,802,385", h: "0x8794…01fd", full: "0x879485a80206d2a005e312d9bfb1ff3257ad40261548f7b146abf0d06abb01fd", amt: "0.15 USDG → BNB", tag: "1CLICK ↗" },

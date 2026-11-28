@@ -1132,10 +1132,11 @@ function RoutesInner() {
                   </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                  <span><b>Cross-Chain Community Pool Supply (0.25 USDG → WETH/USDG)</b> · Status: <b className={s.ok}>CONFIRMED</b></span>
+                  <span><b>Cross-Chain Community Pool Supply (0.25 + 0.13 USDG → WETH/USDG)</b> · Status: <b className={s.ok}>CONFIRMED</b></span>
                   <span style={{ display: "inline-flex", gap: 10, flexWrap: "wrap" }}>
-                    <a href="https://robinhoodchain.blockscout.com/tx/0x1efaa7f0b285ac27db530f865910295cc5f0f123da833f37f2f1996359f74655" target="_blank" rel="noreferrer">Approve Tx 0x1efa…4655 ↗</a>
-                    <a href="https://robinhoodchain.blockscout.com/tx/0xcf2e76b91b2d4cc024616ce3accaecba8743ccc4ef022aff40c9639ec4e25c85" target="_blank" rel="noreferrer">Supply Tx 0xcf2e…5c85 ↗</a>
+                    <a href="https://robinhoodchain.blockscout.com/tx/0xcf2e76b91b2d4cc024616ce3accaecba8743ccc4ef022aff40c9639ec4e25c85" target="_blank" rel="noreferrer">Supply #1 0xcf2e…5c85 ↗</a>
+                    <a href="https://robinhoodchain.blockscout.com/tx/0x970c967609fa3983467ebd3e781126dee2dadfa380151f266d219227a931a046" target="_blank" rel="noreferrer">Supply #2 0x970c…a046 ↗</a>
+                    <a href="https://robinhoodchain.blockscout.com/tx/0x04723328d50ba9902b87d03833a14a31bb29f8758d18c302c237ae5e16990112" target="_blank" rel="noreferrer">Approve 0x0472…0112 ↗</a>
                   </span>
                 </div>
               </div>

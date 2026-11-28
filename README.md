@@ -60,7 +60,7 @@ Start block `122296154` · Manifests: [`contracts/deployments/4663.json`](contra
 | **Seed Stable · `USDe/USDG`** | `USDG` liquidity supplied to `USDe` market (block `124,065,694`) | [`0xb035a9c2…8b63`](https://robinhoodchain.blockscout.com/tx/0xb035a9c29b5ac2906007f2a05cf6822d3845de29e92e145d78d5f2db15748b63) |
 | **Cross-Chain Repay (`USDG`)** | Zero-dust full repay via `/app/routes` Step 2 (block `123,537,392`) | [`0x88a0e4bf…44c8`](https://robinhoodchain.blockscout.com/tx/0x88a0e4bfdfa2b444d205b3f8b125afab714346d86a864451e5a36aa8e55844c8) · [`Approve ↗`](https://robinhoodchain.blockscout.com/tx/0x7ba90b1015824c8088bdcd7e8b5608302aefa4438953b781d4b9c081f61a8be3) |
 | **Post-Repay Collateral Exit** | `0.0010 WETH` unlocked & withdrawn via `/app/routes` Step 3 (block `123,542,369`) | [`0x563d35bd…b41f`](https://robinhoodchain.blockscout.com/tx/0x563d35bd6f8dbb8e56c1029e04dda04f164b2ba1bdd893e216d22195b6aab41f) |
-| **Cross-Chain Community Pool Supply** | `0.245251 USDG` supplied via `/app/routes` Step 2 (block `124,805,845`) | [`0xcf2e76b9…5c85`](https://robinhoodchain.blockscout.com/tx/0xcf2e76b91b2d4cc024616ce3accaecba8743ccc4ef022aff40c9639ec4e25c85) · [`Approve ↗`](https://robinhoodchain.blockscout.com/tx/0x1efaa7f0b285ac27db530f865910295cc5f0f123da833f37f2f1996359f74655) |
+| **Cross-Chain Community Pool Supply** | `0.245251 USDG` (block `124,805,845`) + `0.129573 USDG` (block `125,097,052`) via `/app/routes` Step 2 | [`0xcf2e76b9…5c85`](https://robinhoodchain.blockscout.com/tx/0xcf2e76b91b2d4cc024616ce3accaecba8743ccc4ef022aff40c9639ec4e25c85) · [`0x970c9676…a046`](https://robinhoodchain.blockscout.com/tx/0x970c967609fa3983467ebd3e781126dee2dadfa380151f266d219227a931a046) |
 
 ## How it works
 

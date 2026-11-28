@@ -77,7 +77,8 @@
 | 1 | Approve `USDG` for Cross-Chain Repay (`0.005008 USDG`) | `123,537,352` | [`0x7ba90b10…8be3`](https://robinhoodchain.blockscout.com/tx/0x7ba90b1015824c8088bdcd7e8b5608302aefa4438953b781d4b9c081f61a8be3) |
 | 2 | **Full Debt Repay (`LengoMarket.repay(max)` — `0.005003 USDG`, `5,001` shares → `0` Debt)** | `123,537,392` | [`0x88a0e4bf…44c8`](https://robinhoodchain.blockscout.com/tx/0x88a0e4bfdfa2b444d205b3f8b125afab714346d86a864451e5a36aa8e55844c8) |
 | 3 | **Post-Repay Collateral Exit (`LengoMarket.withdrawCollateral(0.0010 WETH)`)** | `123,542,369` | [`0x563d35bd…b41f`](https://robinhoodchain.blockscout.com/tx/0x563d35bd6f8dbb8e56c1029e04dda04f164b2ba1bdd893e216d22195b6aab41f) |
-| 4 | **Cross-Chain Community Pool Supply (`LengoMarket.supply(0.245251 USDG)`)** | `124,805,845` | [`0xcf2e76b9…5c85`](https://robinhoodchain.blockscout.com/tx/0xcf2e76b91b2d4cc024616ce3accaecba8743ccc4ef022aff40c9639ec4e25c85) · [`Approve ↗`](https://robinhoodchain.blockscout.com/tx/0x1efaa7f0b285ac27db530f865910295cc5f0f123da833f37f2f1996359f74655) |
+| 4 | **Cross-Chain Community Pool Supply #1 (`LengoMarket.supply(0.245251 USDG)`)** | `124,805,845` | [`0xcf2e76b9…5c85`](https://robinhoodchain.blockscout.com/tx/0xcf2e76b91b2d4cc024616ce3accaecba8743ccc4ef022aff40c9639ec4e25c85) · [`Approve ↗`](https://robinhoodchain.blockscout.com/tx/0x1efaa7f0b285ac27db530f865910295cc5f0f123da833f37f2f1996359f74655) |
+| 5 | **Cross-Chain Community Pool Supply #2 (`LengoMarket.supply(0.129573 USDG)`)** | `125,097,052` | [`0x970c9676…a046`](https://robinhoodchain.blockscout.com/tx/0x970c967609fa3983467ebd3e781126dee2dadfa380151f266d219227a931a046) · [`Approve ↗`](https://robinhoodchain.blockscout.com/tx/0x04723328d50ba9902b87d03833a14a31bb29f8758d18c302c237ae5e16990112) |
 
 ---
 
