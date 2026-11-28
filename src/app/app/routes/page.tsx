@@ -1076,7 +1076,7 @@ function RoutesInner() {
             <div style={{ marginTop: 16, border: "1px solid var(--line2)", background: "var(--bg)", padding: "12px 14px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
                 <span style={{ fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--lime)" }}>
-                  ● Verified Live Mainnet 1Click Settlements (Robinhood Chain 4663 ↔ Solana &amp; Base)
+                  ● Verified Live Mainnet 1Click Settlements (Solana · Base · Arbitrum · BNB Chain · Polygon)
                 </span>
                 <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--tx3)" }}>
                   $LENGO Utility: <a href="https://robinhoodchain.blockscout.com/token/0xc256e0fb1f93164b8e499746bba593a8e40a7eef" target="_blank" rel="noreferrer">0xc256…7eef ↗</a> ({lengo.lengoBal.toLocaleString("en-US", { maximumFractionDigits: 0 })} LENGO in wallet)
@@ -1088,7 +1088,6 @@ function RoutesInner() {
                   <span style={{ display: "inline-flex", gap: 10, flexWrap: "wrap" }}>
                     <a href="https://robinhoodchain.blockscout.com/tx/0xc6684d3643a3d0378129c7b2ed80de1f44851e8ae71d4dcbb520b52016d09644" target="_blank" rel="noreferrer">RH Tx 0xc668…9644 ↗</a>
                     <a href="https://explorer.near-intents.org/transactions/0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283" target="_blank" rel="noreferrer">1Click 0x0D65…6283 ↗</a>
-                    <a href="https://1click.chaindefuser.com/v0/status?depositAddress=0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283" target="_blank" rel="noreferrer">1Click API JSON ↗</a>
                     <a href="https://solscan.io/tx/PWUk1xC3DdzyGvPZu9rVviDkj1EpNapzftXxjWPWwpfdFf6PyRMAWkmZqWbp8oCgk4jhuJFDgqz8pRzZV77RUwV" target="_blank" rel="noreferrer">Solana Tx PWUk1x…7RUwV ↗</a>
                   </span>
                 </div>
@@ -1097,8 +1096,31 @@ function RoutesInner() {
                   <span style={{ display: "inline-flex", gap: 10, flexWrap: "wrap" }}>
                     <a href="https://robinhoodchain.blockscout.com/tx/0xa484f312f7419d09f0d64fd85bcaff29394ed072d53603c510f2d523cf77a7f0" target="_blank" rel="noreferrer">RH Tx 0xa484…a7f0 ↗</a>
                     <a href="https://explorer.near-intents.org/transactions/0x0cC24E339540688717D23c86fE2783e3DD7C2E3d" target="_blank" rel="noreferrer">1Click 0x0cC2…2E3d ↗</a>
-                    <a href="https://1click.chaindefuser.com/v0/status?depositAddress=0x0cC24E339540688717D23c86fE2783e3DD7C2E3d" target="_blank" rel="noreferrer">1Click API JSON ↗</a>
                     <a href="https://basescan.org/tx/0x7e4f2eb4a67b2e083993793c4154ce34a23781d6f03e1b866b5e3e78b4c2cd0d" target="_blank" rel="noreferrer">Base Tx 0x7e4f…cd0d ↗</a>
+                  </span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", paddingBottom: 6, borderBottom: "1px dashed var(--line)" }}>
+                  <span><b>0.15 USDG (RH 4663) → 0.1443 USDC (Arbitrum)</b> · Status: <b className={s.ok}>SUCCESS</b></span>
+                  <span style={{ display: "inline-flex", gap: 10, flexWrap: "wrap" }}>
+                    <a href="https://robinhoodchain.blockscout.com/tx/0x832a5e0007347a459b47a1ab56a3dfdb0f9712d09a5802a4d7ef2d1c4118ade9" target="_blank" rel="noreferrer">RH Tx 0x832a…ade9 ↗</a>
+                    <a href="https://explorer.near-intents.org/transactions/0xD1c6F77F9c2E22A9B3Cf77972d7B2d20e926f669" target="_blank" rel="noreferrer">1Click 0xD1c6…f669 ↗</a>
+                    <a href="https://arbiscan.io/tx/0xab62778d215835734109129fde86f2dc9f0e2ce43259cddd27f320ab175a5ba9" target="_blank" rel="noreferrer">Arbitrum Tx 0xab62…5ba9 ↗</a>
+                  </span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", paddingBottom: 6, borderBottom: "1px dashed var(--line)" }}>
+                  <span><b>0.15 USDG (RH 4663) → 0.1396 USDT (BNB Chain)</b> · Status: <b className={s.ok}>SUCCESS</b></span>
+                  <span style={{ display: "inline-flex", gap: 10, flexWrap: "wrap" }}>
+                    <a href="https://robinhoodchain.blockscout.com/tx/0x879485a80206d2a005e312d9bfb1ff3257ad40261548f7b146abf0d06abb01fd" target="_blank" rel="noreferrer">RH Tx 0x8794…01fd ↗</a>
+                    <a href="https://explorer.near-intents.org/transactions/0x581D10cae02143f5051259C350BC55b8083302c5" target="_blank" rel="noreferrer">1Click 0x581D…02c5 ↗</a>
+                    <a href="https://bscscan.com/tx/0xb13b8b8d07fa0e4b8c294b184d4bea4771aec0b28025d9be781d385f85b299d6" target="_blank" rel="noreferrer">BNB Tx 0xb13b…99d6 ↗</a>
+                  </span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", paddingBottom: 6, borderBottom: "1px dashed var(--line)" }}>
+                  <span><b>0.15 USDG (RH 4663) → 0.1395 USDC (Polygon)</b> · Status: <b className={s.ok}>SUCCESS</b></span>
+                  <span style={{ display: "inline-flex", gap: 10, flexWrap: "wrap" }}>
+                    <a href="https://robinhoodchain.blockscout.com/tx/0x7c8e7d1659ad551de05b57b19abedb85b8aa367b237dfb0085fc61b0fc379a99" target="_blank" rel="noreferrer">RH Tx 0x7c8e…9a99 ↗</a>
+                    <a href="https://explorer.near-intents.org/transactions/0x07bCda52e9A1B2C375e554F5ce8378f6564d79f6" target="_blank" rel="noreferrer">1Click 0x07bC…79f6 ↗</a>
+                    <a href="https://polygonscan.com/tx/0x1c58e043f21d7e69a29b0e9342d93b7875166d1aa97b5659e7e13f1d7e7cf782" target="_blank" rel="noreferrer">Polygon Tx 0x1c58…f782 ↗</a>
                   </span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>

@@ -33,6 +33,9 @@ export function MarketList() {
 const EXPLORER_TX = "https://robinhoodchain.blockscout.com/tx/";
 
 const verifiedProofs = [
+  { k: "PAYOUT",     b: "124,802,422", h: "0x7c8e…9a99", full: "0x7c8e7d1659ad551de05b57b19abedb85b8aa367b237dfb0085fc61b0fc379a99", amt: "0.15 USDG → POL", tag: "1CLICK ↗" },
+  { k: "PAYOUT",     b: "124,802,385", h: "0x8794…01fd", full: "0x879485a80206d2a005e312d9bfb1ff3257ad40261548f7b146abf0d06abb01fd", amt: "0.15 USDG → BNB", tag: "1CLICK ↗" },
+  { k: "PAYOUT",     b: "124,802,355", h: "0x832a…ade9", full: "0x832a5e0007347a459b47a1ab56a3dfdb0f9712d09a5802a4d7ef2d1c4118ade9", amt: "0.15 USDG → ARB", tag: "1CLICK ↗" },
   { k: "SEED·USDe",  b: "124,065,694", h: "0xb035…8b63", full: "0xb035a9c29b5ac2906007f2a05cf6822d3845de29e92e145d78d5f2db15748b63", amt: "0.01 USDG → USDe", tag: "TX ↗" },
   { k: "SEED·WBTC",  b: "124,065,612", h: "0x5d55…b81f", full: "0x5d55c1ad35e0986b3e7db7b0e648f037823b0eac714faa3376af039f7cc1b81f", amt: "0.01 USDG → WBTC", tag: "TX ↗" },
   { k: "SEED·cbBTC", b: "124,065,539", h: "0xdb80…e0fa", full: "0xdb808435bd3f9dac585e9658ba6c0cc331902b9e515f29a605e574de9853e0fa", amt: "0.01 USDG → cbBTC", tag: "TX ↗" },

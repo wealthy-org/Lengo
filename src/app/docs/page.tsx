@@ -261,31 +261,31 @@ Est. Liquidation Price  = D / (collateralQuantity × liquidationThreshold)`}</pr
               <div className={d.proofCard}>
                 <div className={d.proofHead}>
                   <span>1Click Cross-Chain Payouts</span>
-                  <em>Solana &amp; Base</em>
+                  <em>5 Chains · USDC &amp; USDT</em>
                 </div>
                 <div className={d.proofItem}>
-                  <span>1Click USDG Origin (RH → SOL)</span>
-                  <b><a href="https://robinhoodchain.blockscout.com/tx/0xc6684d3643a3d0378129c7b2ed80de1f44851e8ae71d4dcbb520b52016d09644" target="_blank" rel="noreferrer">0xc6684d…9644 ↗</a></b>
-                </div>
-                <div className={d.proofItem}>
-                  <span>NEAR Intents Solana Settlement</span>
-                  <b><a href="https://explorer.near-intents.org/transactions/0x0D650Ee3D0961B376a9b90fB12e5fE0BD9D46283" target="_blank" rel="noreferrer">0x0D650E…6283 ↗</a></b>
-                </div>
-                <div className={d.proofItem}>
-                  <span>Solana USDC Payout (0.806 USDC)</span>
+                  <span>Solana USDC Payout (1.00 USDG)</span>
                   <b><a href="https://solscan.io/tx/PWUk1xC3DdzyGvPZu9rVviDkj1EpNapzftXxjWPWwpfdFf6PyRMAWkmZqWbp8oCgk4jhuJFDgqz8pRzZV77RUwV" target="_blank" rel="noreferrer">PWUk1xC3…7RUwV ↗</a></b>
                 </div>
                 <div className={d.proofItem}>
-                  <span>1Click USDG Origin (RH → Base)</span>
-                  <b><a href="https://robinhoodchain.blockscout.com/tx/0xa484f312f7419d09f0d64fd85bcaff29394ed072d53603c510f2d523cf77a7f0" target="_blank" rel="noreferrer">0xa484f3…a7f0 ↗</a></b>
-                </div>
-                <div className={d.proofItem}>
-                  <span>NEAR Intents Base Settlement</span>
-                  <b><a href="https://explorer.near-intents.org/transactions/0x0cC24E339540688717D23c86fE2783e3DD7C2E3d" target="_blank" rel="noreferrer">0x0cC24E…2E3d ↗</a></b>
-                </div>
-                <div className={d.proofItem}>
-                  <span>Base USDC Payout (0.2965 USDC)</span>
+                  <span>Base USDC Payout (0.30 USDG)</span>
                   <b><a href="https://basescan.org/tx/0x7e4f2eb4a67b2e083993793c4154ce34a23781d6f03e1b866b5e3e78b4c2cd0d" target="_blank" rel="noreferrer">0x7e4f2e…cd0d ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Arbitrum USDC Payout (0.15 USDG)</span>
+                  <b><a href="https://arbiscan.io/tx/0xab62778d215835734109129fde86f2dc9f0e2ce43259cddd27f320ab175a5ba9" target="_blank" rel="noreferrer">0xab6277…5ba9 ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>BNB Chain USDT Payout (0.15 USDG)</span>
+                  <b><a href="https://bscscan.com/tx/0xb13b8b8d07fa0e4b8c294b184d4bea4771aec0b28025d9be781d385f85b299d6" target="_blank" rel="noreferrer">0xb13b8b…99d6 ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>Polygon USDC Payout (0.15 USDG)</span>
+                  <b><a href="https://polygonscan.com/tx/0x1c58e043f21d7e69a29b0e9342d93b7875166d1aa97b5659e7e13f1d7e7cf782" target="_blank" rel="noreferrer">0x1c58e0…f782 ↗</a></b>
+                </div>
+                <div className={d.proofItem}>
+                  <span>NEAR Intents Explorer (All 5 Routes)</span>
+                  <b><a href="https://explorer.near-intents.org/transactions/0xD1c6F77F9c2E22A9B3Cf77972d7B2d20e926f669" target="_blank" rel="noreferrer">0xD1c6F7…f669 ↗</a></b>
                 </div>
               </div>
 
