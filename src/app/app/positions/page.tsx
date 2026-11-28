@@ -218,9 +218,6 @@ export default function PositionsPage() {
                     <small>
                       {r.spec.category} · Max LTV {Math.round(r.spec.maxLtv * 100)}% · LT {Math.round(r.spec.liqThreshold * 100)}% · {(r.spec.apr * 100).toFixed(1)}% APR
                       {r.spec.id === "AAPL" ? " · US Market Hours" : r.spec.category === "Robinhood Stock" ? " · 24/5 Session" : ""}
-                      {harmonicSessions[r.spec.id]
-                        ? ` · Harmonic: ${harmonicSessions[r.spec.id].label} (upd ${fmtAge(harmonicSessions[r.spec.id].ageSec)})`
-                        : ""}
                     </small>
                   </div>
                   <div className={p.tags}>

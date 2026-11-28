@@ -21,9 +21,42 @@ export type HarmonicSessionItem = {
 function formatVerdictLabel(verdict: string, canExec: boolean): { label: string; shortLabel: string } {
   if (verdict === "halted") return { label: "Market Halted", shortLabel: "Halted" };
   if (verdict === "open" && canExec) return { label: "Market Open", shortLabel: "Market Open" };
-  if (verdict === "weekend") return { label: "Market Closed · Weekend Hold", shortLabel: "Market Closed" };
+  if (verdict === "weekend") return { label: "Market Closed · Weekend", shortLabel: "Weekend Hold" };
   if (verdict === "closed") return { label: "Market Closed", shortLabel: "Market Closed" };
   return { label: canExec ? "Market Open" : "Market Closed", shortLabel: canExec ? "Market Open" : "Market Closed" };
+}
+
+function formatCleanReason(verdict: string, canExec: boolean, raw: string): string {
+  const isoMatch = raw.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?Z/);
+  let untilStr = "";
+  if (isoMatch) {
+    const d = new Date(isoMatch[0]);
+    if (!Number.isNaN(d.getTime())) {
+      untilStr = d.toLocaleString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: "UTC",
+      }) + " UTC";
+    }
+  }
+  if (verdict === "halted") {
+    return "Trading halted by exchange session feed. Oracle price is frozen until resumption.";
+  }
+  if (verdict === "weekend") {
+    return untilStr
+      ? `24/5 equity session paused until ${untilStr}. Oracle holds last closing price.`
+      : "24/5 equity session paused for weekend hold. Oracle holds last closing price.";
+  }
+  if (!canExec || verdict === "closed") {
+    return untilStr
+      ? `US market session closed until ${untilStr}. Oracle holds last session price.`
+      : "US market session is currently closed. Oracle holds last closing print.";
+  }
+  return "Live 24/5 equity session active on Robinhood Chain.";
 }
 
 export async function GET() {
@@ -55,7 +88,7 @@ export async function GET() {
         verdict,
         label,
         shortLabel,
-        reason: String(a.reason || a.rows?.oracle?.why || ""),
+        reason: formatCleanReason(verdict, canExec, String(a.reason || a.rows?.oracle?.why || "")),
         rowAt,
         ageSec: typeof a.ageSec === "number" ? a.ageSec : computedAge,
         quoteAgeSec: typeof a.quoteAgeSec === "number" ? a.quoteAgeSec : computedAge,

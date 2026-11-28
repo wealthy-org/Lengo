@@ -112,6 +112,14 @@
 .cta:hover:not(:disabled){background:var(--lime)}
 .cta:disabled{background:var(--panel2);color:var(--tx3);cursor:not-allowed}
 .note{font-family:var(--mono);font-size:10px;color:var(--tx3);letter-spacing:.04em}
+.sessionCard{border:1px solid rgba(242,193,78,.28);border-left:2px solid var(--amber);background:rgba(242,193,78,.04);padding:11px 13px;display:flex;flex-direction:column;gap:5px}
+.sessionCardHalted{border-color:rgba(255,107,107,.35);border-left-color:var(--red);background:rgba(255,107,107,.05)}
+.sessionHead{display:flex;align-items:center;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.sessionHead b{font-weight:500;color:var(--amber)}
+.sessionCardHalted .sessionHead b{color:var(--red)}
+.sessionHead a{color:var(--tx3);text-decoration:none;font-size:9.5px;letter-spacing:.08em;transition:color .15s}
+.sessionHead a:hover{color:var(--tx)}
+.sessionBody{font-size:12px;line-height:1.45;color:var(--tx2);margin:0}
 
 /* modal */
 .modalWrap{position:fixed;inset:0;background:rgba(6,10,8,.72);backdrop-filter:blur(4px);display:grid;place-items:center;z-index:50;padding:16px}
